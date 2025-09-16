@@ -1,0 +1,338 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  1. Use a more-intuitive box-sizing model.
+*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+  2. Remove default margin
+*/
+
+* {
+  margin: 0;
+}
+
+/*
+  Typographic tweaks!
+  3. Add accessible line-height
+  4. Improve text rendering
+*/
+
+body {
+  background: #f8f9fd;
+  font-family: "Montserrat", serif;
+  font-size: 15.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  5. Improve media defaults
+*/
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/*
+  6. Remove built-in form typography styles
+*/
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/*
+  7. Avoid text overflows
+*/
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/*
+  8. Create a root stacking context
+*/
+
+#root,
+#__next {
+  isolation: isolate;
+}
+
+/* Custom scrollbar styles */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.pagination-primary {
+  background-color: #f00;
+  /* Use the primary color defined in the theme */
+}
+
+.ant-pagination .ant-pagination-item-active {
+  font-weight: 400;
+  border-color: "#090B3C";
+  background-color: "#090B3C";
+}
+
+.ant-pagination .ant-pagination-item-active a {
+  font-weight: 400;
+  color: black;
+}
+
+.ant-pagination-prev {
+  color: black;
+  border-color: "#090B3C";
+  background-color: "#090B3C";
+}
+
+.ant-pagination-prev.ant-pagination-disabled {
+  background-color: transparent !important;
+  cursor: not-allowed;
+}
+
+.ant-pagination .ant-pagination-prev button {
+  color: black;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ant-pagination-next {
+  color: black;
+  border-color: "#090B3C";
+  background-color: "#090B3C";
+}
+
+.ant-pagination-next.ant-pagination-disabled {
+  background-color: transparent !important;
+  cursor: not-allowed;
+}
+
+.ant-pagination .ant-pagination-next button {
+  color: black;
+  background-color: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #17b26a; /* Custom checkbox color */
+  border-color: #17b26a; /* Custom border color */
+}
+
+.custom-checkbox .ant-checkbox-inner {
+  border-radius: 4px; /* Optional: Rounded corners */
+}
+
+.custom-checkbox .ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: white; /* Customize the tick color */
+}
+
+.custom-checkbox .ant-checkbox-checked:hover .ant-checkbox-inner {
+  background-color: #17b26a !important; /* Custom background color on hover when checked */
+  border-color: #17b26a !important; /* Custom border color on hover when checked */
+}
+
+/* Documentation specific styles */
+.documentation-card {
+  transition: all 0.3s ease;
+}
+
+.documentation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.sticky-sidebar {
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for documentation */
+.sticky-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sticky-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sticky-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 2px;
+}
+
+.sticky-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 1024px) {
+  .documentation-sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    width: 300px;
+  }
+
+  .documentation-sidebar.open {
+    left: 0;
+  }
+}
+
+/* Mobile typography adjustments */
+@media (max-width: 768px) {
+  .documentation-content h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .documentation-content h3 {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+  }
+
+  .documentation-content h4 {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .documentation-content p,
+  .documentation-content li {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Touch improvements for mobile */
+@media (max-width: 768px) {
+  .documentation-card {
+    padding: 0.75rem;
+  }
+
+  .documentation-card:hover {
+    transform: none; /* Disable hover effects on mobile */
+  }
+
+  .documentation-button {
+    min-height: 44px; /* Better touch targets */
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Improved spacing for mobile cards */
+@media (max-width: 640px) {
+  .ant-card {
+    margin-bottom: 1rem;
+  }
+
+  .ant-card-body {
+    padding: 1rem;
+  }
+
+  .ant-steps-vertical .ant-steps-item-content {
+    min-height: auto;
+  }
+}
+
+/* Notification Dropdown Styles */
+.notification-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.notification-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.notification-dropdown .ant-dropdown-menu-item:hover {
+  background: transparent !important;
+}
+
+/* Custom scrollbar for notifications */
+.notification-dropdown
+  .ant-dropdown-menu-item
+  > div
+  > div:last-child::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-dropdown
+  .ant-dropdown-menu-item
+  > div
+  > div:last-child::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.notification-dropdown
+  .ant-dropdown-menu-item
+  > div
+  > div:last-child::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.notification-dropdown
+  .ant-dropdown-menu-item
+  > div
+  > div:last-child::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Group hover effect */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}

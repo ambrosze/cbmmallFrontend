@@ -1,0 +1,575 @@
+import AttributeHeader from "@/components/Attributes/AttributeHeader";
+import TableMainComponent from "@/components/Attributes/TableMainComponent";
+import { SalesForm } from "@/components/Forms/SalesForm";
+import Header from "@/components/header";
+import InvoiceReceipt from "@/components/Invoice/InvoiceReceipt";
+import { salesColumns } from "@/components/Items/itemsColumns";
+import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
+import PaginationComponent from "@/components/sharedUI/PaginationComponent";
+import PlannerModal from "@/components/sharedUI/PlannerModal";
+import SharedLayout from "@/components/sharedUI/SharedLayout";
+import CustomToast from "@/components/sharedUI/Toast/CustomToast";
+import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
+import { useGetAllDailyGoldPricesQuery } from "@/services/admin/daily-gold-price";
+import { useGetAllInventoryItemsQuery } from "@/services/InventoryItem";
+import {
+  useCreateSalesMutation,
+  useDeleteSalesMutation,
+  useGetAllSalesQuery,
+  useUpdateSalesMutation,
+} from "@/services/sales/sales";
+import { SalesDatum } from "@/types/SalesTypes";
+import {
+  capitalizeOnlyFirstLetter,
+  formatCurrency,
+  newUserTimeZoneFormatDate,
+} from "@/utils/fx";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import { Dropdown, MenuProps } from "antd";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import * as yup from "yup";
+import imgError from "/public/states/notificationToasts/error.svg";
+import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+
+interface InventoryCategory {
+  name?: string;
+}
+
+interface InventoryItem {
+  material?: string;
+  weight?: number | string;
+  price?: number;
+  category_id?: number | string;
+  category?: InventoryCategory;
+}
+
+interface InventoryDataItem {
+  id: string | number;
+  item?: InventoryItem;
+}
+
+interface InventoryListItem {
+  label: string;
+  value: string | number;
+  price?: number;
+  category_id?: number | string;
+}
+const index = () => {
+  const [search, setSearch] = useState("");
+  const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
+  const router = useRouter();
+  const [formValues, setFormValues] = useState({
+    customer_name: "",
+    customer_phone_number: "",
+    customer_email: "",
+    payment_method: "",
+    discount_code: "",
+    sale_inventories: [{ inventory_id: "", quantity: "", price_per_gram: "" }],
+  });
+  const [selectedItem, setSelectedItem] = useState<SalesDatum | null>(null);
+  console.log("🚀 ~ index ~ selectedItem:", selectedItem);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [createSales, { isLoading: isLoadingCreate, error }] =
+    useCreateSalesMutation();
+  const [updateSales, { isLoading: isLoadingUpdate, error: errorUpdate }] =
+    useUpdateSalesMutation();
+
+  const { data, refetch, isLoading } = useGetAllSalesQuery({
+    q: search,
+    page: currentPage,
+    include: "saleInventories.inventory.item,discount",
+    per_page: 15,
+    paginate: true,
+  });
+  const { data: inventoryData } = useGetAllInventoryItemsQuery({
+    paginate: false,
+    per_page: 15,
+    include: "store,item.category",
+    page: currentPage,
+    q: search,
+  });
+  console.log("🚀 ~ index ~ inventoryData:", inventoryData);
+  const { data: dailyColdPriceData } = useGetAllDailyGoldPricesQuery({
+    paginate: false,
+    per_page: 15,
+    page: currentPage,
+    q: search,
+    include: "category",
+    sort: "recorded_on",
+    filter: {
+      period: "daily",
+    },
+  });
+  console.log("🚀 ~ index ~ dailyColdPriceData:", dailyColdPriceData);
+  const [deleteSales, { isLoading: isDeleteLoading }] =
+    useDeleteSalesMutation();
+  const [showInvoice, setShowInvoice] = useState(false);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormValues((prev: any) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  useEffect(() => {
+    if (selectedItem && showEditModal) {
+      setFormValues({
+        customer_name: selectedItem?.customer_name || "",
+        customer_phone_number: selectedItem?.customer_phone_number || "",
+        customer_email: selectedItem?.customer_email || "",
+        payment_method: selectedItem?.payment_method || "",
+        discount_code: (selectedItem as any)?.metadata?.discount?.code || "",
+        sale_inventories:
+          selectedItem?.sale_inventories?.map((saleItem: any) => ({
+            id: saleItem?.id || null,
+            inventory_id: saleItem?.inventory_id || "",
+            quantity: saleItem?.quantity || "",
+            price_per_gram: saleItem?.price_per_gram || "",
+          })) || [],
+      });
+    }
+  }, [selectedItem, showEditModal]);
+  const items: MenuProps["items"] = [
+    {
+      label: (
+        <button
+          onClick={() => {
+            // You need to pass the correct item here when rendering the menu
+            // setSelectedItem(item);
+            setShowEditModal(true);
+          }}
+          className="flex w-full items-center gap-2"
+          type="button"
+        >
+          Edit sale
+        </button>
+      ),
+      key: "1",
+    },
+    {
+      label: (
+        <button
+          onClick={() => {
+            router.push(
+              `/sales/sales-inventory/${selectedItem?.id}?customer_name=${selectedItem?.customer_name}`
+            );
+          }}
+          className="flex w-full items-center gap-2"
+          type="button"
+        >
+          View Sales Inventories
+        </button>
+      ),
+      key: "4",
+    },
+    {
+      label: (
+        <button
+          onClick={() => {
+            setShowInvoice(true);
+          }}
+          className="flex w-full items-center gap-2"
+          type="button"
+        >
+          View invoice
+        </button>
+      ),
+      key: "2",
+    },
+
+    {
+      label: (
+        <button
+          onClick={() => {
+            setShowDeleteModal(true);
+          }}
+          className="flex w-full items-center text-red-500 gap-2"
+          type="button"
+        >
+          Delete
+        </button>
+      ),
+      key: "3",
+    },
+  ];
+  const transformedData = data?.data?.map((item) => ({
+    key: item?.id,
+    customer_name: (
+      <div className="flex items-center gap-2">{item?.customer_name}</div>
+    ),
+    amount: (
+      <span className=" font-[500]">
+        {formatCurrency(item?.total_price || 0)}
+      </span>
+    ),
+
+    payment_method: (
+      <div className="flex items-center gap-2">{item?.payment_method ?? "-"}</div>
+    ),
+    invoice_number: (
+      <span className=" font-[500]">{item?.invoice_number || "-"}</span>
+    ),
+    sales_inventory: (
+      <span className=" font-[500] text-center">
+        {item?.sale_inventories.length || "-"}
+      </span>
+    ),
+
+    dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
+
+    action: (
+      <div className="flex items-center space-x-2">
+        <Dropdown menu={{ items }} trigger={["click"]}>
+          <a
+            className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-gray-600 underline py-2`}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedItem(item);
+              const itemToEdit = item; // Store the item in a local variable
+              setSelectedItem(itemToEdit);
+              // Directly set form values here to ensure correct data is used
+              setFormValues({
+                customer_name: itemToEdit?.customer_name || "",
+                customer_phone_number: itemToEdit?.customer_phone_number || "",
+                customer_email: itemToEdit?.customer_email || "",
+                payment_method: itemToEdit?.payment_method || "",
+                discount_code:
+                  (itemToEdit as any)?.metadata?.discount?.code || "",
+                sale_inventories:
+                  itemToEdit?.sale_inventories?.map((saleItem: any) => ({
+                    id: saleItem?.id || null,
+                    inventory_id: saleItem?.inventory_id || "",
+                    quantity: saleItem?.quantity || "",
+                    price_per_gram: saleItem?.price_per_gram || "",
+                  })) || [],
+              });
+            }}
+          >
+            <Icon icon="uil:setting" width="24" height="24" />
+          </a>
+        </Dropdown>
+      </div>
+    ),
+  }));
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    refetch();
+  };
+
+  const inventoryList: InventoryListItem[] | undefined =
+    inventoryData?.data.map((item: InventoryDataItem): InventoryListItem => {
+      return {
+        label:
+          item?.item?.material +
+          "-" +
+          `${item?.item?.weight}g` +
+          ((item as any)?.item?.category?.name
+            ? "-" + (item as any)?.item?.category?.name
+            : ""),
+        value: item.id,
+        price: item?.item?.price,
+        category_id: item?.item?.category_id,
+      };
+    });
+
+  const handleSubmit = async () => {
+    try {
+      // Clear previous form errors if validation is successful
+      setFormErrors({});
+
+      // Prepare the payload with the correct field name
+      const payload = {
+        customer_name: formValues.customer_name,
+        customer_phone_number: formValues.customer_phone_number,
+        payment_method: formValues.payment_method,
+        customer_email: formValues.customer_email,
+        discount_code: formValues.discount_code,
+        sale_inventories: formValues.sale_inventories.map((item) => ({
+          inventory_id: item.inventory_id,
+          quantity: Number(item.quantity),
+          price_per_gram: Number(item.price_per_gram),
+        })),
+      };
+      // Proceed with server-side submission
+      const response = await createSales(payload).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Sale Created Successfully"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Thank you..."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Sale has been recorded successfully.",
+      });
+      refetch();
+      setIsOpenModal(false);
+    } catch (err: any) {
+      if (err.name === "ValidationError") {
+        // Handle client-side validation errors
+        const errors: { [key: string]: string } = {};
+        err.inner.forEach((validationError: yup.ValidationError) => {
+          if (validationError.path) {
+            errors[validationError.path] = validationError.message;
+          }
+        });
+        setFormErrors(errors);
+      } else {
+        // Handle server-side errors
+        console.log("🚀 ~ handleSubmit ~ err:", err);
+        refetch();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={"Sale Creation Failed"}
+                image={imgError}
+                textColor="red"
+                message={(err as any)?.data?.message || "Something went wrong"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Failed to create sale",
+        });
+      }
+    }
+  };
+  const handleUpdateSubmit = async () => {
+    try {
+      // Validate form values using yup
+      // await staffSchema.validate(formValues, {
+      //   abortEarly: false,
+      // });
+
+      // Clear previous form errors if validation is successful
+      setFormErrors({});
+      const payload = {
+        customer_name: formValues.customer_name,
+        customer_phone_number: formValues.customer_phone_number,
+        payment_method: formValues.payment_method,
+        customer_email: formValues.customer_email,
+        discount_code: formValues.discount_code,
+        sale_inventories: formValues.sale_inventories.map((item: any) => ({
+          id: item.id || null,
+          inventory_id: item.inventory_id,
+          quantity: Number(item.quantity),
+          price_per_gram: Number(item.price_per_gram),
+        })),
+      };
+
+      // Proceed with server-side submission
+      const response = await updateSales({
+        id: selectedItem?.id!,
+        body: payload,
+      }).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={
+                <>
+                  <span className="font-bold">
+                    {capitalizeOnlyFirstLetter(selectedItem?.customer_name!)}
+                  </span>{" "}
+                  updated Successfully
+                </>
+              }
+              image={imgSuccess}
+              textColor="green"
+              message={"Thank you..."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Please check your email for verification.",
+      });
+      refetch();
+      setIsOpenModal(false);
+    } catch (err: any) {
+      if (err.name === "ValidationError") {
+        // Handle client-side validation errors
+        const errors: { [key: string]: string } = {};
+        err.inner.forEach((validationError: yup.ValidationError) => {
+          if (validationError.path) {
+            errors[validationError.path] = validationError.message;
+          }
+        });
+        setFormErrors(errors);
+      } else {
+        // Handle server-side errors
+        console.log("🚀 ~ handleSubmit ~ err:", err);
+        refetch();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={
+                  <>
+                    <span className="font-bold">
+                      {capitalizeOnlyFirstLetter(selectedItem?.customer_name!)}
+                    </span>{" "}
+                    update Failed
+                  </>
+                }
+                image={imgError}
+                textColor="red"
+                message={(err as any)?.data?.message || "Something went wrong"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Invalid Credentials",
+        });
+      }
+    }
+  };
+  return (
+    <div className={``}>
+      <Header
+        search={search}
+        setSearch={setSearch}
+        showSearch={true}
+        placeHolderText="Search product, supplier, order"
+        handleOpenSideNavBar={() => {}}
+        isOpenSideNavBar
+      />
+      <AttributeHeader
+        headerText="All Sales"
+        btnText="Create Sales"
+        onClick={() => {
+          setIsOpenModal(true);
+          setFormValues({
+            customer_name: "",
+            customer_phone_number: "",
+            customer_email: "",
+            payment_method: "",
+            discount_code: "",
+            sale_inventories: [
+              { inventory_id: "", quantity: "", price_per_gram: "" },
+            ],
+          });
+        }}
+      />
+      <SharedLayout className="bg-white">
+        {isLoading ? (
+          <SkeletonLoaderForPage />
+        ) : (
+          <>
+            <TableMainComponent
+              DeleteModalText={
+                <>{capitalizeOnlyFirstLetter(selectedItem?.customer_name!)}</>
+              }
+              data={selectedItem}
+              deleteCardApi={deleteSales}
+              isDeleteLoading={isDeleteLoading}
+              showDeleteModal={showDeleteModal}
+              refetch={refetch}
+              formValues={formValues}
+              setShowDeleteModal={setShowDeleteModal}
+              isLoading={false}
+              printTitle="Sales List"
+              showExportButton={true}
+              showPrintButton={true}
+              columnsTable={salesColumns as any}
+              transformedData={transformedData}
+            />
+          </>
+        )}
+
+        <div className="py-8 flex justify-end items-center  w-full">
+          <div className="w-fit">
+            {data?.meta?.total! > 0 && (
+              <PaginationComponent
+                paginationData={{
+                  current_page: data?.meta?.current_page!,
+                  last_page: data?.meta?.last_page!,
+                  per_page: data?.meta?.per_page!,
+                  total: data?.meta?.total!,
+                  next_page_url: data?.links?.next!,
+                  prev_page_url: data?.links?.prev!,
+                }}
+                onPageChange={handlePageChange}
+              />
+            )}
+          </div>
+        </div>
+      </SharedLayout>
+      {isOpenModal && (
+        <PlannerModal
+          modalOpen={isOpenModal}
+          setModalOpen={setIsOpenModal}
+          className=""
+          width={800}
+          title="Create Sales"
+          onCloseModal={() => setIsOpenModal(false)}
+        >
+          <SalesForm
+            error={error}
+            inventoryData={inventoryList || []}
+            dailyGoldPrices={dailyColdPriceData?.data || []}
+            btnText="Create Sale"
+            formErrors={formErrors}
+            formValues={formValues}
+            setFormValues={setFormValues}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleSubmit}
+            isLoadingCreate={isLoadingCreate}
+            setIsOpenModal={setIsOpenModal}
+          />
+        </PlannerModal>
+      )}
+      {showEditModal && (
+        <PlannerModal
+          modalOpen={showEditModal}
+          setModalOpen={setShowEditModal}
+          className=""
+          width={800}
+          title="Edit Sale"
+          onCloseModal={() => setShowEditModal(false)}
+        >
+          <SalesForm
+            inventoryData={inventoryList || []}
+            dailyGoldPrices={dailyColdPriceData?.data || []}
+            error={errorUpdate}
+            setFormValues={setFormValues}
+            btnText="Update Sale"
+            formErrors={formErrors}
+            formValues={formValues}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleUpdateSubmit}
+            isLoadingCreate={isLoadingUpdate}
+            setIsOpenModal={setShowEditModal}
+          />
+        </PlannerModal>
+      )}
+      {showInvoice && (
+        <PlannerModal
+          modalOpen={showInvoice}
+          setModalOpen={setShowInvoice}
+          className=""
+          width={800}
+          title="Invoice"
+          onCloseModal={() => setShowInvoice(false)}
+        >
+          <InvoiceReceipt selectedItem={selectedItem} />
+        </PlannerModal>
+      )}
+    </div>
+  );
+};
+
+export default index;
