@@ -13,7 +13,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useLocalStorage } from "react-use";
 import * as yup from "yup";
-import Logo from "/public/images/logo.svg";
+import Logo from "/public/images/logo-cbm.png";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 import { UserResponseTopLevel } from "@/types/loginInUserType";
@@ -31,7 +31,7 @@ export const AuthHeader = ({ headerText, color = "#1855BB" }: IAuthHeader) => {
         alt={"logo"}
         width={40}
         height={40}
-        className="w-[223px] h-[60px]"
+        className="w-[223px] h-[60px] object-contain"
       />
       <h3 className="text-[#2C3137] font-medium text-[20px]">{headerText}</h3>
     </div>

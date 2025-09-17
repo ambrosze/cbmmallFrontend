@@ -1,5 +1,4 @@
 import { Select } from "antd";
-import { useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 
 interface IProps {
@@ -13,6 +12,8 @@ interface IProps {
   setSearchSelect?: any;
   handleSearchSelect?: any;
   className?: string;
+  mode?: "multiple" | "tags" | undefined;
+  tokenSeparators?: string[];
 }
 
 const SelectInput = ({
@@ -26,29 +27,20 @@ const SelectInput = ({
   handleSearchSelect,
   setSearchSelect,
   className,
+  mode = undefined,
+  tokenSeparators,
 }: IProps) => {
   // console.log('🚀 ~ SelectInput ~ value:', value)
 
-  const handleChange = (selectedValue: string): void => {
+  // Support both single and array values (for multiple/tags modes)
+  const handleChange = (selectedValue: any): void => {
     onChange(selectedValue); // Pass the selected value directly
   };
 
-  useEffect(() => {
-    if (value) {
-      onChange(value);
-    }
-  }, [value]);
+  // Avoid re-invoking onChange when the controlled value prop updates to prevent loops
 
   return (
     <div
-      style={{
-        backgroundColor:
-          backgroundColor === null ||
-          backgroundColor === undefined ||
-          backgroundColor === ""
-            ? ""
-            : backgroundColor,
-      }}
       className={twMerge(
         "w-full rounded-[8px] border border-[#dfdcdc] p-[1px] text-sm hover:border-primary-40 focus:outline-none focus:ring-1 focus:ring-darkColor",
         className
@@ -56,21 +48,22 @@ const SelectInput = ({
     >
       <Select
         showSearch
+        mode={mode}
         allowClear
         variant="borderless"
         value={value}
         size="large"
         placeholder={placeholder}
-        labelRender={(option) => (
-          <span className="text-base">{option.label}</span>
-        )}
-        style={{ width: "100%", borderRadius: "8px" }}
-        className="!placeholder:text-sm !placeholder:font-light text-sm"
+        className="w-full rounded-[8px] !placeholder:text-sm !placeholder:font-light text-sm"
         disabled={disabled}
         onChange={handleChange}
         options={data}
         notFoundContent={notFoundContent}
         onSearch={handleSearchSelect}
+        // Allow splitting tags by common separators when in tags mode
+        tokenSeparators={mode === "tags" ? tokenSeparators ?? [","] : undefined}
+        optionLabelProp="label"
+        optionFilterProp="label"
         filterOption={
           handleSearchSelect
             ? false

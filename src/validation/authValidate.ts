@@ -33,6 +33,21 @@ export const verifyPasswordResetTokenSchema = yup.object().shape({
 export const categorySchema = yup.object().shape({
   name: yup.string().required("Name is required"),
 });
+
+// For creating a category, image must be provided
+export const categoryCreateSchema = yup.object().shape({
+  name: yup.string().required("Name is required"),
+  image: yup
+    .mixed()
+    .test(
+      "required",
+      "Image is required",
+      (value) => value !== null && value !== undefined && value !== ""
+    ),
+});
+export const attributeValueSchema = yup.object().shape({
+  value: yup.string().required("Value is required"),
+});
 export const dailyGoldSchema = yup.object().shape({
   category_id: yup.string().required("Category is required"),
   price_per_gram: yup

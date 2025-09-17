@@ -2,14 +2,14 @@ import {
   CategoryTopLevel,
   ISingleCategoryTopLevel,
 } from "@/types/categoryTypes";
-import { api } from ".";
+import { api } from "..";
 
 interface CreateCategoryType {
   name: string;
   parent_category_id?: null | string;
   image?: null | string;
 }
-export const categoryApi = api.injectEndpoints({
+export const productListApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getAllCategory: builder.query<
@@ -124,4 +124,4 @@ export const {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
-} = categoryApi;
+} = productListApi;

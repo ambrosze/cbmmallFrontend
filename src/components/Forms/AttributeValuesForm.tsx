@@ -1,4 +1,3 @@
-import ColorPickerInput from "../Input/ColorPicker";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
@@ -13,12 +12,14 @@ interface IProps {
   isLoadingCreate: boolean;
   setIsOpenModal: any;
   btnText: string;
+  isEditing: boolean;
 }
-export const ColourForm = ({
+export const AttributeValuesForm = ({
   formErrors,
   error,
   formValues,
   btnText,
+  isEditing,
   handleInputChange,
   setFormValues,
   handleSubmit,
@@ -30,36 +31,19 @@ export const ColourForm = ({
       <form className="mt-5 flex flex-col gap-5">
         <TextInput
           type="text"
-          name="name"
+          name="value"
           errorMessage={
-            formErrors.name ||
-            (error as any)?.data?.errors?.name?.map((err: any) => err) ||
+            formErrors.value ||
+            (error as any)?.data?.errors?.value?.map((err: any) => err) ||
             ""
           }
-          value={formValues.name}
+          value={formValues.value}
           onChange={handleInputChange}
-          placeholder="Enter a colour name"
-          title={<span className="font-[500]">Colour Name*</span>}
+          placeholder="Enter a value"
+          title={<span className="font-[500]">Attribute Value*</span>}
           required={false}
         />
-        <div className="">
-          <ColorPickerInput
-            colorPicker={formValues.hex}
-            onChange={(color: any) =>
-              setFormValues({
-                ...formValues,
-                hex: color.toHexString(),
-              })
-            }
-            errorMessage={
-              formErrors.hex ||
-              (error as any)?.data?.errors?.hex?.map((err: any) => err) ||
-              ""
-            }
-            title={(<span className="font-[500]">Colour Code</span>) as any}
-            className="py-2"
-          />
-        </div>
+
         <div className="flex justify-end border-t border-gray-300 pt-3">
           <div className="w-fit flex gap-5">
             <CustomButton

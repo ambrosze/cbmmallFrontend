@@ -3,7 +3,7 @@ import { formatCurrency } from "@/utils/fx";
 import { PrinterOutlined } from "@ant-design/icons";
 import { Card, Col, Divider, Row, Space, Table, Typography } from "antd";
 import Image from "next/image";
-import Logo from "/public/images/logo.svg";
+import Logo from "/public/images/logo-cbm.png";
 
 const { Title, Text } = Typography;
 
@@ -126,7 +126,7 @@ const InvoiceReceipt = ({ selectedItem }: InvoiceReceiptProps) => {
         <Col span={12} style={{ textAlign: "right" }}>
           <Text strong>From:</Text>
           <br />
-          <Text>Goldwise Jewelry</Text>
+          <Text>CBM MALL</Text>
           <br />
           <Text>456 Business Avenue</Text>
           <br />

@@ -315,9 +315,9 @@ const index = () => {
         isOpenSideNavBar
       />
       <AttributeHeader
-        headerText="All Items"
-        showAddButton={false}
-        btnText=""
+        headerText="All Products"
+        showAddButton={true}
+        btnText="Add New Product"
         onClick={() => {}}
       />
       <SharedLayout>

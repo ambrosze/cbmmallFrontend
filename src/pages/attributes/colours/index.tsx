@@ -9,7 +9,7 @@ import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 
 import { columnsTable } from "@/components/Attributes/tableColumns";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
-import { ColourForm } from "@/components/Forms/ColourForm";
+import { ColourForm } from "@/components/Forms/AttributeForm";
 import {
   useCreateColourMutation,
   useDeleteColourMutation,
@@ -19,7 +19,6 @@ import {
 import { IColourDatum } from "@/types/colourTypes";
 import {
   capitalizeOnlyFirstLetter,
-  formatCurrency,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
 import { categorySchema } from "@/validation/authValidate";

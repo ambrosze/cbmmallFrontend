@@ -1,24 +1,12 @@
-export interface IAttributesTopLevel {
-  data: IAttributesDatum[];
-  links: IAttributesLinks;
-  meta: IAttributesMeta;
+export interface IAttributesValuesTopLevel {
+  data: IAttributesValuesDatum[];
+  links: IAttributesValuesLinks;
+  meta: IAttributesValuesMeta;
   status: string;
   message: string;
 }
 
-export interface IAttributesDatum {
-  id: string;
-  name: string;
-  slug: string;
-  type: "number" | "color" | "text" | "date" | "image" | undefined;
-  sort_order: number;
-  values: IAttributeValue[];
-  created_at: string;
-  updated_at: string;
-  deleted_at: null;
-}
-
-export interface IAttributeValue {
+export interface IAttributesValuesDatum {
   id: string;
   attribute_id: string;
   value: string;
@@ -27,27 +15,39 @@ export interface IAttributeValue {
   created_at: string;
   updated_at: string;
   deleted_at: null;
+  attribute: IAttributesValuesAttribute;
 }
 
-export interface IAttributesLinks {
+export interface IAttributesValuesAttribute {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: null;
+}
+
+export interface IAttributesValuesLinks {
   first: string;
   last: string;
   prev: null;
   next: null;
 }
 
-export interface IAttributesMeta {
+export interface IAttributesValuesMeta {
   current_page: number;
   from: number;
   last_page: number;
-  links: IAttributesLink[];
+  links: IAttributesValuesLink[];
   path: string;
   per_page: number;
   to: number;
   total: number;
 }
 
-export interface IAttributesLink {
+export interface IAttributesValuesLink {
   url: null | string;
   label: string;
   active: boolean;
@@ -55,7 +55,7 @@ export interface IAttributesLink {
 
 // single attribute value response
 export interface ISingleAttributeValueTopLevel {
-  data: IAttributesDatum;
+  data: IAttributesValuesDatum;
   status: string;
   message: string;
 }
