@@ -1,10 +1,10 @@
-
 import { api } from "..";
 
 interface CreateProductsType {
   name: string;
   price: number;
   compare_price: null | number;
+  cost_price: number;
   quantity: number;
   short_description: string;
   description: string;
@@ -13,6 +13,18 @@ interface CreateProductsType {
   attribute_value_ids: string[]; //attribute value ids
   is_serialized: 1 | 0;
   serial_number: string; //required_if:is_serialized-true|unique
+  variants: {
+    name: string;
+    price: number;
+    compare_price: null | number;
+    cost_price: number;
+    quantity: number;
+    is_serialized: 1 | 0;
+    serial_number?: string; // required if is_serialized === 1 and should be unique
+    images?: string[];
+    attribute_value_ids?: string[];
+    batch_number?: string;
+  }[];
 }
 export const productListApi = api.injectEndpoints({
   overrideExisting: true,

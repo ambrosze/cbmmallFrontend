@@ -10,6 +10,7 @@ import { useGetAllStoresQuery } from "@/services/admin/store";
 import { useGetAllCategoryQuery } from "@/services/category";
 import { useGetAllColoursQuery } from "@/services/colour";
 import { useGetAllInventoryItemsQuery } from "@/services/InventoryItem";
+import { useGetAllProductsQuery } from "@/services/products/product-list";
 import { useGetAllTypesQuery } from "@/services/types";
 import { formatCurrency, newUserTimeZoneFormatDate } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -33,12 +34,12 @@ const index = () => {
   }>({});
 
   const router = useRouter();
-  const { data, isLoading, refetch } = useGetAllInventoryItemsQuery({
+  const { data, isLoading, refetch } = useGetAllProductsQuery({
     paginate: true,
     per_page: 15,
     page: currentPage,
     q: search,
-    include: "store,item.category",
+    include: "variants,images,attributeValues",
     filter: {
       ...filters,
     },
@@ -318,7 +319,9 @@ const index = () => {
         headerText="All Products"
         showAddButton={true}
         btnText="Add New Product"
-        onClick={() => {}}
+        onClick={() => {
+          router.push("/products/create");
+        }}
       />
       <SharedLayout>
         <div className="">

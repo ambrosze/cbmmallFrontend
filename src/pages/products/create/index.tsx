@@ -511,9 +511,9 @@ const index = () => {
         isOpenSideNavBar
       />
       <AttributeHeader
-        headerText="Edit Product"
+        headerText="Create Product"
         showAddButton={false}
-        btnText="Update Product"
+        btnText="Add New Product"
         onClick={() => {}}
       />
       <SharedLayout className="bg-white">
@@ -710,30 +710,40 @@ const index = () => {
             {/* Descriptions */}
             <section>
               <h3 className="text-base font-semibold mb-3">Descriptions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextAreaInput
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="w-full">
+                  <div className="flex items-center justify-between pb-1">
+                  <span className="text-sm font-[500]">
+                    Short description (maximum 200 characters)
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {Math.max(0, 200 - (formValues.short_description?.length ?? 0))} left
+                  </span>
+                  </div>
+                  <TextAreaInput
                   row={8}
+                  maxLength={200}
                   name="short_description"
                   errorMessage={""}
                   className="w-full"
                   value={formValues.short_description}
                   onChange={handleInputChange}
                   placeholder="Short description"
-                  title={<span className="font-[500]">Short description</span>}
-                />
-                <div>
-                  <RichTextEditor
-                    value={formValues.description}
-                    onChange={(html) =>
-                      setFormValues((p) => ({ ...p, description: html }))
-                    }
-                    placeholder="Write full description..."
-                    className="h-[205px]"
-                    label={<span className="font-[500]">Description</span>}
-                    errorMessage={""}
                   />
                 </div>
-              </div>
+                <div>
+                  <RichTextEditor
+                  value={formValues.description}
+                  onChange={(html) =>
+                    setFormValues((p) => ({ ...p, description: html }))
+                  }
+                  placeholder="Write full description..."
+                  className="h-[205px]"
+                  label={<span className="font-[500]">Description</span>}
+                  errorMessage={""}
+                  />
+                </div>
+                </div>
             </section>
 
             {/* Images */}
