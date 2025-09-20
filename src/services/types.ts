@@ -1,6 +1,5 @@
-
-import { ISingleAttributeTopLevel, ITypesTopLevel } from "@/types/attributeTypes";
 import { api } from ".";
+
 
 interface CreateTypesType {
   name: string;
@@ -10,7 +9,7 @@ export const typesApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getAllTypes: builder.query<
-      ITypesTopLevel,
+      any,
       {
         sort?: string;
 
@@ -54,7 +53,7 @@ export const typesApi = api.injectEndpoints({
       },
     }),
     getSingleTypes: builder.query<
-      ISingleAttributeTopLevel,
+      any,
       {
         id: string;
         include?: string;

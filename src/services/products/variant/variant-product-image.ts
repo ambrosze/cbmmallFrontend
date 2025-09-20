@@ -51,7 +51,7 @@ export const variantProductImageApi = api.injectEndpoints({
 });
 
 export const {
-  useCreateProductImageMutation,
-  useUpdateProductImageMutation,
-  useDeleteProductImageMutation,
+  useCreateVariantProductImageMutation,
+  useUpdateVariantProductImageMutation,
+  useDeleteVariantProductImageMutation,
 } = variantProductImageApi;
