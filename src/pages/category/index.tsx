@@ -1,14 +1,13 @@
 import AttributeCard from "@/components/Attributes/AttributeCard";
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
+import { CategoryForm } from "@/components/Forms/Category/CategoryForm";
 import Header from "@/components/header";
-import TextInput from "@/components/Input/TextInput";
 import EmptyState from "@/components/ItemComponent/EmptyState";
 import CustomButton from "@/components/sharedUI/Buttons/Button";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
-import Spinner from "@/components/sharedUI/Spinner";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import {
@@ -17,7 +16,8 @@ import {
   useGetAllCategoryQuery,
   useUpdateCategoryMutation,
 } from "@/services/category";
-import { categorySchema } from "@/validation/authValidate";
+import { CategoryDatum } from "@/types/categoryTypes";
+import { categoryCreateSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -29,14 +29,21 @@ const index = () => {
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [formValues, setFormValues] = useState({
     name: "",
+    image: null,
+    parent_category_id: null,
   });
+  console.log("🚀 ~ index ~ formValues:", formValues);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [selectedItem, setSelectedItem] = useState<CategoryDatum | null>(null);
+  console.log("🚀 ~ index ~ selectedItem:", selectedItem);
+  const [isOpenParentModal, setIsOpenParentModal] = useState(false);
   const { data, refetch, isLoading } = useGetAllCategoryQuery({
     q: search,
     page: currentPage,
     per_page: 15,
     paginate: true,
+    include: "parentCategory,subCategories",
   });
   const [createCategory, { isLoading: isLoadingCreate, error }] =
     useCreateCategoryMutation();
@@ -59,7 +66,7 @@ const index = () => {
   const handleSubmit = async () => {
     try {
       // Validate form values using yup
-      await categorySchema.validate(formValues, {
+      await categoryCreateSchema.validate(formValues, {
         abortEarly: false,
       });
 
@@ -67,6 +74,9 @@ const index = () => {
       setFormErrors({});
       let payload = {
         name: formValues.name,
+        image: formValues.image || null,
+        // Creating from the top-level modal always creates a root category
+        parent_category_id: null,
       };
 
       // Proceed with server-side submission
@@ -137,6 +147,8 @@ const index = () => {
           setIsOpenModal(true);
           setFormValues({
             name: "",
+            image: null,
+            parent_category_id: null,
           });
         }}
       />
@@ -158,16 +170,23 @@ const index = () => {
                   <>
                     {data?.data?.map((item) => {
                       return (
-                        <div className="">
+                        <div key={item.id} className="">
                           <AttributeCard
+                            isOpenParentModal={isOpenParentModal}
+                            setIsOpenParentModal={setIsOpenParentModal}
+                            selectedItem={selectedItem}
+                            setSelectedItem={setSelectedItem}
                             modalBtnEditText="Edit Category"
                             editInputPlaceHolder="Enter a category name"
                             formErrors={formErrors}
                             setFormErrors={setFormErrors}
                             updateCardApi={updateCategory}
+                            createCardApi={createCategory}
                             deleteCardApi={deleteCategory}
                             isLoadingUpdate={isLoadingUpdate}
                             errorUpdate={errorUpdate}
+                            errorCreate={error}
+                            isLoadingCreate={isLoadingCreate}
                             isDeleteLoading={isDeleteLoading}
                             refetch={refetch}
                             data={item}
@@ -188,6 +207,8 @@ const index = () => {
                             setIsOpenModal(true);
                             setFormValues({
                               name: "",
+                              image: null,
+                              parent_category_id: null,
                             });
                           }}
                           type="button"
@@ -227,51 +248,22 @@ const index = () => {
           modalOpen={isOpenModal}
           setModalOpen={setIsOpenModal}
           className=""
+          width={400}
           title="Create Category"
           onCloseModal={() => setIsOpenModal(false)}
         >
-          <form className="mt-5 flex flex-col gap-5">
-            <TextInput
-              type="text"
-              name="name"
-              errorMessage={
-                formErrors.name ||
-                (error as any)?.data?.errors?.name?.map((err: any) => err) ||
-                ""
-              }
-              value={formValues.name}
-              onChange={handleInputChange}
-              placeholder="Enter a category name"
-              title={<span className="font-[500]">Category</span>}
-              required={false}
-            />
-
-            <div className="flex justify-end border-t border-gray-300 pt-3">
-              <div className="w-fit flex gap-5">
-                <CustomButton
-                  type="button"
-                  onClick={() => {
-                    setIsOpenModal(false);
-                  }}
-                  className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
-                >
-                  Cancel
-                </CustomButton>
-                <CustomButton
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isLoadingCreate}
-                  className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
-                >
-                  {isLoadingCreate ? (
-                    <Spinner className="border-white" />
-                  ) : (
-                    "Create Category"
-                  )}
-                </CustomButton>
-              </div>
-            </div>
-          </form>
+          <CategoryForm
+            isEditing={false}
+            error={error}
+            btnText="Create Category"
+            formErrors={formErrors}
+            formValues={formValues}
+            handleInputChange={handleInputChange}
+            setFormValues={setFormValues}
+            handleSubmit={handleSubmit}
+            isLoadingCreate={isLoadingCreate}
+            setIsOpenModal={setIsOpenModal}
+          />
         </PlannerModal>
       )}
     </div>

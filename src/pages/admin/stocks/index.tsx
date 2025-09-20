@@ -109,13 +109,13 @@ const index = () => {
       value: item.id,
     };
   });
-  const transformedTypesData = getAllTypesData?.data.map((item) => {
+  const transformedTypesData = getAllTypesData?.data.map((item:any) => {
     return {
       label: item.name,
       value: item.id,
     };
   });
-  const transformedColoursData = getAllColoursData?.data.map((item) => {
+  const transformedColoursData = getAllColoursData?.data.map((item:any) => {
     return {
       label: item.name,
       value: item.id,
@@ -128,12 +128,12 @@ const index = () => {
   };
   // get the type by id from the data
   const getTypeById = (id: string) => {
-    const type = transformedTypesData?.find((item) => item.value === id);
+    const type = transformedTypesData?.find((item: any) => item.value === id);
     return type ? type.label : "N/A";
   };
   // get the colour by id from the data
   const getColourById = (id: string) => {
-    const colour = transformedColoursData?.find((item) => item.value === id);
+    const colour = transformedColoursData?.find((item: any) => item.value === id);
     return colour ? colour.label : "N/A";
   };
   const handleCloseEditModal = () => {

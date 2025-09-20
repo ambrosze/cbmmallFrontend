@@ -48,10 +48,12 @@ const nextConfig = {
 
   images: {
     domains: [
-      "api.goldwisejewelry.com/storage",
-      "api.goldwisejewelry.com",
+      "api.cbm-mall.com/storage",
+      "api.cbm-mall.com",
       "ui-avatars.com",
-      "http://api.goldwisejewelry.com/storage",
+      "https://placehold.co",
+      "placehold.co",
+      "http://api.cbm-mall.com/storage",
     ],
   },
 

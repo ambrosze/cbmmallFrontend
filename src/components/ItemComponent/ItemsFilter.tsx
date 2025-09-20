@@ -188,7 +188,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
           borderRadius: "16px",
         }}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col">
           {/* Filter Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -200,7 +200,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-gray-800 text-lg">
-                  Item Filters
+                  Product Filters
                 </span>
                 {getActiveFiltersCount() > 0 && (
                   <Badge
@@ -260,33 +260,73 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
             </div>
           </div>
 
-          {/* Essential Filters - Always Visible */}
-          <div className="flex flex-wrap gap-4 items-center w-full">
-            {/* Store Filter */}
-            {loginResponse?.user.is_admin && (
-              <div className="hidden flex-col gap-2 min-w-[160px]">
+          {/* Advanced Filters - Collapsible */}
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            {/* Essential Filters - Always Visible */}
+            <div className="flex flex-wrap gap-4 items-center w-full">
+              {/* Store Filter */}
+              {loginResponse?.user.is_admin && (
+                <div className="hidden flex-col gap-2 min-w-[160px]">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                    <Icon icon="mdi:store" className="w-3 h-3" />
+                    Store
+                  </label>
+                  <Select
+                    placeholder={
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <Icon icon="mdi:store-outline" className="w-4 h-4" />
+                        <span>All Stores</span>
+                      </div>
+                    }
+                    value={filters[filterKeys.storeKey as keyof FilterState]}
+                    onChange={(value) =>
+                      handleFilterChange(
+                        filterKeys.storeKey as keyof FilterState,
+                        value
+                      )
+                    }
+                    allowClear
+                    style={{ minWidth: 160 }}
+                    className="custom-select"
+                    options={storeOptions}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label as string)
+                        ?.toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  />
+                </div>
+              )}
+
+              {/* Category Filter */}
+              <div className="flex flex-col gap-2 min-w-[160px] mt-5">
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                  <Icon icon="mdi:store" className="w-3 h-3" />
-                  Store
+                  <Icon icon="mdi:tag" className="w-3 h-3" />
+                  Category
                 </label>
                 <Select
                   placeholder={
                     <div className="flex items-center gap-2 text-gray-500">
-                      <Icon icon="mdi:store-outline" className="w-4 h-4" />
-                      <span>All Stores</span>
+                      <Icon icon="mdi:tag-outline" className="w-4 h-4" />
+                      <span>All Categories</span>
                     </div>
                   }
-                  value={filters[filterKeys.storeKey as keyof FilterState]}
+                  value={filters[filterKeys.categoryKey as keyof FilterState]}
                   onChange={(value) =>
                     handleFilterChange(
-                      filterKeys.storeKey as keyof FilterState,
+                      filterKeys.categoryKey as keyof FilterState,
                       value
                     )
                   }
                   allowClear
                   style={{ minWidth: 160 }}
                   className="custom-select"
-                  options={storeOptions}
+                  options={categoryOptions}
                   showSearch
                   filterOption={(input, option) =>
                     (option?.label as string)
@@ -295,48 +335,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                   }
                 />
               </div>
-            )}
-
-            {/* Category Filter */}
-            <div className="flex flex-col gap-2 min-w-[160px]">
-              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                <Icon icon="mdi:tag" className="w-3 h-3" />
-                Category
-              </label>
-              <Select
-                placeholder={
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Icon icon="mdi:tag-outline" className="w-4 h-4" />
-                    <span>All Categories</span>
-                  </div>
-                }
-                value={filters[filterKeys.categoryKey as keyof FilterState]}
-                onChange={(value) =>
-                  handleFilterChange(
-                    filterKeys.categoryKey as keyof FilterState,
-                    value
-                  )
-                }
-                allowClear
-                style={{ minWidth: 160 }}
-                className="custom-select"
-                options={categoryOptions}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label as string)
-                    ?.toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-              />
             </div>
-          </div>
-
-          {/* Advanced Filters - Collapsible */}
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-            }`}
-          >
             <div className="flex flex-col gap-6 pt-2 border-t border-gray-200/60">
               <div className="flex items-center gap-2 mb-2">
                 <Icon icon="mdi:tune" className="w-4 h-4 text-gray-500" />

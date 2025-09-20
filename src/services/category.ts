@@ -1,9 +1,13 @@
-import { CategoryTopLevel, ISingleCategoryTopLevel } from "@/types/categoryTypes";
+import {
+  CategoryTopLevel,
+  ISingleCategoryTopLevel,
+} from "@/types/categoryTypes";
 import { api } from ".";
 
 interface CreateCategoryType {
   name: string;
-  parent_id?: string;
+  parent_category_id?: null | string;
+  image?: null | string;
 }
 export const categoryApi = api.injectEndpoints({
   overrideExisting: true,
@@ -16,7 +20,7 @@ export const categoryApi = api.injectEndpoints({
         paginate?: boolean;
         per_page?: number;
         page?: number;
-        include?: string;
+        include?: string; //parentCategory,subCategories
       }
     >({
       query: ({
@@ -62,8 +66,8 @@ export const categoryApi = api.injectEndpoints({
         id,
         include,
       }: {
-        id: string;
-        include?: string; //cryptoNetwork
+        id: string; //category_id
+        include?: string; //parentCategory,subCategories
       }) => {
         const params: any = {};
 

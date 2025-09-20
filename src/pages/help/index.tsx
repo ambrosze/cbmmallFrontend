@@ -99,7 +99,7 @@ const index = () => {
                   className="text-blue-600 text-2xl"
                 />
                 <h3 className="text-xl font-semibold text-blue-800">
-                  Welcome to Goldwise Jewelry!
+                  Welcome to CBM MALL!
                 </h3>
               </div>
               <p className="text-blue-700 mb-4">

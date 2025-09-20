@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { useDispatch } from "react-redux";
 import { useLocalStorage } from "react-use";
 import { clearCookie } from "./header";
-import Logo from "/public/images/logo.svg";
+import Logo from "/public/images/logo-cbm.png";
 type MenuItem = GetProp<MenuProps, "items">[number];
 interface IProps {
   setToggleNavbar?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,7 +54,7 @@ const Sidebar = ({
     if (path.includes("/admin/discounts")) return ["56", "sub4"];
 
     // Then check regular routes
-    if (path.includes("/items")) return ["2", "sub1"];
+    if (path.includes("/products")) return ["2", "sub1"];
     if (path.includes("/stock-transfer")) return ["3", "sub1"];
     if (path.includes("/scrapes")) return ["4", "sub1"];
     if (
@@ -66,6 +66,8 @@ const Sidebar = ({
     if (path.includes("/attributes/category")) return ["30", "sub3"];
     if (path.includes("/attributes/types")) return ["31", "sub3"];
     if (path.includes("/attributes/colours")) return ["32", "sub3"];
+    if (path.includes("/attributes")) return ["40"];
+    if (path.includes("/category")) return ["30"];
     if (path.includes("/help")) return ["100"];
     if (path.includes("/settings")) return ["101"];
 
@@ -89,9 +91,9 @@ const Sidebar = ({
       children: [
         {
           key: "2",
-          label: "Items",
+          label: "Products",
           onClick: () => {
-            router.push("/items");
+            router.push("/products");
           },
         },
         {
@@ -139,33 +141,51 @@ const Sidebar = ({
       ],
     },
     {
-      key: "sub3",
+      key: "40",
+      icon: (
+        <Icon icon="flowbite:cell-attributes-outline" width="20" height="20" />
+      ),
       label: "Attributes",
-      icon: <Icon icon="system-uicons:list-add" width="21" height="21" />,
-      children: [
-        {
-          key: "30",
-          label: "Category",
-          onClick: () => {
-            router.push("/attributes/category");
-          },
-        },
-        {
-          key: "31",
-          label: "Types",
-          onClick: () => {
-            router.push("/attributes/types");
-          },
-        },
-        {
-          key: "32",
-          label: "Colours",
-          onClick: () => {
-            router.push("/attributes/colours");
-          },
-        },
-      ],
+      onClick: () => {
+        router.push("/attributes");
+      },
     },
+    {
+      key: "30",
+      icon: <Icon icon="iconamoon:category-light" width="20" height="20" />,
+      label: "Category",
+      onClick: () => {
+        router.push("/category");
+      },
+    },
+    // {
+    //   key: "sub3",
+    //   label: "Attributes",
+    //   icon: <Icon icon="system-uicons:list-add" width="21" height="21" />,
+    //   children: [
+    //     {
+    //       key: "30",
+    //       label: "Category",
+    //       onClick: () => {
+    //         router.push("/attributes/category");
+    //       },
+    //     },
+    //     {
+    //       key: "31",
+    //       label: "Types",
+    //       onClick: () => {
+    //         router.push("/attributes/types");
+    //       },
+    //     },
+    //     {
+    //       key: "32",
+    //       label: "Colours",
+    //       onClick: () => {
+    //         router.push("/attributes/colours");
+    //       },
+    //     },
+    //   ],
+    // },
     ...(loginResponse?.user.is_admin
       ? [
           {
@@ -241,11 +261,6 @@ const Sidebar = ({
           },
         ]
       : []),
-    // {
-    //   key: "40",
-    //   icon: <Icon icon="mdi-light:truck" width="20" height="20" />,
-    //   label: "Suppliers",
-    // },
 
     // {
     //   key: "41",

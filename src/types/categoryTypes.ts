@@ -9,16 +9,26 @@ export interface CategoryTopLevel {
 export interface CategoryDatum {
   id: string;
   name: string;
-  created_at: String;
-  updated_at: String;
-  parent_category_id: null;
+  slug: string;
+  description: null;
+  image_path: null | string;
+  is_active: null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: null;
+  parent_id: null | string;
+  image_url: string;
+  // Optional relations when included from API
+  parent_category?: CategoryDatum | null;
+  sub_categories?: CategoryDatum[];
 }
 
 export interface CategoryLinks {
   first: string;
   last: string;
   prev: null;
-  next: null;
+  next: string;
 }
 
 export interface CategoryMeta {
@@ -37,17 +47,10 @@ export interface CategoryLink {
   label: string;
   active: boolean;
 }
-// single category
-export interface ISingleCategoryTopLevel {
-  data: ISingleCategoryData;
-  message: string;
-}
 
-export interface ISingleCategoryData {
-  id: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
-  parent_category_id: string;
-  parent_category?: ISingleCategoryData;
+// single category types
+export interface ISingleCategoryTopLevel {
+  data: CategoryDatum;
+  message: string;
+  status: string;
 }

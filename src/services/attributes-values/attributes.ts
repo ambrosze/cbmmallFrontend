@@ -1,15 +1,16 @@
-import { api } from ".";
+import { IAttributesTopLevel, ISingleAttributeValueTopLevel } from "@/types/attributeTypes";
+import { api } from "..";
 
-
-interface CreateTypesType {
+interface CreateAttributesType {
   name: string;
-  parent_id?: string;
+  type: "text" | "number" | "date" | "color" | "image";
+  values: string[]; // Array of value IDs
 }
-export const typesApi = api.injectEndpoints({
+export const attributesApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getAllTypes: builder.query<
-      any,
+    getAllAttributes: builder.query<
+      IAttributesTopLevel,
       {
         sort?: string;
 
@@ -18,6 +19,9 @@ export const typesApi = api.injectEndpoints({
         per_page?: number;
         page?: number;
         include?: string;
+        filter?: {
+          [key: string]: any;
+        };
       }
     >({
       query: ({
@@ -27,6 +31,7 @@ export const typesApi = api.injectEndpoints({
         per_page,
         page,
         include,
+        filter,
       }: {
         sort?: string;
         q?: string;
@@ -34,6 +39,9 @@ export const typesApi = api.injectEndpoints({
         per_page?: number;
         page?: number;
         include?: string;
+        filter?: {
+          [key: string]: any;
+        };
       }) => {
         const params: any = {};
         if (q) params.q = q;
@@ -43,17 +51,27 @@ export const typesApi = api.injectEndpoints({
         if (per_page) params.per_page = per_page;
         if (page) params.page = page;
         if (sort) params.sort = sort;
-
+        if (filter) {
+          Object.keys(filter).forEach((key) => {
+            if (
+              filter[key] !== undefined &&
+              filter[key] !== null &&
+              filter[key] !== ""
+            ) {
+              params[`filter[${key}]`] = filter[key];
+            }
+          });
+        }
         return {
-          url: "types",
+          url: "attributes",
           method: "GET",
           params,
-          providesTags: ["types"],
+          providesTags: ["attributes"],
         };
       },
     }),
-    getSingleTypes: builder.query<
-      any,
+    getSingleAttributes: builder.query<
+      ISingleAttributeValueTopLevel,
       {
         id: string;
         include?: string;
@@ -64,61 +82,61 @@ export const typesApi = api.injectEndpoints({
         include,
       }: {
         id: string;
-        include?: string; //cryptoNetwork
+        include?: string; //values
       }) => {
         const params: any = {};
 
         if (include) params.include = include;
         return {
-          url: `types/${id}`,
+          url: `attributes/${id}`,
           method: "GET",
 
-          providesTags: ["types"],
+          providesTags: ["attributes"],
         };
       },
     }),
-    createTypes: builder.mutation<any, CreateTypesType>({
+    createAttributes: builder.mutation<any, CreateAttributesType>({
       query: (body) => ({
-        url: "types",
+        url: "attributes",
         method: "POST",
         body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["types"],
+        invalidatesTags: ["attributes"],
       }),
     }),
-    updateTypes: builder.mutation<
+    updateAttributes: builder.mutation<
       any,
-      { id: string; body: CreateTypesType }
+      { id: string; body: CreateAttributesType }
     >({
       query: ({ id, body }) => ({
-        url: `types/${id}`,
+        url: `attributes/${id}`,
         method: "PUT",
         body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["types"],
+        invalidatesTags: ["attributes"],
       }),
     }),
-    deleteTypes: builder.mutation<any, { id: string }>({
+    deleteAttributes: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `types/${id}`,
+        url: `attributes/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["types"],
+        invalidatesTags: ["attributes"],
       }),
     }),
   }),
 });
 
 export const {
-  useGetAllTypesQuery,
-  useGetSingleTypesQuery,
-  useCreateTypesMutation,
-  useUpdateTypesMutation,
-  useDeleteTypesMutation,
-} = typesApi;
+  useGetAllAttributesQuery,
+  useGetSingleAttributesQuery,
+  useCreateAttributesMutation,
+  useUpdateAttributesMutation,
+  useDeleteAttributesMutation,
+} = attributesApi;
