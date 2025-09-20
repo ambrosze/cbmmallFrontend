@@ -1,5 +1,5 @@
+import { api } from "@/services";
 
-import { api } from "..";
 
 interface CreateProductsType {
   name: string;
@@ -9,15 +9,15 @@ interface CreateProductsType {
   short_description: string;
   description: string;
   images: string[]; //images
-  category_ids: string[]; //category ids
+  product_id: string; //product id
   attribute_value_ids: string[]; //attribute value ids
   is_serialized: 1 | 0;
   serial_number: string; //required_if:is_serialized-true|unique
 }
-export const productListApi = api.injectEndpoints({
+export const variantProductListApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getAllProducts: builder.query<
+    getAllProductVariants: builder.query<
       any,
       {
         sort?: string;
@@ -70,80 +70,80 @@ export const productListApi = api.injectEndpoints({
           });
         }
         return {
-          url: "products",
+          url: "product-variants",
           method: "GET",
           params,
-          providesTags: ["products"],
+          providesTags: ["product-variants", "products"],
         };
       },
     }),
-    getSingleProducts: builder.query<
+    getSingleProductVariant: builder.query<
       any,
       {
-        id: string;
+        product_variant_id: string;
         include?: string;
       }
     >({
       query: ({
-        id,
+        product_variant_id,
         include,
       }: {
-        id: string; //product_id
-        include?: string; //variants,images,attributeValues,categories
+        product_variant_id: string; //product_variant_id
+        include?: string; //product.categories
       }) => {
         const params: any = {};
 
         if (include) params.include = include;
         return {
-          url: `products/${id}`,
+          url: `product-variants/${product_variant_id}`,
           method: "GET",
 
-          providesTags: ["products"],
+          providesTags: ["product-variants", "products"],
         };
       },
     }),
-    createProducts: builder.mutation<any, CreateProductsType>({
+    createProductVariant: builder.mutation<any, CreateProductsType>({
       query: (body) => ({
-        url: "products",
+        url: "product-variants",
         method: "POST",
         body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["products"],
+        invalidatesTags: ["product-variants", "products"],
       }),
     }),
-    updateProducts: builder.mutation<
+    updateProductVariant: builder.mutation<
       any,
-      { id: string; body: CreateProductsType }
+      { product_variant_id: string; body: CreateProductsType }
     >({
-      query: ({ id, body }) => ({
-        url: `products/${id}`,
+      query: ({ product_variant_id, body }) => ({
+        url: `product-variants/${product_variant_id}`,
         method: "PUT",
         body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["products"],
+        invalidatesTags: ["product-variants", "products"],
       }),
     }),
-    deleteProducts: builder.mutation<any, { id: string }>({
+    deleteProductVariant: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `products/${id}`,
+        url: `product-variants/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["products"],
+        invalidatesTags: ["product-variants", "products"],
       }),
     }),
   }),
 });
 
 export const {
-  useGetAllProductsQuery,
-  useGetSingleProductsQuery,
-  useCreateProductsMutation,
-  useUpdateProductsMutation,
-  useDeleteProductsMutation,
-} = productListApi;
+  useGetAllProductVariantsQuery,
+  useGetSingleProductVariantQuery,
+  useCreateProductVariantMutation,
+  useUpdateProductVariantMutation,
+  useDeleteProductVariantMutation,
+} = variantProductListApi;
