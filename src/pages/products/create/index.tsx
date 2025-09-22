@@ -197,7 +197,7 @@ const index = () => {
   };
 
   const triggerUpload = () => {
-    if (fileList.length >= 6) {
+    if (fileList.length >= 4) {
       message.warning("You can only upload up to 6 images");
       return;
     }
@@ -211,9 +211,9 @@ const index = () => {
 
   const handleFileChange = async ({ fileList: newFileList }: any) => {
     const limitedList =
-      newFileList.length > 6 ? newFileList.slice(0, 6) : newFileList;
-    if (newFileList.length > 6) {
-      message.warning("You can only upload up to 6 images");
+      newFileList.length > 4 ? newFileList.slice(0, 4) : newFileList;
+    if (newFileList.length > 4) {
+      message.warning("You can only upload up to 4 images");
     }
     setFileList(limitedList);
     try {
@@ -292,9 +292,9 @@ const index = () => {
     { fileList: newFileList }: { fileList: any[] }
   ) => {
     const limitedList =
-      newFileList.length > 6 ? newFileList.slice(0, 6) : newFileList;
-    if (newFileList.length > 6) {
-      message.warning("You can only upload up to 6 images per variant");
+      newFileList.length > 4 ? newFileList.slice(0, 4) : newFileList;
+    if (newFileList.length > 4) {
+      message.warning("You can only upload up to 4 images per variant");
     }
     // Update UI previews immediately
     setFormValues((prev) => {
@@ -710,40 +710,44 @@ const index = () => {
             {/* Descriptions */}
             <section>
               <h3 className="text-base font-semibold mb-3">Descriptions</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="w-full">
                   <div className="flex items-center justify-between pb-1">
-                  <span className="text-sm font-[500]">
-                    Short description (maximum 200 characters)
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {Math.max(0, 200 - (formValues.short_description?.length ?? 0))} left
-                  </span>
+                    <span className="text-sm font-[500]">
+                      Short description (maximum 200 characters)
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {Math.max(
+                        0,
+                        200 - (formValues.short_description?.length ?? 0)
+                      )}{" "}
+                      left
+                    </span>
                   </div>
                   <TextAreaInput
-                  row={8}
-                  maxLength={200}
-                  name="short_description"
-                  errorMessage={""}
-                  className="w-full"
-                  value={formValues.short_description}
-                  onChange={handleInputChange}
-                  placeholder="Short description"
+                    row={8}
+                    maxLength={200}
+                    name="short_description"
+                    errorMessage={""}
+                    className="w-full"
+                    value={formValues.short_description}
+                    onChange={handleInputChange}
+                    placeholder="Short description"
                   />
                 </div>
                 <div>
                   <RichTextEditor
-                  value={formValues.description}
-                  onChange={(html) =>
-                    setFormValues((p) => ({ ...p, description: html }))
-                  }
-                  placeholder="Write full description..."
-                  className="h-[205px]"
-                  label={<span className="font-[500]">Description</span>}
-                  errorMessage={""}
+                    value={formValues.description}
+                    onChange={(html) =>
+                      setFormValues((p) => ({ ...p, description: html }))
+                    }
+                    placeholder="Write full description..."
+                    className="h-[205px]"
+                    label={<span className="font-[500]">Description</span>}
+                    errorMessage={""}
                   />
                 </div>
-                </div>
+              </div>
             </section>
 
             {/* Images */}
@@ -752,7 +756,11 @@ const index = () => {
                 Images ({fileList.length || 0})
               </h3>
               <div className="w-full">
-                <div className="relative w-full">
+                <div
+                  className={`relative w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                    fileList.length > 0 ? "grid" : "block"
+                  }`}
+                >
                   <Upload
                     ref={uploadRef}
                     className="main-hidden-upload w-full hidden"
@@ -761,8 +769,8 @@ const index = () => {
                     fileList={fileList}
                     onChange={handleFileChange}
                     beforeUpload={(f) => {
-                      if (fileList.length >= 6) {
-                        message.warning("You can only upload up to 6 images");
+                      if (fileList.length >= 4) {
+                        message.warning("You can only upload up to 4 images");
                         return (Upload as any).LIST_IGNORE ?? false;
                       }
                       return false;
@@ -779,12 +787,12 @@ const index = () => {
                   <button
                     type="button"
                     onClick={triggerUpload}
-                    className={`p-6 w-full mt-2 border-2 border-dashed ${
+                    className={`p-6 w-full block border-2 border-dashed ${
                       formErrors.images ||
                       (error as any)?.data?.errors?.images?.join?.("\n")
                         ? "border-red-500"
                         : "border-gray-300"
-                    } rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
+                    } rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
                   >
                     <div className="flex justify-center items-center gap-2 py-4">
                       <Icon icon="ic:round-plus" width="24" height="24" />
@@ -803,7 +811,7 @@ const index = () => {
                   )}
 
                   {fileList.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
+                    <>
                       {fileList.map((f, idx) => (
                         <div
                           key={f.uid ?? idx}
@@ -835,7 +843,7 @@ const index = () => {
                           </button>
                         </div>
                       ))}
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -843,14 +851,16 @@ const index = () => {
 
             {/* Variants */}
             <section>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between w-full mb-3">
                 <h3 className="text-base font-semibold">Variants</h3>
-                <CustomButton
-                  onClick={addVariant}
-                  className="bg-primary-40 text-white w-auto px-4"
-                >
-                  Add variant
-                </CustomButton>
+                <div className="">
+                  <CustomButton
+                    onClick={addVariant}
+                    className="bg-primary-40 w-fit text-white px-4"
+                  >
+                    Add variant
+                  </CustomButton>
+                </div>
               </div>
 
               {formValues.variants.length === 0 ? (
@@ -1055,7 +1065,9 @@ const index = () => {
                           Variant Images ({v.ui_files?.length || 0})
                         </p>
                         <div
-                          className="relative w-full"
+                          className={`relative w-full mt-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                            v.ui_files?.length! > 0 ? "grid" : "block"
+                          }`}
                           id={`variant-upload-${i}`}
                         >
                           <Upload
@@ -1067,7 +1079,7 @@ const index = () => {
                               handleVariantFileChange(i, info)
                             }
                             beforeUpload={() => {
-                              if ((v.ui_files?.length ?? 0) >= 6) {
+                              if ((v.ui_files?.length ?? 0) >= 4) {
                                 message.warning(
                                   "You can only upload up to 6 images per variant"
                                 );
@@ -1087,9 +1099,9 @@ const index = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if ((v.ui_files?.length ?? 0) >= 6) {
+                              if ((v.ui_files?.length ?? 0) >= 4) {
                                 message.warning(
-                                  "You can only upload up to 6 images per variant"
+                                  "You can only upload up to 4 images per variant"
                                 );
                                 return;
                               }
@@ -1101,7 +1113,7 @@ const index = () => {
                               ) as HTMLElement | null;
                               input?.click?.();
                             }}
-                            className={`p-4 w-full mt-2 border-2 border-dashed border-gray-300 rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
+                            className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
                           >
                             <div className="flex justify-center items-center gap-2 py-3">
                               <Icon
@@ -1122,7 +1134,7 @@ const index = () => {
                           )}
 
                           {(v.ui_files?.length ?? 0) > 0 && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-2">
+                            <>
                               {(v.ui_files as any[]).map((file, idx) => (
                                 <div
                                   key={file.uid ?? idx}
@@ -1156,7 +1168,7 @@ const index = () => {
                                   </button>
                                 </div>
                               ))}
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>
