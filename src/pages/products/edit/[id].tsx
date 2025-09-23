@@ -91,23 +91,6 @@ const productSchema = yup.object().shape({
   short_description: yup.string().optional(),
   description: yup.string().optional(),
   // The rest of the fields are displayed but managed via other APIs; keep them optional to avoid blocking submit
-  price: yup.number().typeError("Price must be a number").min(0).optional(),
-  compare_price: yup
-    .number()
-    .nullable()
-    .transform((v, o) => (o === "" ? null : v))
-    .min(0)
-    .optional(),
-  cost_price: yup
-    .number()
-    .typeError("Cost price must be a number")
-    .min(0)
-    .optional(),
-  quantity: yup
-    .number()
-    .typeError("Quantity must be a number")
-    .min(0)
-    .optional(),
   category_ids: yup.array().of(yup.string()).optional(),
   attribute_value_ids: yup.array().of(yup.string()).optional(),
   images: yup.array().of(yup.string()).max(6).optional(),
@@ -1187,7 +1170,7 @@ const index = () => {
           </div>
         ) : (
           <div>
-            <form className="mt-5 flex flex-col gap-8">
+            <form className="mt-5 flex flex-col gap-5">
               {/* Basic Info */}
               <section>
                 <h3 className="text-base font-semibold mb-3">Basic info</h3>
@@ -1264,10 +1247,10 @@ const index = () => {
 
               {/* Pricing & Inventory */}
               <section>
-                <h3 className="text-base font-semibold mb-3">
+                <h3 className="text-base hidden font-semibold mb-3">
                   Pricing & inventory
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid hidden grid-cols-1 md:grid-cols-4 gap-4">
                   <TextInput
                     type="number"
                     name="price"
