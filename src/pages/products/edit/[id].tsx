@@ -5,22 +5,54 @@ import SelectInput from "@/components/Input/SelectInput";
 import TextAreaInput from "@/components/Input/TextAreaInput";
 import TextInput from "@/components/Input/TextInput";
 import CustomButton from "@/components/sharedUI/Buttons/Button";
+import ImageComponent from "@/components/sharedUI/ImageComponent";
+import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import Spinner from "@/components/sharedUI/Spinner";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import { useGetAllAttributesQuery } from "@/services/attributes-values/attributes";
 import { useGetAllCategoryQuery } from "@/services/category";
-import { useCreateProductsMutation } from "@/services/products/product-list";
+import {
+  useDeleteProductAttributeValueMutation,
+  useUpdateProductAttributeValueMutation,
+} from "@/services/products/manage-attributes-values/product-attribute-values";
+import {
+  useDeleteProductCategoryMutation,
+  useUpdateProductCategoryMutation,
+} from "@/services/products/manage-product-category/product-category";
+import {
+  useCreateProductImageMutation,
+  useDeleteProductImageMutation,
+} from "@/services/products/manage-product-images/product-image";
+import {
+  useGetSingleProductsQuery,
+  useUpdateProductsMutation,
+} from "@/services/products/product-list";
+import {
+  useDeleteVariantProductAttributeValueMutation,
+  useUpdateVariantProductAttributeValueMutation,
+} from "@/services/products/variant/variant-product-attribute-values";
+import {
+  useCreateVariantProductImageMutation,
+  useDeleteVariantProductImageMutation,
+} from "@/services/products/variant/variant-product-image";
+import {
+  useDeleteProductVariantMutation,
+  useGetSingleProductVariantQuery,
+  useUpdateProductVariantMutation,
+} from "@/services/products/variant/variant-product-list";
 import { compressImage, fileToBase64 } from "@/utils/compressImage";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Upload, message } from "antd";
+import { useRouter } from "next/router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 
 type Variant = {
+  id?: string;
   name: string;
   price: number | "";
   compare_price: number | null | "";
@@ -37,57 +69,60 @@ type Variant = {
   copy_from_main?: boolean;
 };
 
+type FormValues = {
+  name: string;
+  short_description: string;
+  description: string;
+  price: number | "";
+  compare_price: number | null | "";
+  cost_price: number | "";
+  quantity: number | "";
+  images: string[];
+  category_ids: string[];
+  attribute_value_ids: string[];
+  is_serialized: 0 | 1;
+  serial_number: string;
+  variants: Variant[];
+};
+
+// For update, only enforce fields we actually submit
 const productSchema = yup.object().shape({
   name: yup.string().required("Product name is required"),
-  price: yup
-    .number()
-    .typeError("Price must be a number")
-    .min(0, "Price cannot be negative")
-    .required("Price is required"),
+  short_description: yup.string().optional(),
+  description: yup.string().optional(),
+  // The rest of the fields are displayed but managed via other APIs; keep them optional to avoid blocking submit
+  price: yup.number().typeError("Price must be a number").min(0).optional(),
   compare_price: yup
     .number()
     .nullable()
     .transform((v, o) => (o === "" ? null : v))
-    .min(0, "Compare price cannot be negative")
+    .min(0)
     .optional(),
   cost_price: yup
     .number()
     .typeError("Cost price must be a number")
-    .min(0, "Cost price cannot be negative")
-    .required("Cost price is required"),
+    .min(0)
+    .optional(),
   quantity: yup
     .number()
     .typeError("Quantity must be a number")
-    .min(0, "Quantity cannot be negative")
-    .required("Quantity is required"),
-  short_description: yup.string().optional(),
-  description: yup.string().optional(),
-  category_ids: yup
-    .array()
-    .of(yup.string())
-    .min(1, "Select at least one category"),
+    .min(0)
+    .optional(),
+  category_ids: yup.array().of(yup.string()).optional(),
   attribute_value_ids: yup.array().of(yup.string()).optional(),
-  images: yup
-    .array()
-    .of(yup.string())
-    .min(1, "Add at least one image")
-    .max(6, "You can only upload up to 6 images"),
-  is_serialized: yup.mixed<1 | 0>().oneOf([0, 1]).required(),
-  serial_number: yup.string().when("is_serialized", {
-    is: 1,
-    then: (schema) => schema.required("Serial number is required"),
-    otherwise: (schema) => schema.optional(),
-  }),
+  images: yup.array().of(yup.string()).max(6).optional(),
+  is_serialized: yup.mixed<1 | 0>().oneOf([0, 1]).optional(),
+  serial_number: yup.string().optional(),
   variants: yup
     .array()
     .of(
       yup.object().shape({
-        name: yup.string().required("Variant name is required"),
+        name: yup.string().optional(),
         price: yup
           .number()
           .typeError("Variant price must be a number")
           .min(0)
-          .required("Variant price is required"),
+          .optional(),
         compare_price: yup
           .number()
           .nullable()
@@ -98,57 +133,80 @@ const productSchema = yup.object().shape({
           .number()
           .typeError("Variant cost must be a number")
           .min(0)
-          .required("Variant cost is required"),
+          .optional(),
         quantity: yup
           .number()
           .typeError("Variant qty must be a number")
           .min(0)
-          .required("Variant quantity is required"),
-        is_serialized: yup.mixed<1 | 0>().oneOf([0, 1]).required(),
-        serial_number: yup.string().when("is_serialized", {
-          is: 1,
-          then: (schema) => schema.required("Variant serial is required"),
-          otherwise: (schema) => schema.optional(),
-        }),
+          .optional(),
+        is_serialized: yup.mixed<1 | 0>().oneOf([0, 1]).optional(),
+        serial_number: yup.string().optional(),
         batch_number: yup.string().optional(),
         attribute_value_ids: yup.array().of(yup.string()).optional(),
-        images: yup
-          .array()
-          .of(yup.string())
-          .max(6, "You can only upload up to 6 images per variant")
-          .optional(),
+        images: yup.array().of(yup.string()).max(6).optional(),
       })
     )
     .optional(),
 });
 
 const index = () => {
-  const [formValues, setFormValues] = useState({
+  const router = useRouter();
+  const [formValues, setFormValues] = useState<FormValues>({
     name: "",
-    price: "" as number | "",
-    compare_price: "" as number | null | "",
-    cost_price: "" as number | "",
-    quantity: "" as number | "",
     short_description: "",
     description: "",
-    images: [] as string[],
-    category_ids: [] as string[],
-    attribute_value_ids: [] as string[],
-    is_serialized: 0 as 1 | 0,
+    // Display-only fields managed by separate APIs; we keep them in state for the UI
+    price: "",
+    compare_price: "",
+    cost_price: "",
+    quantity: "",
+    images: [],
+    category_ids: [],
+    attribute_value_ids: [],
+    is_serialized: 0 as 0 | 1,
     serial_number: "",
     variants: [] as Variant[],
   });
 
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [fileList, setFileList] = useState<any[]>([]);
+  console.log("🚀 ~ index ~ fileList:", fileList);
   const uploadRef = useRef(null);
+  // Avoid overwriting user edits on incidental refetches (e.g., image mutations)
+  const hydratedProductIdRef = useRef<string | null>(null);
+  const { id } = router.query as { id?: string };
+
+  // Reset hydration when navigating between products
+  React.useEffect(() => {
+    if (!id) return;
+    hydratedProductIdRef.current = null;
+  }, [id]);
 
   // Queries
   const [categorySearch] = useState<string>("");
   const [categoryPage] = useState<number>(1);
   const [attrSearch] = useState<string>("");
   const [attrPage] = useState<number>(1);
-
+  // variant selection
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    null
+  );
+  const { data, isLoading } = useGetSingleProductsQuery(
+    { id: id as string, include: "variants,images,attributeValues,categories" },
+    { skip: !id }
+  );
+  const {
+    data: variantResp,
+    isLoading: isVariantLoading,
+    refetch: variantRefetch,
+  } = useGetSingleProductVariantQuery(
+    {
+      product_variant_id: selectedVariantId || "",
+      include:
+        "product,product.images,product.variants,product.attributeValues,product.categories,images,attributeValues",
+    },
+    { skip: !selectedVariantId }
+  );
   const { data: categoriesResp, isLoading: isLoadingCategories } =
     useGetAllCategoryQuery({
       q: categorySearch,
@@ -167,8 +225,160 @@ const index = () => {
       paginate: false,
     });
 
-  const [createProducts, { isLoading: isLoadingCreate, error }] =
-    useCreateProductsMutation();
+  const [updateProducts, { isLoading: isLoadingUpdate, error }] =
+    useUpdateProductsMutation();
+  const [updateProductCategories, { isLoading: isUpdatingCategories }] =
+    useUpdateProductCategoryMutation();
+  const [deleteProductCategory] = useDeleteProductCategoryMutation();
+  const [updateProductAttributeValues, { isLoading: isUpdatingAttributes }] =
+    useUpdateProductAttributeValueMutation();
+  const [deleteProductAttributeValue] =
+    useDeleteProductAttributeValueMutation();
+  const [createProductImage, { isLoading: isCreatingProductImage }] =
+    useCreateProductImageMutation();
+  const [deleteProductImage] = useDeleteProductImageMutation();
+  const [updateVariant, { isLoading: isUpdatingVariant }] =
+    useUpdateProductVariantMutation();
+  const [createVariantImage, { isLoading: isCreatingVariantImage }] =
+    useCreateVariantProductImageMutation();
+  const [updateVariantAttributes, { isLoading: isUpdatingVariantAttrs }] =
+    useUpdateVariantProductAttributeValueMutation();
+  const [deleteVariantAttributes] =
+    useDeleteVariantProductAttributeValueMutation();
+  const [deleteVariantImage] = useDeleteVariantProductImageMutation();
+  const [deleteVariantApi] = useDeleteProductVariantMutation();
+
+  // Preload form values from product data (or nested product inside variant)
+  React.useEffect(() => {
+    const d: any = data?.data;
+    if (!d) return;
+    const product = d?.product ? d.product : d;
+    const productId = product?.id as string | undefined;
+    if (!product || !productId) return;
+
+    // Only hydrate once per product id to avoid clobbering user edits on refetch
+    if (hydratedProductIdRef.current === productId) return;
+    hydratedProductIdRef.current = productId;
+
+    // Hydrate main fields (initial load)
+    setFormValues((prev: FormValues) => ({
+      ...prev,
+      name: product?.name ?? "",
+      short_description: product?.short_description ?? "",
+      description: product?.description ?? "",
+      is_serialized: (product?.is_serialized ?? 0) as 0 | 1,
+      serial_number: product?.serial_number ?? "",
+      price: product?.price ?? prev.price ?? "",
+      compare_price: product?.compare_price ?? prev.compare_price ?? "",
+      cost_price: product?.cost_price ?? prev.cost_price ?? "",
+      quantity: product?.quantity ?? prev.quantity ?? "",
+      category_ids: (product?.categories || [])?.map((c: any) => c.id) ?? [],
+      attribute_value_ids:
+        (product?.attribute_values || [])?.map((av: any) => av.id) ?? [],
+      variants: ((product?.variants as any[]) || []).map((v: any) => ({
+        id: v?.id,
+        name: v?.name ?? "",
+        price: v?.price != null ? Number(v.price) : ("" as any),
+        compare_price:
+          v?.compare_price != null && v?.compare_price !== ""
+            ? Number(v.compare_price)
+            : ("" as any),
+        cost_price: v?.cost_price != null ? Number(v.cost_price) : ("" as any),
+        quantity: v?.quantity != null ? Number(v.quantity) : ("" as any),
+        is_serialized: (v?.is_serialized ?? 0) as 0 | 1,
+        serial_number: v?.serial_number ?? "",
+        batch_number: v?.batch_number ?? "",
+        attribute_value_ids:
+          (v?.attribute_values || [])?.map((av: any) => av.id) ?? [],
+        images: (v?.images || [])?.map((img: any) => img.url).filter(Boolean),
+        ui_files: (v?.images || []).map((img: any) => ({
+          uid: img.id,
+          name: img.name ?? `image-${img.id}`,
+          url: img.url,
+          status: "done",
+        })),
+        copy_from_main: false,
+      })),
+    }));
+
+    // Hydrate product image previews (initial)
+    const images = (product?.images || []) as any[];
+    if (images.length) {
+      const fl = images.map((img: any) => ({
+        uid: img.id,
+        name: img.name ?? `image-${img.id}`,
+        url: img.url,
+        status: "done",
+      }));
+      setFileList(fl as any);
+    }
+  }, [data]);
+
+  // Default selected variant to the first one if none chosen
+  React.useEffect(() => {
+    if (!selectedVariantId && formValues.variants?.length) {
+      const first = formValues.variants[0];
+      if (first?.id) setSelectedVariantId(first.id);
+    }
+  }, [selectedVariantId, formValues.variants]);
+
+  // Prefill the selected variant from variantResp
+  React.useEffect(() => {
+    if (!selectedVariantId || !variantResp?.data) return;
+    const vr: any = variantResp.data;
+    // If response is a product with variants, find the selected variant
+    const variantFromProduct = Array.isArray(vr?.variants)
+      ? (vr.variants as any[]).find((vv) => vv.id === selectedVariantId)
+      : null;
+    // If response is a variant with nested product shape
+    const looksLikeVariant =
+      vr?.product && vr?.id === selectedVariantId ? vr : null;
+    const source: any = looksLikeVariant || variantFromProduct;
+    if (!source) return;
+
+    const images = (source.images || []) as any[];
+    const attrVals = (source.attribute_values || []) as any[];
+
+    setFormValues((prev: FormValues) => {
+      const variants = [...prev.variants];
+      const idx = variants.findIndex((v) => v.id === selectedVariantId);
+      if (idx === -1) return prev;
+      const curr = { ...(variants[idx] || {}) } as Variant;
+      variants[idx] = {
+        ...curr,
+        name: source.name ?? curr.name ?? "",
+        price:
+          source.price != null
+            ? Number(source.price)
+            : curr.price ?? ("" as any),
+        compare_price:
+          source.compare_price != null && source.compare_price !== ""
+            ? Number(source.compare_price)
+            : curr.compare_price ?? ("" as any),
+        cost_price:
+          source.cost_price != null
+            ? Number(source.cost_price)
+            : curr.cost_price ?? ("" as any),
+        quantity:
+          source.quantity != null
+            ? Number(source.quantity)
+            : curr.quantity ?? ("" as any),
+        is_serialized: (source.is_serialized ?? curr.is_serialized ?? 0) as
+          | 0
+          | 1,
+        serial_number: source.serial_number ?? curr.serial_number ?? "",
+        attribute_value_ids: attrVals.map((av: any) => av.id),
+        images: images.map((img: any) => img.url).filter(Boolean),
+        ui_files: images.map((img: any) => ({
+          uid: img.id,
+          name: img.name ?? `image-${img.id}`,
+          url: img.url,
+          status: "done",
+        })),
+      };
+      return { ...prev, variants };
+    });
+  }, [selectedVariantId, variantResp]);
 
   // Options
   const categoryOptions = useMemo(
@@ -193,7 +403,7 @@ const index = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormValues((prev) => ({ ...prev, [name]: value }));
+    setFormValues((prev: FormValues) => ({ ...prev, [name]: value } as any));
   };
 
   const triggerUpload = () => {
@@ -217,23 +427,127 @@ const index = () => {
     }
     setFileList(limitedList);
     try {
-      const base64Images: string[] = [];
-      for (const f of limitedList) {
-        const fileObj = f.originFileObj;
-        if (!fileObj) continue;
-        const compressed = await compressImage(fileObj);
-        const base64 = await fileToBase64(compressed);
-        base64Images.push(base64 as string);
+      // Auto-upload to product if id exists
+      if (id) {
+        const updatedList: any[] = [...limitedList];
+        for (let idx = 0; idx < updatedList.length; idx++) {
+          const f = updatedList[idx];
+          // Only upload files that are new (have originFileObj)
+          if (f?.originFileObj) {
+            // create a local preview URL and mark uploading
+            const previewUrl = URL.createObjectURL(f.originFileObj);
+            updatedList[idx] = {
+              ...f,
+              status: "uploading",
+              url: previewUrl,
+              _previewUrl: previewUrl,
+            };
+            const compressed = await compressImage(f.originFileObj);
+            const base64 = (await fileToBase64(compressed)) as string;
+            try {
+              const resp: any = await createProductImage({
+                product_id: id,
+                body: { image: base64 },
+              }).unwrap();
+              // If API returns id/url, reflect it in the UI list item
+              const created = resp?.data || resp;
+              updatedList[idx] = {
+                uid: created?.id ?? f.uid,
+                name: created?.name ?? f.name ?? `image-${created?.id ?? idx}`,
+                url: created?.url ?? f.url,
+                status: "done",
+              };
+            } catch (e) {
+              // Keep as local preview if upload failed
+              updatedList[idx] = {
+                ...f,
+                status: "error",
+              };
+            }
+          }
+        }
+        setFileList(updatedList);
+      } else {
+        // Fallback: just compute base64 for local state (no server upload without product id)
+        const base64Images: string[] = [];
+        for (const f of limitedList) {
+          const fileObj = f.originFileObj;
+          if (!fileObj) continue;
+          const compressed = await compressImage(fileObj);
+          const base64 = await fileToBase64(compressed);
+          base64Images.push(base64 as string);
+        }
+        setFormValues((prev: FormValues) => ({
+          ...prev,
+          images: base64Images,
+        }));
       }
-      setFormValues((prev) => ({ ...prev, images: base64Images }));
     } catch (err) {
       console.error("Error processing images", err);
       message.error("Error processing image(s)");
     }
   };
 
+  // Remove a product image: if persisted (no originFileObj), delete via API; otherwise just remove locally
+  const removeProductImage = async (idx: number) => {
+    const f = fileList[idx];
+    if (!f) return;
+    const isPersisted = !f?.originFileObj && !!f?.uid;
+    if (isPersisted && id) {
+      try {
+        // mark this tile as deleting so UI disables the button
+        const mark = [...fileList];
+        mark[idx] = { ...mark[idx], _deleting: true };
+        setFileList(mark);
+        await deleteProductImage({
+          product_id: id,
+          image_id: String(f.uid),
+        }).unwrap();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Success"}
+                title={"Deleted"}
+                image={imgSuccess}
+                textColor="green"
+                message="Image deleted successfully"
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Deleted",
+        });
+      } catch (e: any) {
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={"Delete Failed"}
+                image={imgError}
+                textColor="red"
+                message={e?.data?.message || "Unable to delete image"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Error",
+        });
+        // revert deleting mark
+        const revert = [...fileList];
+        if (revert[idx]) delete revert[idx]._deleting;
+        setFileList(revert);
+        return; // keep UI unchanged on failure
+      }
+    }
+    const copy = [...fileList];
+    copy.splice(idx, 1);
+    setFileList(copy);
+  };
+
   const addVariant = useCallback(() => {
-    setFormValues((prev) => ({
+    setFormValues((prev: FormValues) => ({
       ...prev,
       variants: [
         ...prev.variants,
@@ -254,25 +568,51 @@ const index = () => {
     }));
   }, []);
 
-  const removeVariant = (index: number) => {
-    setFormValues((prev) => ({
-      ...prev,
-      variants: prev.variants.filter((_, i) => i !== index),
-    }));
-  };
+  // Helpers for variants UI
+  const updateVariantField = useCallback(
+    (index: number, field: keyof Variant | any, value: any) => {
+      setFormValues((prev: FormValues) => {
+        const variants: Variant[] = [...(prev.variants || [])];
+        const current = { ...(variants[index] || {}) } as Variant;
+        let v: any = value;
+        if (["price", "cost_price", "quantity"].includes(field)) {
+          v = parseNumber(value);
+        }
+        if (field === "compare_price") {
+          v = toNullableNumber(value) as any;
+        }
+        variants[index] = { ...current, [field]: v } as Variant;
+        return { ...prev, variants };
+      });
+    },
+    []
+  );
 
-  const updateVariantField = (
-    index: number,
-    field: keyof Variant,
-    value: any
-  ) => {
-    setFormValues((prev) => {
-      const updated = [...prev.variants];
-      // Ensure numeric fields remain numbers or ""
-      updated[index] = { ...updated[index], [field]: value } as Variant;
-      return { ...prev, variants: updated };
+  const removeVariant = useCallback((index: number) => {
+    setFormValues((prev: FormValues) => {
+      const variants = [...(prev.variants || [])];
+      variants.splice(index, 1);
+      return { ...prev, variants };
     });
-  };
+  }, []);
+
+  const handleCopyFromMain = useCallback((index: number, checked: boolean) => {
+    setFormValues((prev: FormValues) => {
+      const variants: Variant[] = [...(prev.variants || [])];
+      const v = { ...(variants[index] || {}) } as Variant;
+      v.copy_from_main = checked;
+      if (checked) {
+        v.price = parseNumber(prev.price);
+        v.compare_price = toNullableNumber(prev.compare_price) as any;
+        v.cost_price = parseNumber(prev.cost_price);
+        v.quantity = parseNumber(prev.quantity);
+        v.is_serialized = prev.is_serialized as 0 | 1;
+        v.serial_number = prev.is_serialized ? prev.serial_number : "";
+      }
+      variants[index] = v;
+      return { ...prev, variants };
+    });
+  }, []);
 
   const parseNumber = (v: any): number => {
     if (v === "" || v === null || v === undefined) return 0;
@@ -297,7 +637,7 @@ const index = () => {
       message.warning("You can only upload up to 6 images per variant");
     }
     // Update UI previews immediately
-    setFormValues((prev) => {
+    setFormValues((prev: FormValues) => {
       const variants = [...prev.variants];
       variants[index] = {
         ...variants[index],
@@ -307,26 +647,149 @@ const index = () => {
     });
 
     try {
-      const base64Images: string[] = [];
-      for (const f of limitedList) {
-        const fileObj = (f as any).originFileObj;
-        if (!fileObj) continue;
-        const compressed = await compressImage(fileObj);
-        const base64 = await fileToBase64(compressed);
-        base64Images.push(base64 as string);
+      const vid = (formValues.variants[index] || {}).id;
+      if (vid) {
+        const updated = [...limitedList];
+        for (let idx = 0; idx < updated.length; idx++) {
+          const f: any = updated[idx];
+          if (f?.originFileObj) {
+            // create a local preview and mark uploading
+            const previewUrl = URL.createObjectURL(f.originFileObj);
+            updated[idx] = {
+              ...f,
+              status: "uploading",
+              url: previewUrl,
+              _previewUrl: previewUrl,
+            };
+            const compressed = await compressImage(f.originFileObj);
+            const base64 = (await fileToBase64(compressed)) as string;
+            try {
+              const resp: any = await createVariantImage({
+                product_variant_id: vid,
+                body: { image: base64 },
+              }).unwrap();
+              const created = resp?.data || resp;
+              updated[idx] = {
+                uid: created?.id ?? f.uid,
+                name: created?.name ?? f.name ?? `image-${created?.id ?? idx}`,
+                url: created?.url ?? f.url,
+                status: "done",
+              };
+            } catch (e) {
+              updated[idx] = { ...f, status: "error" };
+            }
+          }
+        }
+        setFormValues((prev: FormValues) => {
+          const variants = [...prev.variants];
+          variants[index] = {
+            ...variants[index],
+            ui_files: updated,
+          } as Variant;
+          return { ...prev, variants };
+        });
+      } else {
+        // No variant id yet: compute base64 and keep in state only
+        const base64Images: string[] = [];
+        for (const f of limitedList) {
+          const fileObj = (f as any).originFileObj;
+          if (!fileObj) continue;
+          const compressed = await compressImage(fileObj);
+          const base64 = await fileToBase64(compressed);
+          base64Images.push(base64 as string);
+        }
+        setFormValues((prev: FormValues) => {
+          const variants = [...prev.variants];
+          variants[index] = {
+            ...variants[index],
+            images: base64Images,
+          } as Variant;
+          return { ...prev, variants };
+        });
       }
-      setFormValues((prev) => {
-        const variants = [...prev.variants];
-        variants[index] = {
-          ...variants[index],
-          images: base64Images,
-        } as Variant;
-        return { ...prev, variants };
-      });
     } catch (err) {
       console.error("Error processing variant images", err);
       message.error("Error processing variant image(s)");
     }
+  };
+
+  // Remove a variant image: if persisted (no originFileObj), delete via API; otherwise just remove locally
+  const removeVariantImage = async (
+    variantIndex: number,
+    fileIndex: number
+  ) => {
+    const v = formValues.variants[variantIndex];
+    const file: any = v?.ui_files?.[fileIndex];
+    if (!file) return;
+    const isPersisted = !file?.originFileObj && !!file?.uid;
+    const vid = v?.id;
+    if (isPersisted && vid) {
+      try {
+        // mark deleting in UI
+        setFormValues((prev: FormValues) => {
+          const variants = [...prev.variants];
+          const current = { ...(variants[variantIndex] || {}) } as Variant;
+          const files = [...((current.ui_files as any[]) || [])];
+          files[fileIndex] = { ...files[fileIndex], _deleting: true };
+          variants[variantIndex] = { ...current, ui_files: files } as Variant;
+          return { ...prev, variants };
+        });
+        await deleteVariantImage({
+          product_variant_id: vid,
+          image_id: String(file.uid),
+        }).unwrap();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Success"}
+                title={"Deleted"}
+                image={imgSuccess}
+                textColor="green"
+                message="Variant Image deleted successfully"
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Deleted",
+        });
+      } catch (e: any) {
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={"Delete Failed"}
+                image={imgError}
+                textColor="red"
+                message={e?.data?.message || "Unable to delete variant image"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Error",
+        });
+        // unmark deleting on failure
+        setFormValues((prev: FormValues) => {
+          const variants = [...prev.variants];
+          const current = { ...(variants[variantIndex] || {}) } as Variant;
+          const files = [...((current.ui_files as any[]) || [])];
+          files[fileIndex] = { ...files[fileIndex] };
+          delete (files[fileIndex] as any)._deleting;
+          variants[variantIndex] = { ...current, ui_files: files } as Variant;
+          return { ...prev, variants };
+        });
+        return; // keep UI unchanged on failure
+      }
+    }
+    setFormValues((prev: FormValues) => {
+      const variants = [...prev.variants];
+      const current = { ...(variants[variantIndex] || {}) } as Variant;
+      const files = [...((current.ui_files as any[]) || [])];
+      files.splice(fileIndex, 1);
+      variants[variantIndex] = { ...current, ui_files: files } as Variant;
+      return { ...prev, variants };
+    });
   };
 
   const handleSubmit = async () => {
@@ -335,18 +798,9 @@ const index = () => {
       await productSchema.validate(
         {
           ...formValues,
-          // coerce for validation for numbers
-          price: parseNumber(formValues.price),
-          cost_price: parseNumber(formValues.cost_price),
-          quantity: parseNumber(formValues.quantity),
-          compare_price: toNullableNumber(formValues.compare_price),
-          variants: formValues.variants.map((v) => ({
-            ...v,
-            price: parseNumber(v.price),
-            cost_price: parseNumber(v.cost_price),
-            quantity: parseNumber(v.quantity),
-            compare_price: toNullableNumber(v.compare_price),
-          })),
+          name: formValues.name.trim(),
+          description: formValues.description.trim(),
+          short_description: formValues.short_description.trim(),
         },
         { abortEarly: false }
       );
@@ -355,69 +809,27 @@ const index = () => {
 
       const payload = {
         name: formValues.name,
-        price: parseNumber(formValues.price),
-        compare_price: toNullableNumber(formValues.compare_price),
-        cost_price: parseNumber(formValues.cost_price),
-        quantity: parseNumber(formValues.quantity),
         short_description: formValues.short_description,
         description: formValues.description,
-        images: formValues.images,
-        category_ids: formValues.category_ids,
-        attribute_value_ids: formValues.attribute_value_ids,
-        is_serialized: formValues.is_serialized,
-        serial_number: formValues.serial_number,
-        variants: formValues.variants.map((v) => ({
-          name: v.name,
-          price: parseNumber(v.price),
-          compare_price: toNullableNumber(v.compare_price),
-          cost_price: parseNumber(v.cost_price),
-          quantity: parseNumber(v.quantity),
-          is_serialized: v.is_serialized,
-          serial_number: v.serial_number || undefined,
-          images: v.images && v.images.length ? v.images : undefined,
-          attribute_value_ids:
-            v.attribute_value_ids && v.attribute_value_ids.length
-              ? v.attribute_value_ids
-              : undefined,
-          batch_number: v.batch_number || undefined,
-        })),
       };
 
-      await createProducts(payload as any).unwrap();
+      await updateProducts({ id: id as string, body: payload }).unwrap();
       showPlannerToast({
         options: {
           customToast: (
             <CustomToast
               altText={"Success"}
-              title={"Product Created Successfully"}
+              title={"Product Updated Successfully"}
               image={imgSuccess}
               textColor="green"
-              message={"Your product has been created."}
+              message={"Your product has been updated."}
               backgroundColor="#FCFCFD"
             />
           ),
         },
         message: "Success",
       });
-
-      // Reset a few fields
-      setFormValues((prev) => ({
-        ...prev,
-        name: "",
-        price: "",
-        compare_price: "",
-        cost_price: "",
-        quantity: "",
-        short_description: "",
-        description: "",
-        images: [],
-        category_ids: [],
-        attribute_value_ids: [],
-        is_serialized: 0,
-        serial_number: "",
-        variants: [],
-      }));
-      setFileList([]);
+      // After successful update, do not wipe the form; keep values in place
     } catch (err: any) {
       if (err?.name === "ValidationError") {
         const errors: { [key: string]: string } = {};
@@ -434,7 +846,7 @@ const index = () => {
             customToast: (
               <CustomToast
                 altText={"Error"}
-                title={"Product Creation Failed"}
+                title={"Update Failed"}
                 image={imgError}
                 textColor="red"
                 message={(err as any)?.data?.message || "Something went wrong"}
@@ -448,25 +860,277 @@ const index = () => {
     }
   };
 
-  // Copy selected main product values into a specific variant
-  const handleCopyFromMain = (index: number, checked: boolean) => {
-    setFormValues((prev) => {
-      const variants = [...prev.variants];
-      const target = { ...variants[index] } as Variant;
-      if (checked) {
-        // Copy core numeric and serialization fields; leave images and attrs untouched
-        target.price = prev.price;
-        target.compare_price = prev.compare_price as any;
-        target.cost_price = prev.cost_price;
-        target.quantity = prev.quantity;
-        target.is_serialized = prev.is_serialized;
-        target.serial_number =
-          prev.is_serialized === 1 ? prev.serial_number : "";
+  // Product-level apply helpers using dedicated APIs
+  const applyProductCategories = async () => {
+    if (!id) return;
+    try {
+      await updateProductCategories({
+        product_id: id,
+        body: { category_ids: formValues.category_ids },
+      }).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Categories Updated"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Product categories updated."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Success",
+      });
+    } catch (e: any) {
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Error"}
+              title={"Categories Update Failed"}
+              image={imgError}
+              textColor="red"
+              message={e?.data?.message || "Unable to update categories"}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Error",
+      });
+    }
+  };
+
+  const applyProductAttributes = async () => {
+    if (!id) return;
+    try {
+      await updateProductAttributeValues({
+        product_id: id,
+        body: { attribute_value_ids: formValues.attribute_value_ids },
+      }).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Attributes Updated"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Product attributes updated."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Success",
+      });
+    } catch (e: any) {
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Error"}
+              title={"Attributes Update Failed"}
+              image={imgError}
+              textColor="red"
+              message={e?.data?.message || "Unable to update attributes"}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Error",
+      });
+    }
+  };
+
+  const uploadProductImages = async () => {
+    if (!id) return;
+    try {
+      for (const b64 of formValues.images || []) {
+        if (!b64) continue;
+        await createProductImage({
+          product_id: id,
+          body: { image: b64 },
+        }).unwrap();
       }
-      target.copy_from_main = checked;
-      variants[index] = target;
-      return { ...prev, variants };
-    });
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Images Uploaded"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Product images uploaded."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Success",
+      });
+    } catch (e: any) {
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Error"}
+              title={"Image Upload Failed"}
+              image={imgError}
+              textColor="red"
+              message={e?.data?.message || "Unable to upload images"}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Error",
+      });
+    }
+  };
+
+  // Variant-level helpers
+  const saveVariant = async (variant: Variant) => {
+    if (!variant.id || !id) return;
+    try {
+      await updateVariant({
+        product_variant_id: variant.id,
+        body: {
+          name: variant.name || "",
+          price: typeof variant.price === "number" ? variant.price : 0,
+          compare_price:
+            typeof variant.compare_price === "number"
+              ? variant.compare_price
+              : null,
+          quantity: typeof variant.quantity === "number" ? variant.quantity : 0,
+          short_description: formValues.short_description || "",
+          description: formValues.description || "",
+          images: [],
+          product_id: id,
+          attribute_value_ids: variant.attribute_value_ids || [],
+          is_serialized: (variant.is_serialized ?? 0) as 0 | 1,
+          serial_number: variant.is_serialized
+            ? variant.serial_number || ""
+            : "",
+        },
+      }).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Variant Saved"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Variant details updated."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Success",
+      });
+    } catch (e: any) {
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Error"}
+              title={"Variant Save Failed"}
+              image={imgError}
+              textColor="red"
+              message={e?.data?.message || "Unable to save variant"}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Error",
+      });
+    }
+  };
+
+  const uploadVariantImages = async (variant: Variant) => {
+    if (!variant.id) return;
+    try {
+      for (const b64 of variant.images || []) {
+        if (!b64) continue;
+        await createVariantImage({
+          product_variant_id: variant.id,
+          body: { image: b64 },
+        }).unwrap();
+      }
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Variant Images Uploaded"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Variant images uploaded."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Success",
+      });
+    } catch (e: any) {
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Error"}
+              title={"Upload Failed"}
+              image={imgError}
+              textColor="red"
+              message={e?.data?.message || "Unable to upload variant images"}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Error",
+      });
+    }
+  };
+
+  const applyVariantAttributes = async (variant: Variant) => {
+    if (!variant.id) return;
+    try {
+      await updateVariantAttributes({
+        product_variant_id: variant.id,
+        body: { attribute_value_ids: variant.attribute_value_ids || [] },
+      }).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Variant Attributes Updated"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Variant attributes updated."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Success",
+      });
+    } catch (e: any) {
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Error"}
+              title={"Update Failed"}
+              image={imgError}
+              textColor="red"
+              message={
+                e?.data?.message || "Unable to update variant attributes"
+              }
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Error",
+      });
+    }
   };
 
   // Helper: read variant field error from client (Yup) and server API errors
@@ -517,690 +1181,972 @@ const index = () => {
         onClick={() => {}}
       />
       <SharedLayout className="bg-white">
-        <div>
-          <form className="mt-5 flex flex-col gap-8">
-            {/* Basic Info */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">Basic info</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextInput
-                  type="text"
-                  name="name"
-                  errorMessage={
-                    formErrors.name ||
-                    (error as any)?.data?.errors?.name?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.name}
-                  onChange={handleInputChange}
-                  className="py-[11px]"
-                  placeholder="Enter product name"
-                  title={<span className="font-[500]">Name*</span>}
-                  required={false}
-                />
-                <div
-                  className={`grid  gap-4 ${
-                    formValues.is_serialized === 1
-                      ? "grid-cols-2"
-                      : "grid-cols-1"
-                  }`}
-                >
+        {isLoading ? (
+          <div className="pb-20">
+            <SkeletonLoaderForPage />
+          </div>
+        ) : (
+          <div>
+            <form className="mt-5 flex flex-col gap-8">
+              {/* Basic Info */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">Basic info</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TextInput
+                    type="text"
+                    name="name"
+                    errorMessage={
+                      formErrors.name ||
+                      (error as any)?.data?.errors?.name?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.name}
+                    onChange={handleInputChange}
+                    className="py-[11px]"
+                    placeholder="Enter product name"
+                    title={<span className="font-[500]">Name*</span>}
+                    required={false}
+                  />
+                  <div
+                    className={`grid  gap-4 ${
+                      formValues.is_serialized === 1
+                        ? "grid-cols-2"
+                        : "grid-cols-1"
+                    }`}
+                  >
+                    <div>
+                      <div className={`pb-1`}>
+                        <label className={"text-sm capitalize text-[#2C3137]"}>
+                          Serialized
+                        </label>
+                      </div>
+                      <SelectInput
+                        onChange={(v) =>
+                          setFormValues((p: FormValues) => ({
+                            ...p,
+                            is_serialized: Number(v) as 0 | 1,
+                            serial_number:
+                              Number(v) === 1 ? p.serial_number : "",
+                          }))
+                        }
+                        value={formValues.is_serialized}
+                        placeholder={
+                          <span className="text-sm font-bold">Select</span>
+                        }
+                        data={[
+                          { label: "No", value: 0 },
+                          { label: "Yes", value: 1 },
+                        ]}
+                      />
+                    </div>
+                    {formValues.is_serialized === 1 && (
+                      <TextInput
+                        type="text"
+                        name="serial_number"
+                        errorMessage={
+                          formErrors.serial_number ||
+                          (error as any)?.data?.errors?.serial_number?.join?.(
+                            "\n"
+                          ) ||
+                          ""
+                        }
+                        value={formValues.serial_number}
+                        onChange={handleInputChange}
+                        placeholder="e.g., SN-12345"
+                        title={
+                          <span className="font-[500]">Serial number*</span>
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Pricing & Inventory */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">
+                  Pricing & inventory
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <TextInput
+                    type="number"
+                    name="price"
+                    errorMessage={
+                      formErrors.price ||
+                      (error as any)?.data?.errors?.price?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    title={<span className="font-[500]">Price*</span>}
+                  />
+                  <TextInput
+                    type="number"
+                    name="compare_price"
+                    errorMessage={
+                      formErrors.compare_price ||
+                      (error as any)?.data?.errors?.compare_price?.join?.(
+                        "\n"
+                      ) ||
+                      ""
+                    }
+                    value={formValues.compare_price as any}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    title={<span className="font-[500]">Compare price</span>}
+                  />
+                  <TextInput
+                    type="number"
+                    name="cost_price"
+                    errorMessage={
+                      formErrors.cost_price ||
+                      (error as any)?.data?.errors?.cost_price?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.cost_price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    title={<span className="font-[500]">Cost price*</span>}
+                  />
+                  <TextInput
+                    type="number"
+                    name="quantity"
+                    errorMessage={
+                      formErrors.quantity ||
+                      (error as any)?.data?.errors?.quantity?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.quantity}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    title={<span className="font-[500]">Quantity*</span>}
+                  />
+                </div>
+              </section>
+
+              {/* Categorization & Attributes */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">Categorization</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <div className={`pb-1`}>
                       <label className={"text-sm capitalize text-[#2C3137]"}>
-                        Serialized
+                        Categories*
                       </label>
                     </div>
                     <SelectInput
-                      onChange={(v) =>
-                        setFormValues((p) => ({
+                      loading={isUpdatingCategories}
+                      onChange={async (values) => {
+                        setFormValues((p: FormValues) => ({
                           ...p,
-                          is_serialized: Number(v) as 0 | 1,
-                          serial_number: Number(v) === 1 ? p.serial_number : "",
-                        }))
-                      }
-                      value={formValues.is_serialized}
+                          category_ids: values,
+                        }));
+                        if (!id) return;
+                        try {
+                          await updateProductCategories({
+                            product_id: id,
+                            body: { category_ids: values },
+                          }).unwrap();
+                          showPlannerToast({
+                            options: {
+                              customToast: (
+                                <CustomToast
+                                  altText={"Success"}
+                                  title={"Categories Updated"}
+                                  image={imgSuccess}
+                                  textColor="green"
+                                  message={"Product categories updated."}
+                                  backgroundColor="#FCFCFD"
+                                />
+                              ),
+                            },
+                            message: "Success",
+                          });
+                        } catch (e: any) {
+                          showPlannerToast({
+                            options: {
+                              customToast: (
+                                <CustomToast
+                                  altText={"Error"}
+                                  title={"Categories Update Failed"}
+                                  image={imgError}
+                                  textColor="red"
+                                  message={
+                                    e?.data?.message ||
+                                    "Unable to update categories"
+                                  }
+                                  backgroundColor="#FCFCFD"
+                                />
+                              ),
+                            },
+                            message: "Error",
+                          });
+                        }
+                      }}
+                      onDeselect={async (value) => {
+                        if (!id || !value) return;
+                        try {
+                          await deleteProductCategory({
+                            product_id: id,
+                            category_id: value as string,
+                          }).unwrap();
+                        } catch (e) {}
+                      }}
+                      value={formValues.category_ids}
                       placeholder={
                         <span className="text-sm font-bold">Select</span>
                       }
-                      data={[
-                        { label: "No", value: 0 },
-                        { label: "Yes", value: 1 },
-                      ]}
+                      data={categoryOptions}
+                      mode="multiple"
                     />
-                  </div>
-                  {formValues.is_serialized === 1 && (
-                    <TextInput
-                      type="text"
-                      name="serial_number"
-                      errorMessage={
-                        formErrors.serial_number ||
-                        (error as any)?.data?.errors?.serial_number?.join?.(
-                          "\n"
-                        ) ||
-                        ""
-                      }
-                      value={formValues.serial_number}
-                      onChange={handleInputChange}
-                      placeholder="e.g., SN-12345"
-                      title={<span className="font-[500]">Serial number*</span>}
-                    />
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Pricing & Inventory */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">
-                Pricing & inventory
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <TextInput
-                  type="number"
-                  name="price"
-                  errorMessage={
-                    formErrors.price ||
-                    (error as any)?.data?.errors?.price?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.price}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  title={<span className="font-[500]">Price*</span>}
-                />
-                <TextInput
-                  type="number"
-                  name="compare_price"
-                  errorMessage={
-                    formErrors.compare_price ||
-                    (error as any)?.data?.errors?.compare_price?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.compare_price as any}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  title={<span className="font-[500]">Compare price</span>}
-                />
-                <TextInput
-                  type="number"
-                  name="cost_price"
-                  errorMessage={
-                    formErrors.cost_price ||
-                    (error as any)?.data?.errors?.cost_price?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.cost_price}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  title={<span className="font-[500]">Cost price*</span>}
-                />
-                <TextInput
-                  type="number"
-                  name="quantity"
-                  errorMessage={
-                    formErrors.quantity ||
-                    (error as any)?.data?.errors?.quantity?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.quantity}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  title={<span className="font-[500]">Quantity*</span>}
-                />
-              </div>
-            </section>
-
-            {/* Categorization & Attributes */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">Categorization</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className={`pb-1`}>
-                    <label className={"text-sm capitalize text-[#2C3137]"}>
-                      Categories*
-                    </label>
-                  </div>
-                  <SelectInput
-                    onChange={(values) =>
-                      setFormValues((p) => ({ ...p, category_ids: values }))
-                    }
-                    value={formValues.category_ids}
-                    placeholder={
-                      <span className="text-sm font-bold">Select</span>
-                    }
-                    data={categoryOptions}
-                    mode="multiple"
-                  />
-                  {(formErrors.category_ids ||
-                    (error as any)?.data?.errors?.category_ids) && (
-                    <p className="flex flex-col gap-1 text-xs italic text-red-600">
-                      {formErrors.category_ids ||
-                        (error as any)?.data?.errors?.category_ids?.join?.(
-                          "\n"
-                        ) ||
-                        ""}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <div className={`pb-1`}>
-                    <label className={"text-sm capitalize text-[#2C3137]"}>
-                      Attribute values
-                    </label>
-                  </div>
-                  <SelectInput
-                    onChange={(values) =>
-                      setFormValues((p) => ({
-                        ...p,
-                        attribute_value_ids: values,
-                      }))
-                    }
-                    value={formValues.attribute_value_ids}
-                    placeholder={
-                      <span className="text-sm font-bold">Select</span>
-                    }
-                    data={attributeValueOptions}
-                    mode="multiple"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Descriptions */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">Descriptions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextAreaInput
-                  row={8}
-                  name="short_description"
-                  errorMessage={""}
-                  className="w-full"
-                  value={formValues.short_description}
-                  onChange={handleInputChange}
-                  placeholder="Short description"
-                  title={<span className="font-[500]">Short description</span>}
-                />
-                <div>
-                  <RichTextEditor
-                    value={formValues.description}
-                    onChange={(html) =>
-                      setFormValues((p) => ({ ...p, description: html }))
-                    }
-                    placeholder="Write full description..."
-                    className="h-[205px]"
-                    label={<span className="font-[500]">Description</span>}
-                    errorMessage={""}
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Images */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">
-                Images ({fileList.length || 0})
-              </h3>
-              <div className="w-full">
-                <div className="relative w-full">
-                  <Upload
-                    ref={uploadRef}
-                    className="main-hidden-upload w-full hidden"
-                    multiple
-                    maxCount={6}
-                    fileList={fileList}
-                    onChange={handleFileChange}
-                    beforeUpload={(f) => {
-                      if (fileList.length >= 6) {
-                        message.warning("You can only upload up to 6 images");
-                        return (Upload as any).LIST_IGNORE ?? false;
-                      }
-                      return false;
-                    }}
-                    accept="image/*"
-                    showUploadList={false}
-                    customRequest={({ onSuccess }) => {
-                      if (onSuccess) onSuccess("ok", undefined);
-                    }}
-                  >
-                    <div></div>
-                  </Upload>
-
-                  <button
-                    type="button"
-                    onClick={triggerUpload}
-                    className={`p-6 w-full mt-2 border-2 border-dashed ${
-                      formErrors.images ||
-                      (error as any)?.data?.errors?.images?.join?.("\n")
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
-                  >
-                    <div className="flex justify-center items-center gap-2 py-4">
-                      <Icon icon="ic:round-plus" width="24" height="24" />
-                      <p className="text-xs font-bold text-center">
-                        Add Images
+                    {(formErrors.category_ids ||
+                      (error as any)?.data?.errors?.category_ids) && (
+                      <p className="flex flex-col gap-1 text-xs italic text-red-600">
+                        {formErrors.category_ids ||
+                          (error as any)?.data?.errors?.category_ids?.join?.(
+                            "\n"
+                          ) ||
+                          ""}
                       </p>
+                    )}
+                  </div>
+                  <div>
+                    <div className={`pb-1`}>
+                      <label className={"text-sm capitalize text-[#2C3137]"}>
+                        Attribute values
+                      </label>
                     </div>
-                  </button>
-                  {(formErrors.images ||
-                    (error as any)?.data?.errors?.images) && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {formErrors.images ||
-                        (error as any)?.data?.errors?.images?.join?.("\n") ||
-                        ""}
-                    </p>
-                  )}
-
-                  {fileList.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
-                      {fileList.map((f, idx) => (
-                        <div
-                          key={f.uid ?? idx}
-                          className="border rounded p-2 flex flex-col items-center gap-2"
-                        >
-                          <img
-                            src={
-                              f.thumbUrl ||
-                              f.url ||
-                              (f.originFileObj &&
-                                URL.createObjectURL(f.originFileObj))
-                            }
-                            alt="Preview"
-                            className="w-20 h-20 object-cover"
-                          />
-                          <p className="text-xs truncate w-full text-center">
-                            {f.name}
-                          </p>
-                          <button
-                            type="button"
-                            className="text-red-500 text-xs"
-                            onClick={() => {
-                              const copy = [...fileList];
-                              copy.splice(idx, 1);
-                              handleFileChange({ fileList: copy });
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                    <SelectInput
+                      loading={isUpdatingAttributes}
+                      onChange={async (values) => {
+                        setFormValues((p: FormValues) => ({
+                          ...p,
+                          attribute_value_ids: values,
+                        }));
+                        if (!id) return;
+                        try {
+                          await updateProductAttributeValues({
+                            product_id: id,
+                            body: { attribute_value_ids: values },
+                          }).unwrap();
+                          showPlannerToast({
+                            options: {
+                              customToast: (
+                                <CustomToast
+                                  altText={"Success"}
+                                  title={"Attributes Updated"}
+                                  image={imgSuccess}
+                                  textColor="green"
+                                  message={"Product attributes updated."}
+                                  backgroundColor="#FCFCFD"
+                                />
+                              ),
+                            },
+                            message: "Success",
+                          });
+                        } catch (e: any) {
+                          showPlannerToast({
+                            options: {
+                              customToast: (
+                                <CustomToast
+                                  altText={"Error"}
+                                  title={"Attributes Update Failed"}
+                                  image={imgError}
+                                  textColor="red"
+                                  message={
+                                    e?.data?.message ||
+                                    "Unable to update attributes"
+                                  }
+                                  backgroundColor="#FCFCFD"
+                                />
+                              ),
+                            },
+                            message: "Error",
+                          });
+                        }
+                      }}
+                      onDeselect={async (value) => {
+                        if (!id || !value) return;
+                        try {
+                          await deleteProductAttributeValue({
+                            product_id: id,
+                            attribute_value_id: value as string,
+                          }).unwrap();
+                        } catch (e) {}
+                      }}
+                      value={formValues.attribute_value_ids}
+                      placeholder={
+                        <span className="text-sm font-bold">Select</span>
+                      }
+                      data={attributeValueOptions}
+                      mode="multiple"
+                    />
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Variants */}
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-semibold">Variants</h3>
-                <CustomButton
-                  onClick={addVariant}
-                  className="bg-primary-40 text-white w-auto px-4"
-                >
-                  Add variant
-                </CustomButton>
-              </div>
+              {/* Descriptions */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">Descriptions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TextAreaInput
+                    row={8}
+                    name="short_description"
+                    errorMessage={""}
+                    className="w-full"
+                    value={formValues.short_description}
+                    onChange={handleInputChange}
+                    placeholder="Short description"
+                    title={
+                      <span className="font-[500]">Short description</span>
+                    }
+                  />
+                  <div>
+                    <RichTextEditor
+                      value={formValues.description}
+                      onChange={(html) =>
+                        setFormValues((p: FormValues) => ({
+                          ...p,
+                          description: html,
+                        }))
+                      }
+                      placeholder="Write full description..."
+                      className="h-[205px]"
+                      label={<span className="font-[500]">Description</span>}
+                      errorMessage={""}
+                    />
+                  </div>
+                </div>
+              </section>
 
-              {formValues.variants.length === 0 ? (
-                <p className="text-sm text-gray-500">No variants added.</p>
-              ) : (
-                <div className="flex flex-col gap-6">
-                  {formValues.variants.map((v, i) => (
-                    <div key={i} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold">Variant {i + 1}</h4>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-xs">
-                            <input
-                              type="checkbox"
-                              checked={!!v.copy_from_main}
-                              onChange={(e) =>
-                                handleCopyFromMain(i, e.target.checked)
-                              }
-                            />
-                            <span>Copy main product values</span>
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => removeVariant(i)}
-                            className="text-red-500 font-[500] text-xs"
-                          >
-                            Remove
-                          </button>
-                        </div>
+              {/* Images */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">
+                  Images ({fileList.length || 0})
+                </h3>
+                <div className="w-full">
+                  <div className="relative w-full">
+                    <Upload
+                      ref={uploadRef}
+                      className="main-hidden-upload w-full hidden"
+                      multiple
+                      maxCount={6}
+                      fileList={fileList}
+                      onChange={handleFileChange}
+                      beforeUpload={(f) => {
+                        if (fileList.length >= 6) {
+                          message.warning("You can only upload up to 6 images");
+                          return (Upload as any).LIST_IGNORE ?? false;
+                        }
+                        return false;
+                      }}
+                      accept="image/*"
+                      showUploadList={false}
+                      customRequest={({ onSuccess }) => {
+                        if (onSuccess) onSuccess("ok", undefined);
+                      }}
+                    >
+                      <div></div>
+                    </Upload>
+
+                    <button
+                      type="button"
+                      onClick={triggerUpload}
+                      className={`p-6 w-full mt-2 border-2 border-dashed ${
+                        formErrors.images ||
+                        (error as any)?.data?.errors?.images?.join?.("\n")
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
+                    >
+                      <div className="flex justify-center items-center gap-2 py-4">
+                        <Icon icon="ic:round-plus" width="24" height="24" />
+                        <p className="text-xs font-bold text-center">
+                          Add Images
+                        </p>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <TextInput
-                          type="text"
-                          name={`variant_name_${i}`}
-                          errorMessage={getVariantError(i, "name")}
-                          value={v.name}
-                          className="py-[11px]"
-                          onChange={(e) =>
-                            updateVariantField(i, "name", e.target.value)
-                          }
-                          placeholder="Variant name"
-                          title={<span className="font-[500]">Name*</span>}
-                        />
-                        <div
-                          className={`grid  gap-4 ${
-                            v.is_serialized === 1
-                              ? "grid-cols-2"
-                              : "grid-cols-1"
-                          }`}
-                        >
-                          <div className="">
-                            {" "}
+                    </button>
+                    {(formErrors.images ||
+                      (error as any)?.data?.errors?.images) && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {formErrors.images ||
+                          (error as any)?.data?.errors?.images?.join?.("\n") ||
+                          ""}
+                      </p>
+                    )}
+
+                    {fileList.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
+                        {fileList.map((f, idx) => (
+                          <div
+                            key={f.uid ?? idx}
+                            className="border rounded p-2 flex flex-col items-center gap-2"
+                          >
+                            <div className="w-16 h-16">
+                              <ImageComponent
+                                isLoadingImage={false}
+                                setIsLoadingImage={() => {}}
+                                width={64}
+                                aspectRatio="1/1"
+                                src={f.url || f._previewUrl || f.thumbUrl}
+                                alt="Variant Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+
+                            {f.status === "uploading" && (
+                              <span className="text-[10px] text-gray-500">
+                                Uploading…
+                              </span>
+                            )}
+                            {f.status === "error" && (
+                              <span className="text-[10px] text-red-500">
+                                Upload failed
+                              </span>
+                            )}
+                            {f._deleting && (
+                              <span className="text-[10px] text-gray-500">
+                                Deleting…
+                              </span>
+                            )}
+                            <p className="text-xs truncate w-full text-center">
+                              {f.name}
+                            </p>
+                            <button
+                              type="button"
+                              className="text-red-500 text-xs disabled:opacity-50"
+                              disabled={f.status === "uploading" || f._deleting}
+                              onClick={() => removeProductImage(idx)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Upload is automatic on add; no manual upload button */}
+              </section>
+
+              {/* Variants */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold">Variants</h3>
+                  <div className="w-fit">
+                    <CustomButton
+                      onClick={addVariant}
+                      className="bg-primary-40 text-white w-auto px-4"
+                    >
+                      Add variant
+                    </CustomButton>
+                  </div>
+                </div>
+
+                {formValues.variants.length === 0 ? (
+                  <p className="text-sm text-gray-500">No variants added.</p>
+                ) : (
+                  <div className="flex flex-col gap-6">
+                    {formValues.variants.map((v: Variant, i: number) => (
+                      <div
+                        key={i}
+                        className="border rounded-lg p-4"
+                        onClick={() => {
+                          if (v.id) setSelectedVariantId(v.id);
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold">Variant {i + 1}</h4>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={!!v.copy_from_main}
+                                onChange={(e) =>
+                                  handleCopyFromMain(i, e.target.checked)
+                                }
+                              />
+                              <span>Copy main product values</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeVariant(i)}
+                              className="text-red-500 font-[500] text-xs"
+                            >
+                              Remove
+                            </button>
+                            {v.id && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    await deleteVariantApi({
+                                      id: v.id!,
+                                    }).unwrap();
+                                    removeVariant(i);
+                                  } catch (e) {
+                                    showPlannerToast({
+                                      options: {
+                                        customToast: (
+                                          <CustomToast
+                                            altText={"Error"}
+                                            title={"Delete Failed"}
+                                            image={imgError}
+                                            textColor="red"
+                                            message={"Unable to delete variant"}
+                                            backgroundColor="#FCFCFD"
+                                          />
+                                        ),
+                                      },
+                                      message: "Error",
+                                    });
+                                  }
+                                }}
+                                className="text-red-500 font-[500] text-xs"
+                              >
+                                Delete variant
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <TextInput
+                            type="text"
+                            name={`variant_name_${i}`}
+                            errorMessage={getVariantError(i, "name")}
+                            value={v.name}
+                            className="py-[11px]"
+                            onChange={(e) =>
+                              updateVariantField(i, "name", e.target.value)
+                            }
+                            placeholder="Variant name"
+                            title={<span className="font-[500]">Name*</span>}
+                          />
+                          <div
+                            className={`grid  gap-4 ${
+                              v.is_serialized === 1
+                                ? "grid-cols-2"
+                                : "grid-cols-1"
+                            }`}
+                          >
+                            <div className="">
+                              {" "}
+                              <div className={`pb-1`}>
+                                <label
+                                  className={
+                                    "text-sm capitalize text-[#2C3137]"
+                                  }
+                                >
+                                  Serialized
+                                </label>
+                              </div>
+                              <SelectInput
+                                onChange={(val) =>
+                                  updateVariantField(
+                                    i,
+                                    "is_serialized",
+                                    Number(val)
+                                  )
+                                }
+                                className="h-fit"
+                                value={v.is_serialized}
+                                placeholder={
+                                  <span className="text-sm font-bold">
+                                    Serialized
+                                  </span>
+                                }
+                                data={[
+                                  { label: "No", value: 0 },
+                                  { label: "Yes", value: 1 },
+                                ]}
+                              />
+                            </div>
+                            {v.is_serialized === 1 && (
+                              <TextInput
+                                type="text"
+                                name={`variant_serial_${i}`}
+                                errorMessage={getVariantError(
+                                  i,
+                                  "serial_number"
+                                )}
+                                value={v.serial_number || ""}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    i,
+                                    "serial_number",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Serial number"
+                                title={
+                                  <span className="font-[500]">Serial*</span>
+                                }
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                          <TextInput
+                            type="number"
+                            name={`variant_price_${i}`}
+                            errorMessage={getVariantError(i, "price")}
+                            value={v.price}
+                            onChange={(e) =>
+                              updateVariantField(i, "price", e.target.value)
+                            }
+                            placeholder="0.00"
+                            title={<span className="font-[500]">Price*</span>}
+                          />
+                          <TextInput
+                            type="number"
+                            name={`variant_compare_${i}`}
+                            errorMessage={getVariantError(i, "compare_price")}
+                            value={v.compare_price as any}
+                            onChange={(e) =>
+                              updateVariantField(
+                                i,
+                                "compare_price",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0.00"
+                            title={<span className="font-[500]">Compare</span>}
+                          />
+                          <TextInput
+                            type="number"
+                            name={`variant_cost_${i}`}
+                            errorMessage={getVariantError(i, "cost_price")}
+                            value={v.cost_price}
+                            onChange={(e) =>
+                              updateVariantField(
+                                i,
+                                "cost_price",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0.00"
+                            title={<span className="font-[500]">Cost*</span>}
+                          />
+                          <TextInput
+                            type="number"
+                            name={`variant_qty_${i}`}
+                            errorMessage={getVariantError(i, "quantity")}
+                            value={v.quantity}
+                            onChange={(e) =>
+                              updateVariantField(i, "quantity", e.target.value)
+                            }
+                            placeholder="0"
+                            title={<span className="font-[500]">Qty*</span>}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                          <div>
                             <div className={`pb-1`}>
                               <label
                                 className={"text-sm capitalize text-[#2C3137]"}
                               >
-                                Serialized
+                                Attribute values
                               </label>
                             </div>
                             <SelectInput
-                              onChange={(val) =>
+                              loading={isUpdatingVariantAttrs}
+                              onChange={async (values) => {
                                 updateVariantField(
                                   i,
-                                  "is_serialized",
-                                  Number(val)
-                                )
-                              }
-                              className="h-fit"
-                              value={v.is_serialized}
+                                  "attribute_value_ids",
+                                  values
+                                );
+                                const vid =
+                                  (formValues.variants[i] || {}).id || v.id;
+                                if (!vid) return;
+                                try {
+                                  await updateVariantAttributes({
+                                    product_variant_id: vid,
+                                    body: { attribute_value_ids: values },
+                                  }).unwrap();
+                                  showPlannerToast({
+                                    options: {
+                                      customToast: (
+                                        <CustomToast
+                                          altText={"Success"}
+                                          title={"Variant Attributes Updated"}
+                                          image={imgSuccess}
+                                          textColor="green"
+                                          message={
+                                            "Variant attributes updated."
+                                          }
+                                          backgroundColor="#FCFCFD"
+                                        />
+                                      ),
+                                    },
+                                    message: "Success",
+                                  });
+                                } catch (e: any) {
+                                  showPlannerToast({
+                                    options: {
+                                      customToast: (
+                                        <CustomToast
+                                          altText={"Error"}
+                                          title={"Update Failed"}
+                                          image={imgError}
+                                          textColor="red"
+                                          message={
+                                            e?.data?.message ||
+                                            "Unable to update variant attributes"
+                                          }
+                                          backgroundColor="#FCFCFD"
+                                        />
+                                      ),
+                                    },
+                                    message: "Error",
+                                  });
+                                }
+                              }}
+                              onDeselect={async (value) => {
+                                const vid =
+                                  (formValues.variants[i] || {}).id || v.id;
+                                if (!vid || !value) return;
+                                try {
+                                  await deleteVariantAttributes({
+                                    product_variant_id: vid,
+                                    attribute_value_id: value as string,
+                                  }).unwrap();
+                                } catch (e) {}
+                              }}
+                              value={v.attribute_value_ids}
                               placeholder={
                                 <span className="text-sm font-bold">
-                                  Serialized
+                                  Select
                                 </span>
                               }
-                              data={[
-                                { label: "No", value: 0 },
-                                { label: "Yes", value: 1 },
-                              ]}
+                              data={attributeValueOptions}
+                              mode="multiple"
                             />
+                            {getVariantError(i, "attribute_value_ids") && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {getVariantError(i, "attribute_value_ids")}
+                              </p>
+                            )}
                           </div>
-                          {v.is_serialized === 1 && (
-                            <TextInput
-                              type="text"
-                              name={`variant_serial_${i}`}
-                              errorMessage={getVariantError(i, "serial_number")}
-                              value={v.serial_number || ""}
-                              onChange={(e) =>
-                                updateVariantField(
-                                  i,
-                                  "serial_number",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Serial number"
-                              title={
-                                <span className="font-[500]">Serial*</span>
-                              }
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
-                        <TextInput
-                          type="number"
-                          name={`variant_price_${i}`}
-                          errorMessage={getVariantError(i, "price")}
-                          value={v.price}
-                          onChange={(e) =>
-                            updateVariantField(i, "price", e.target.value)
-                          }
-                          placeholder="0.00"
-                          title={<span className="font-[500]">Price*</span>}
-                        />
-                        <TextInput
-                          type="number"
-                          name={`variant_compare_${i}`}
-                          errorMessage={getVariantError(i, "compare_price")}
-                          value={v.compare_price as any}
-                          onChange={(e) =>
-                            updateVariantField(
-                              i,
-                              "compare_price",
-                              e.target.value
-                            )
-                          }
-                          placeholder="0.00"
-                          title={<span className="font-[500]">Compare</span>}
-                        />
-                        <TextInput
-                          type="number"
-                          name={`variant_cost_${i}`}
-                          errorMessage={getVariantError(i, "cost_price")}
-                          value={v.cost_price}
-                          onChange={(e) =>
-                            updateVariantField(i, "cost_price", e.target.value)
-                          }
-                          placeholder="0.00"
-                          title={<span className="font-[500]">Cost*</span>}
-                        />
-                        <TextInput
-                          type="number"
-                          name={`variant_qty_${i}`}
-                          errorMessage={getVariantError(i, "quantity")}
-                          value={v.quantity}
-                          onChange={(e) =>
-                            updateVariantField(i, "quantity", e.target.value)
-                          }
-                          placeholder="0"
-                          title={<span className="font-[500]">Qty*</span>}
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                        <div>
-                          <div className={`pb-1`}>
-                            <label
-                              className={"text-sm capitalize text-[#2C3137]"}
-                            >
-                              Attribute values
-                            </label>
-                          </div>
-                          <SelectInput
-                            onChange={(values) =>
+                          <TextInput
+                            type="text"
+                            name={`variant_batch_${i}`}
+                            errorMessage={""}
+                            value={v.batch_number || ""}
+                            onChange={(e) =>
                               updateVariantField(
                                 i,
-                                "attribute_value_ids",
-                                values
+                                "batch_number",
+                                e.target.value
                               )
                             }
-                            value={v.attribute_value_ids}
-                            placeholder={
-                              <span className="text-sm font-bold">Select</span>
+                            placeholder="Batch number (optional)"
+                            title={
+                              <span className="font-[500]">Batch No.</span>
                             }
-                            data={attributeValueOptions}
-                            mode="multiple"
                           />
-                          {getVariantError(i, "attribute_value_ids") && (
-                            <p className="text-xs text-red-500 mt-1">
-                              {getVariantError(i, "attribute_value_ids")}
-                            </p>
-                          )}
                         </div>
-                        <TextInput
-                          type="text"
-                          name={`variant_batch_${i}`}
-                          errorMessage={""}
-                          value={v.batch_number || ""}
-                          onChange={(e) =>
-                            updateVariantField(
-                              i,
-                              "batch_number",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Batch number (optional)"
-                          title={<span className="font-[500]">Batch No.</span>}
-                        />
-                      </div>
-
-                      {/* Variant Images */}
-                      <div className="mt-4">
-                        <p className="text-sm capitalize font-[500] text-[#000]">
-                          Variant Images ({v.ui_files?.length || 0})
-                        </p>
-                        <div
-                          className="relative w-full"
-                          id={`variant-upload-${i}`}
-                        >
-                          <Upload
-                            className="hidden-upload w-full hidden"
-                            multiple
-                            maxCount={6}
-                            fileList={v.ui_files as any}
-                            onChange={(info) =>
-                              handleVariantFileChange(i, info)
-                            }
-                            beforeUpload={() => {
-                              if ((v.ui_files?.length ?? 0) >= 6) {
-                                message.warning(
-                                  "You can only upload up to 6 images per variant"
-                                );
-                                return (Upload as any).LIST_IGNORE ?? false;
-                              }
-                              return false;
-                            }}
-                            accept="image/*"
-                            showUploadList={false}
-                            customRequest={({ onSuccess }) => {
-                              if (onSuccess) onSuccess("ok", undefined);
-                            }}
+                        {/* Variant Images */}
+                        <div className="mt-4">
+                          <p className="text-sm capitalize font-[500] text-[#000]">
+                            Variant Images ({v.ui_files?.length || 0})
+                          </p>
+                          <div
+                            className="relative w-full"
+                            id={`variant-upload-${i}`}
                           >
-                            <div></div>
-                          </Upload>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if ((v.ui_files?.length ?? 0) >= 6) {
-                                message.warning(
-                                  "You can only upload up to 6 images per variant"
-                                );
-                                return;
+                            <Upload
+                              className="hidden-upload w-full hidden"
+                              multiple
+                              maxCount={6}
+                              fileList={v.ui_files as any}
+                              onChange={(info) =>
+                                handleVariantFileChange(i, info)
                               }
-                              const container = document.getElementById(
-                                `variant-upload-${i}`
-                              );
-                              const input = container?.querySelector(
-                                '.ant-upload input[type="file"]'
-                              ) as HTMLElement | null;
-                              input?.click?.();
-                            }}
-                            className={`p-4 w-full mt-2 border-2 border-dashed border-gray-300 rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
-                          >
-                            <div className="flex justify-center items-center gap-2 py-3">
-                              <Icon
-                                icon="ic:round-plus"
-                                width="20"
-                                height="20"
-                              />
-                              <p className="text-xs font-bold text-center">
-                                Add Variant Images
+                              beforeUpload={() => {
+                                if ((v.ui_files?.length ?? 0) >= 6) {
+                                  message.warning(
+                                    "You can only upload up to 6 images per variant"
+                                  );
+                                  return (Upload as any).LIST_IGNORE ?? false;
+                                }
+                                return false;
+                              }}
+                              accept="image/*"
+                              showUploadList={false}
+                              customRequest={({ onSuccess }) => {
+                                if (onSuccess) onSuccess("ok", undefined);
+                              }}
+                            >
+                              <div></div>
+                            </Upload>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if ((v.ui_files?.length ?? 0) >= 6) {
+                                  message.warning(
+                                    "You can only upload up to 6 images per variant"
+                                  );
+                                  return;
+                                }
+                                const container = document.getElementById(
+                                  `variant-upload-${i}`
+                                );
+                                const input = container?.querySelector(
+                                  '.ant-upload input[type="file"]'
+                                ) as HTMLElement | null;
+                                input?.click?.();
+                              }}
+                              className={`p-4 w-full mt-2 border-2 border-dashed border-gray-300 rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
+                            >
+                              <div className="flex justify-center items-center gap-2 py-3">
+                                <Icon
+                                  icon="ic:round-plus"
+                                  width="20"
+                                  height="20"
+                                />
+                                <p className="text-xs font-bold text-center">
+                                  Add Variant Images
+                                </p>
+                              </div>
+                            </button>
+
+                            {getVariantError(i, "images") && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {getVariantError(i, "images")}
                               </p>
-                            </div>
-                          </button>
+                            )}
 
-                          {getVariantError(i, "images") && (
-                            <p className="text-xs text-red-500 mt-1">
-                              {getVariantError(i, "images")}
-                            </p>
-                          )}
-
-                          {(v.ui_files?.length ?? 0) > 0 && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-2">
-                              {(v.ui_files as any[]).map((file, idx) => (
-                                <div
-                                  key={file.uid ?? idx}
-                                  className="border rounded p-2 flex flex-col items-center gap-2"
-                                >
-                                  <img
-                                    src={
-                                      file.thumbUrl ||
-                                      file.url ||
-                                      (file.originFileObj &&
-                                        URL.createObjectURL(file.originFileObj))
-                                    }
-                                    alt="Variant Preview"
-                                    className="w-16 h-16 object-cover"
-                                  />
-                                  <p className="text-[10px] truncate w-full text-center">
-                                    {file.name}
-                                  </p>
-                                  <button
-                                    type="button"
-                                    className="text-red-500 text-[10px]"
-                                    onClick={() => {
-                                      const copy = [...(v.ui_files as any[])];
-                                      copy.splice(idx, 1);
-                                      handleVariantFileChange(i, {
-                                        fileList: copy,
-                                      });
-                                    }}
+                            {(v.ui_files?.length ?? 0) > 0 && (
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-2">
+                                {(v.ui_files as any[]).map((file, idx) => (
+                                  <div
+                                    key={file.uid ?? idx}
+                                    className="border rounded p-2 flex flex-col items-center gap-2"
                                   >
-                                    Remove
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                    <div className="w-16 h-16">
+                                      <ImageComponent
+                                        isLoadingImage={false}
+                                        setIsLoadingImage={() => {}}
+                                        width={64}
+                                        aspectRatio="1/1"
+                                        src={
+                                          file.url ||
+                                          file._previewUrl ||
+                                          file.thumbUrl
+                                        }
+                                        alt="Variant Preview"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    {file.status === "uploading" && (
+                                      <span className="text-[10px] text-gray-500">
+                                        Uploading…
+                                      </span>
+                                    )}
+                                    {file.status === "error" && (
+                                      <span className="text-[10px] text-red-500">
+                                        Upload failed
+                                      </span>
+                                    )}
+                                    {file._deleting && (
+                                      <span className="text-[10px] text-gray-500">
+                                        Deleting…
+                                      </span>
+                                    )}
+                                    <p className="text-[10px] truncate w-full text-center">
+                                      {file.name}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      className="text-red-500 text-[10px] disabled:opacity-50"
+                                      disabled={
+                                        file.status === "uploading" ||
+                                        file._deleting
+                                      }
+                                      onClick={() => removeVariantImage(i, idx)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-4">
+                          <div className="">
+                            <CustomButton
+                              type="button"
+                              onClick={() => saveVariant(v)}
+                              disabled={isUpdatingVariant || !v.id}
+                              className="border bg-black text-white px-4 py-2"
+                            >
+                              {isUpdatingVariant ? (
+                                <span className="flex items-center gap-2">
+                                  <Spinner className="border-white" /> Saving…
+                                </span>
+                              ) : (
+                                "Save variant"
+                              )}
+                            </CustomButton>
+                          </div>
+                          {/* Variant image upload is automatic on add; no manual upload button */}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-            {/* Actions */}
-            <div className="flex justify-end border-t border-gray-300 pt-3 pb-20">
-              <div className="w-fit flex gap-5">
-                <CustomButton
-                  type="button"
-                  onClick={() => {
-                    // simple reset
-                    setFormValues((prev) => ({
-                      ...prev,
-                      name: "",
-                      price: "",
-                      compare_price: "",
-                      cost_price: "",
-                      quantity: "",
-                      short_description: "",
-                      description: "",
-                      images: [],
-                      category_ids: [],
-                      attribute_value_ids: [],
-                      is_serialized: 0,
-                      serial_number: "",
-                      variants: [],
-                    }));
-                    setFileList([]);
-                  }}
-                  className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
-                >
-                  Cancel
-                </CustomButton>
-                <CustomButton
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isLoadingCreate}
-                  className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
-                >
-                  {isLoadingCreate ? (
-                    <Spinner className="border-white" />
-                  ) : (
-                    "Create product"
-                  )}
-                </CustomButton>
+              {/* Actions */}
+              <div className="flex justify-end border-t border-gray-300 pt-3 pb-20">
+                <div className="w-fit flex gap-5">
+                  <CustomButton
+                    type="button"
+                    onClick={() => {
+                      // simple reset
+                      setFormValues((prev: FormValues) => ({
+                        ...prev,
+                        name: "",
+                        price: "",
+                        compare_price: "",
+                        cost_price: "",
+                        quantity: "",
+                        short_description: "",
+                        description: "",
+                        images: [],
+                        category_ids: [],
+                        attribute_value_ids: [],
+                        is_serialized: 0,
+                        serial_number: "",
+                        variants: [],
+                      }));
+                      setFileList([]);
+                    }}
+                    className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
+                  >
+                    Cancel
+                  </CustomButton>
+                  <CustomButton
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isLoadingUpdate}
+                    className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
+                  >
+                    {isLoadingUpdate ? (
+                      <Spinner className="border-white" />
+                    ) : (
+                      "Update product"
+                    )}
+                  </CustomButton>
+                </div>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        )}
       </SharedLayout>
     </div>
   );

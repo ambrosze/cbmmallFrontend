@@ -1,5 +1,13 @@
+import {
+  IProductListResponse,
+  ISingleProductResponse,
+} from "@/types/productTypes";
 import { api } from "..";
-
+interface CreateUpdateType {
+  name: string;
+  short_description: string;
+  description: string;
+}
 interface CreateProductsType {
   name: string;
   price: number;
@@ -30,7 +38,7 @@ export const productListApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getAllProducts: builder.query<
-      any,
+      IProductListResponse,
       {
         sort?: string;
         q?: string;
@@ -90,7 +98,7 @@ export const productListApi = api.injectEndpoints({
       },
     }),
     getSingleProducts: builder.query<
-      any,
+      ISingleProductResponse,
       {
         id: string;
         include?: string;
@@ -109,7 +117,7 @@ export const productListApi = api.injectEndpoints({
         return {
           url: `products/${id}`,
           method: "GET",
-
+          params,
           providesTags: ["products"],
         };
       },
@@ -127,7 +135,7 @@ export const productListApi = api.injectEndpoints({
     }),
     updateProducts: builder.mutation<
       any,
-      { id: string; body: CreateProductsType }
+      { id: string; body: CreateUpdateType }
     >({
       query: ({ id, body }) => ({
         url: `products/${id}`,
