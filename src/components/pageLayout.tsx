@@ -109,7 +109,7 @@ const PageLayout = ({ children }: IProps) => {
       componentSize="middle"
       theme={{
         token: {
-          colorPrimary: "#C1A213",
+          colorPrimary: "#600601",
           fontSize: 16,
         },
       }}
@@ -118,7 +118,7 @@ const PageLayout = ({ children }: IProps) => {
         <>
           <div
             style={{
-              backgroundImage: "url(/images/auth-bg.png)",
+              backgroundImage: "url(/images/auth-bg.jpg)",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",
               backgroundPosition: "center",

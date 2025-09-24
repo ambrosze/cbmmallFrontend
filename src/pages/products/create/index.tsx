@@ -696,6 +696,9 @@ const index = () => {
                         attribute_value_ids: values,
                       }))
                     }
+                    notFoundContent={
+                      isLoadingAttributes ? <Spinner /> : <span className="text-gray-500">No attributes found </span>
+                    }
                     value={formValues.attribute_value_ids}
                     placeholder={
                       <span className="text-sm font-bold">Select</span>
@@ -856,7 +859,7 @@ const index = () => {
                 <div className="">
                   <CustomButton
                     onClick={addVariant}
-                    className="bg-primary-40 w-fit text-white px-4"
+                    className="bg-primary-20 w-fit text-white px-4"
                   >
                     Add variant
                   </CustomButton>

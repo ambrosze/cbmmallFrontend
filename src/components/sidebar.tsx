@@ -49,7 +49,7 @@ const Sidebar = ({
     if (path.includes("/admin/items")) return ["53", "sub4"];
     if (path.includes("/admin/staffs")) return ["50", "sub4"];
     if (path.includes("/admin/daily-gold-price")) return ["55", "sub4"];
-    if (path.includes("/admin/stores")) return ["51", "sub4"];
+    if (path.includes("/stores")) return ["51", "sub4"];
     if (path.includes("/admin/roles")) return ["52", "sub4"];
     if (path.includes("/admin/discounts")) return ["56", "sub4"];
 
@@ -78,7 +78,7 @@ const Sidebar = ({
     {
       key: "1",
       icon: <Icon icon="mage:dashboard" width="20" height="20" />,
-      label: "Dashboard",
+      label: <span className="font-[500]">Dashboard</span>,
       onClick: () => {
         router.push("/dashboard");
       },
@@ -86,7 +86,7 @@ const Sidebar = ({
 
     {
       key: "sub1",
-      label: "Inventory",
+      label: <span className="font-[500]">Inventory</span>,
       icon: <Icon icon="fluent:box-24-regular" width="20" height="20" />,
       children: [
         {
@@ -117,13 +117,13 @@ const Sidebar = ({
 
     {
       key: "sub2",
-      label: "Sales",
+      label: <span className="font-[500]">Sales</span>,
       icon: <Icon icon="mynaui:cart" width="20" height="20" />,
       children: [
         {
           key: "20",
           icon: <Icon icon="iconoir:home-sale" width="20" height="20" />,
-          label: "Sales",
+          label: <span className="">Sales</span>,
           onClick: () => {
             router.push("/sales/sales-list");
           },
@@ -131,7 +131,7 @@ const Sidebar = ({
 
         {
           key: "22",
-          label: "Pos",
+          label: <span className="">Pos</span>,
           icon: <Icon icon="mdi:line-scan" width="20" height="20" />,
           onClick: () => {
             router.push("/sales/pos");
@@ -145,7 +145,7 @@ const Sidebar = ({
       icon: (
         <Icon icon="flowbite:cell-attributes-outline" width="20" height="20" />
       ),
-      label: "Attributes",
+      label: <span className="font-[500]">Attributes</span>,
       onClick: () => {
         router.push("/attributes");
       },
@@ -153,7 +153,7 @@ const Sidebar = ({
     {
       key: "30",
       icon: <Icon icon="iconamoon:category-light" width="20" height="20" />,
-      label: "Category",
+      label: <span className="font-[500]">Categories</span>,
       onClick: () => {
         router.push("/category");
       },
@@ -190,7 +190,7 @@ const Sidebar = ({
       ? [
           {
             key: "sub4",
-            label: "Admin",
+            label: <span className="font-[500]">Admin</span>,
             icon: (
               <Icon icon="eos-icons:admin-outlined" width="20" height="20" />
             ),
@@ -200,7 +200,7 @@ const Sidebar = ({
                 icon: (
                   <Icon icon="hugeicons:group-items" width="20" height="20" />
                 ),
-                label: "Stocks",
+                label: <span className="">Stocks</span>,
                 onClick: () => {
                   router.push("/admin/stocks");
                 },
@@ -208,7 +208,7 @@ const Sidebar = ({
               {
                 key: "50",
                 icon: <Icon icon="mynaui:users" width="20" height="20" />,
-                label: "Staffs",
+                label: <span className="">Staffs</span>,
                 onClick: () => {
                   router.push("/admin/staffs");
                 },
@@ -219,14 +219,14 @@ const Sidebar = ({
                 icon: (
                   <Icon icon="hugeicons:task-daily-01" width="20" height="20" />
                 ),
-                label: "Daily Gold Price",
+                label: <span className="">Daily Gold Price</span>,
                 onClick: () => {
                   router.push("/admin/daily-gold-price");
                 },
               },
               {
                 key: "56",
-                label: "Discounts",
+                label: <span className="">Discounts</span>,
                 icon: <Icon icon="ic:outline-discount" width="20" />,
 
                 onClick: () => {
@@ -244,7 +244,7 @@ const Sidebar = ({
                 ),
                 label: "Stores",
                 onClick: () => {
-                  router.push("/admin/stores");
+                  router.push("/stores");
                 },
               },
               {

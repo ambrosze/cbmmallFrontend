@@ -11,6 +11,8 @@ import SharedLayout from "@/components/sharedUI/SharedLayout";
 import Spinner from "@/components/sharedUI/Spinner";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
+import { useAppDispatch } from "@/redux-store/hooks";
+import { api } from "@/services";
 import { useGetAllAttributesQuery } from "@/services/attributes-values/attributes";
 import { useGetAllCategoryQuery } from "@/services/category";
 import {
@@ -158,6 +160,7 @@ const index = () => {
   // Avoid overwriting user edits on incidental refetches (e.g., image mutations)
   const hydratedProductIdRef = useRef<string | null>(null);
   const { id } = router.query as { id?: string };
+  const dispatch = useAppDispatch();
 
   // Reset hydration when navigating between products
   React.useEffect(() => {
@@ -175,7 +178,11 @@ const index = () => {
     null
   );
   const { data, isLoading } = useGetSingleProductsQuery(
-    { id: id as string, include: "variants,images,attributeValues,categories" },
+    {
+      id: id as string,
+      // Include variant images up-front so their previews show without needing to click a variant
+      include: "variants,images,attributeValues,categories",
+    },
     { skip: !id }
   );
   const {
@@ -184,9 +191,9 @@ const index = () => {
     refetch: variantRefetch,
   } = useGetSingleProductVariantQuery(
     {
-      product_variant_id: selectedVariantId || "",
+      product_variant_id: selectedVariantId ? String(selectedVariantId) : "",
       include:
-        "product,product.images,product.variants,product.attributeValues,product.categories,images,attributeValues",
+        "images,product,product.categories,product.attributeValues,product.attributeValues.attribute,attributeValues,attributeValues.attribute",
     },
     { skip: !selectedVariantId }
   );
@@ -259,7 +266,7 @@ const index = () => {
       attribute_value_ids:
         (product?.attribute_values || [])?.map((av: any) => av.id) ?? [],
       variants: ((product?.variants as any[]) || []).map((v: any) => ({
-        id: v?.id,
+        id: v?.id != null ? String(v.id) : undefined,
         name: v?.name ?? "",
         price: v?.price != null ? Number(v.price) : ("" as any),
         compare_price:
@@ -295,15 +302,32 @@ const index = () => {
       }));
       setFileList(fl as any);
     }
-  }, [data]);
+    // Ensure a selected variant is set automatically (first available)
+    if (!selectedVariantId) {
+      const firstId = product?.variants?.[0]?.id;
+      if (firstId != null) setSelectedVariantId(String(firstId));
+    }
+  }, [data, selectedVariantId]);
 
   // Default selected variant to the first one if none chosen
   React.useEffect(() => {
     if (!selectedVariantId && formValues.variants?.length) {
       const first = formValues.variants[0];
-      if (first?.id) setSelectedVariantId(first.id);
+      if (first?.id != null) setSelectedVariantId(String(first.id));
     }
   }, [selectedVariantId, formValues.variants]);
+
+  // If current selected variant is no longer present (e.g., after delete), reselect the first available
+  React.useEffect(() => {
+    if (!formValues.variants?.length) return;
+    const exists = formValues.variants.some(
+      (v) => String(v.id) === String(selectedVariantId)
+    );
+    if (!exists) {
+      const first = formValues.variants[0];
+      if (first?.id != null) setSelectedVariantId(String(first.id));
+    }
+  }, [formValues.variants, selectedVariantId]);
 
   // Prefill the selected variant from variantResp
   React.useEffect(() => {
@@ -324,7 +348,9 @@ const index = () => {
 
     setFormValues((prev: FormValues) => {
       const variants = [...prev.variants];
-      const idx = variants.findIndex((v) => v.id === selectedVariantId);
+      const idx = variants.findIndex(
+        (v) => String(v.id) === String(selectedVariantId)
+      );
       if (idx === -1) return prev;
       const curr = { ...(variants[idx] || {}) } as Variant;
       variants[idx] = {
@@ -362,6 +388,82 @@ const index = () => {
       return { ...prev, variants };
     });
   }, [selectedVariantId, variantResp]);
+
+  // Prefetch and hydrate ALL variants' details (images + attribute values) once per variant id
+  const prefetchedVariantIdsRef = React.useRef<Set<string>>(new Set());
+  React.useEffect(() => {
+    const list = formValues.variants || [];
+    if (!list.length) return;
+    const include = "images,attributeValues,attributeValues.attribute,product";
+
+    list.forEach((v) => {
+      const vid = v?.id ? String(v.id) : "";
+      if (!vid) return;
+      if (prefetchedVariantIdsRef.current.has(vid)) return; // avoid duplicate fetches
+      prefetchedVariantIdsRef.current.add(vid);
+
+      const sub = dispatch(
+        (api as any).endpoints.getSingleProductVariant.initiate({
+          product_variant_id: vid,
+          include,
+        })
+      );
+
+      sub
+        .unwrap()
+        .then((resp: any) => {
+          const variant = resp?.data || resp;
+          const images = (variant?.images || []) as any[];
+          const attrVals = (variant?.attribute_values || []) as any[];
+
+          setFormValues((prev: FormValues) => {
+            const variants = [...prev.variants];
+            const idx = variants.findIndex(
+              (vv) => String(vv.id) === String(vid)
+            );
+            if (idx === -1) return prev;
+            const curr = { ...(variants[idx] || {}) } as Variant;
+            variants[idx] = {
+              ...curr,
+              name: variant?.name ?? curr.name ?? "",
+              price:
+                variant?.price != null
+                  ? Number(variant.price)
+                  : curr.price ?? ("" as any),
+              compare_price:
+                variant?.compare_price != null && variant?.compare_price !== ""
+                  ? Number(variant.compare_price)
+                  : curr.compare_price ?? ("" as any),
+              cost_price:
+                variant?.cost_price != null
+                  ? Number(variant.cost_price)
+                  : curr.cost_price ?? ("" as any),
+              quantity:
+                variant?.quantity != null
+                  ? Number(variant.quantity)
+                  : curr.quantity ?? ("" as any),
+              is_serialized: (variant?.is_serialized ??
+                curr.is_serialized ??
+                0) as 0 | 1,
+              serial_number: variant?.serial_number ?? curr.serial_number ?? "",
+              attribute_value_ids: attrVals.map((av: any) => av.id),
+              images: images.map((img: any) => img.url).filter(Boolean),
+              ui_files: images.map((img: any) => ({
+                uid: img.id,
+                name: img.name ?? `image-${img.id}`,
+                url: img.url,
+                status: "done",
+              })),
+            } as Variant;
+            return { ...prev, variants };
+          });
+        })
+        .catch(() => {})
+        .finally(() => {
+          // optional: nothing to do; RTK Query caches this call
+        });
+    });
+  }, [dispatch, formValues.variants]);
 
   // Options
   const categoryOptions = useMemo(
@@ -408,53 +510,72 @@ const index = () => {
     if (newFileList.length > 6) {
       message.warning("You can only upload up to 6 images");
     }
-    setFileList(limitedList);
+
+    // 1) Immediately show local previews and mark uploading for new files
+    const withPreviews = limitedList.map((f: any) => {
+      if (f?.originFileObj) {
+        const previewUrl = URL.createObjectURL(f.originFileObj);
+        return {
+          ...f,
+          status: "uploading",
+          url: previewUrl,
+          _previewUrl: previewUrl,
+        };
+      }
+      return f;
+    });
+    setFileList(withPreviews);
+
     try {
-      // Auto-upload to product if id exists
+      // 2) Auto-upload to product if id exists, and update each item as it finishes
       if (id) {
-        const updatedList: any[] = [...limitedList];
-        for (let idx = 0; idx < updatedList.length; idx++) {
-          const f = updatedList[idx];
-          // Only upload files that are new (have originFileObj)
-          if (f?.originFileObj) {
-            // create a local preview URL and mark uploading
-            const previewUrl = URL.createObjectURL(f.originFileObj);
-            updatedList[idx] = {
-              ...f,
-              status: "uploading",
-              url: previewUrl,
-              _previewUrl: previewUrl,
-            };
+        for (let idx = 0; idx < withPreviews.length; idx++) {
+          const f: any = withPreviews[idx];
+          if (!f?.originFileObj) continue;
+          const tempUid = f.uid; // antd's generated uid before server id
+          try {
             const compressed = await compressImage(f.originFileObj);
             const base64 = (await fileToBase64(compressed)) as string;
-            try {
-              const resp: any = await createProductImage({
-                product_id: id,
-                body: { image: base64 },
-              }).unwrap();
-              // If API returns id/url, reflect it in the UI list item
-              const created = resp?.data || resp;
-              updatedList[idx] = {
-                uid: created?.id ?? f.uid,
-                name: created?.name ?? f.name ?? `image-${created?.id ?? idx}`,
-                url: created?.url ?? f.url,
-                status: "done",
-              };
-            } catch (e) {
-              // Keep as local preview if upload failed
-              updatedList[idx] = {
-                ...f,
-                status: "error",
-              };
-            }
+            const resp: any = await createProductImage({
+              product_id: id,
+              body: { image: base64 },
+            }).unwrap();
+            const created = resp?.data || resp;
+            // Update this one item to done
+            setFileList((prev) => {
+              const copy = [...prev];
+              const foundIdx = copy.findIndex((ff: any) => ff.uid === tempUid);
+              if (foundIdx !== -1) {
+                const current = copy[foundIdx];
+                copy[foundIdx] = {
+                  uid: created?.id ?? current.uid,
+                  name:
+                    created?.name ??
+                    current.name ??
+                    `image-${created?.id ?? foundIdx}`,
+                  url: created?.url ?? current.url ?? current._previewUrl,
+                  status: "done",
+                } as any;
+              }
+              return copy;
+            });
+          } catch (e) {
+            // Mark as error but keep preview
+            setFileList((prev) => {
+              const copy = [...prev];
+              const foundIdx = copy.findIndex((ff: any) => ff.uid === tempUid);
+              if (foundIdx !== -1) {
+                copy[foundIdx] = { ...copy[foundIdx], status: "error" } as any;
+              }
+              return copy;
+            });
           }
         }
-        setFileList(updatedList);
       } else {
-        // Fallback: just compute base64 for local state (no server upload without product id)
+        // No product id: keep base64s for later upload
         const base64Images: string[] = [];
         for (const f of limitedList) {
-          const fileObj = f.originFileObj;
+          const fileObj = (f as any).originFileObj;
           if (!fileObj) continue;
           const compressed = await compressImage(fileObj);
           const base64 = await fileToBase64(compressed);
@@ -619,12 +740,24 @@ const index = () => {
     if (newFileList.length > 6) {
       message.warning("You can only upload up to 6 images per variant");
     }
-    // Update UI previews immediately
+    // Update UI previews immediately (mark new files as uploading + preview)
+    const withPreviews = limitedList.map((f: any) => {
+      if (f?.originFileObj) {
+        const previewUrl = URL.createObjectURL(f.originFileObj);
+        return {
+          ...f,
+          status: "uploading",
+          url: previewUrl,
+          _previewUrl: previewUrl,
+        };
+      }
+      return f;
+    });
     setFormValues((prev: FormValues) => {
       const variants = [...prev.variants];
       variants[index] = {
         ...variants[index],
-        ui_files: limitedList,
+        ui_files: withPreviews,
       } as Variant;
       return { ...prev, variants };
     });
@@ -632,45 +765,55 @@ const index = () => {
     try {
       const vid = (formValues.variants[index] || {}).id;
       if (vid) {
-        const updated = [...limitedList];
-        for (let idx = 0; idx < updated.length; idx++) {
-          const f: any = updated[idx];
-          if (f?.originFileObj) {
-            // create a local preview and mark uploading
-            const previewUrl = URL.createObjectURL(f.originFileObj);
-            updated[idx] = {
-              ...f,
-              status: "uploading",
-              url: previewUrl,
-              _previewUrl: previewUrl,
-            };
+        for (let idx = 0; idx < withPreviews.length; idx++) {
+          const f: any = withPreviews[idx];
+          if (!f?.originFileObj) continue;
+          const tempUid = f.uid;
+          try {
             const compressed = await compressImage(f.originFileObj);
             const base64 = (await fileToBase64(compressed)) as string;
-            try {
-              const resp: any = await createVariantImage({
-                product_variant_id: vid,
-                body: { image: base64 },
-              }).unwrap();
-              const created = resp?.data || resp;
-              updated[idx] = {
-                uid: created?.id ?? f.uid,
-                name: created?.name ?? f.name ?? `image-${created?.id ?? idx}`,
-                url: created?.url ?? f.url,
-                status: "done",
-              };
-            } catch (e) {
-              updated[idx] = { ...f, status: "error" };
-            }
+            const resp: any = await createVariantImage({
+              product_variant_id: vid,
+              body: { image: base64 },
+            }).unwrap();
+            const created = resp?.data || resp;
+            setFormValues((prev: FormValues) => {
+              const variants = [...prev.variants];
+              const current = { ...(variants[index] || {}) } as Variant;
+              const files = [...((current.ui_files as any[]) || [])];
+              const foundIdx = files.findIndex((ff: any) => ff.uid === tempUid);
+              if (foundIdx !== -1) {
+                const cur = files[foundIdx];
+                files[foundIdx] = {
+                  uid: created?.id ?? cur.uid,
+                  name:
+                    created?.name ??
+                    cur.name ??
+                    `image-${created?.id ?? foundIdx}`,
+                  url: created?.url ?? cur.url ?? cur._previewUrl,
+                  status: "done",
+                } as any;
+              }
+              variants[index] = { ...current, ui_files: files } as Variant;
+              return { ...prev, variants };
+            });
+          } catch (e) {
+            setFormValues((prev: FormValues) => {
+              const variants = [...prev.variants];
+              const current = { ...(variants[index] || {}) } as Variant;
+              const files = [...((current.ui_files as any[]) || [])];
+              const foundIdx = files.findIndex((ff: any) => ff.uid === tempUid);
+              if (foundIdx !== -1) {
+                files[foundIdx] = {
+                  ...files[foundIdx],
+                  status: "error",
+                } as any;
+              }
+              variants[index] = { ...current, ui_files: files } as Variant;
+              return { ...prev, variants };
+            });
           }
         }
-        setFormValues((prev: FormValues) => {
-          const variants = [...prev.variants];
-          variants[index] = {
-            ...variants[index],
-            ui_files: updated,
-          } as Variant;
-          return { ...prev, variants };
-        });
       } else {
         // No variant id yet: compute base64 and keep in state only
         const base64Images: string[] = [];
@@ -1246,11 +1389,11 @@ const index = () => {
               </section>
 
               {/* Pricing & Inventory */}
-              <section>
-                <h3 className="text-base hidden font-semibold mb-3">
+              <section className="hidden">
+                <h3 className="text-base font-semibold mb-3">
                   Pricing & inventory
                 </h3>
-                <div className="grid hidden grid-cols-1 md:grid-cols-4 gap-4">
+                <div className=" md:grid grid-cols-1 md:grid-cols-4 gap-4 ">
                   <TextInput
                     type="number"
                     name="price"
@@ -1509,7 +1652,11 @@ const index = () => {
                   Images ({fileList.length || 0})
                 </h3>
                 <div className="w-full">
-                  <div className="relative w-full">
+                  <div
+                    className={`relative w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                      fileList.length > 0 ? "grid" : "block"
+                    }`}
+                  >
                     <Upload
                       ref={uploadRef}
                       className="main-hidden-upload w-full hidden"
@@ -1536,12 +1683,12 @@ const index = () => {
                     <button
                       type="button"
                       onClick={triggerUpload}
-                      className={`p-6 w-full mt-2 border-2 border-dashed ${
+                      className={`p-6 w-full border-2 border-dashed ${
                         formErrors.images ||
                         (error as any)?.data?.errors?.images?.join?.("\n")
                           ? "border-red-500"
                           : "border-gray-300"
-                      } rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
+                      } rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
                     >
                       <div className="flex justify-center items-center gap-2 py-4">
                         <Icon icon="ic:round-plus" width="24" height="24" />
@@ -1560,7 +1707,7 @@ const index = () => {
                     )}
 
                     {fileList.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
+                      <>
                         {fileList.map((f, idx) => (
                           <div
                             key={f.uid ?? idx}
@@ -1606,7 +1753,7 @@ const index = () => {
                             </button>
                           </div>
                         ))}
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1620,7 +1767,7 @@ const index = () => {
                   <div className="w-fit">
                     <CustomButton
                       onClick={addVariant}
-                      className="bg-primary-40 text-white w-auto px-4"
+                      className="bg-primary-30 text-white w-auto px-4"
                     >
                       Add variant
                     </CustomButton>
@@ -1652,13 +1799,15 @@ const index = () => {
                               />
                               <span>Copy main product values</span>
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => removeVariant(i)}
-                              className="text-red-500 font-[500] text-xs"
-                            >
-                              Remove
-                            </button>
+                            {!v.id && (
+                              <button
+                                type="button"
+                                onClick={() => removeVariant(i)}
+                                className="text-red-500 font-[500] text-xs"
+                              >
+                                Remove
+                              </button>
+                            )}
                             {v.id && (
                               <button
                                 type="button"
@@ -1936,7 +2085,9 @@ const index = () => {
                             Variant Images ({v.ui_files?.length || 0})
                           </p>
                           <div
-                            className="relative w-full"
+                            className={`relative w-full mt-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                              v.ui_files?.length! > 0 ? "grid" : "block"
+                            }`}
                             id={`variant-upload-${i}`}
                           >
                             <Upload
@@ -1982,7 +2133,7 @@ const index = () => {
                                 ) as HTMLElement | null;
                                 input?.click?.();
                               }}
-                              className={`p-4 w-full mt-2 border-2 border-dashed border-gray-300 rounded-lg mb-2 cursor-pointer hover:border-blue-500 transition-colors`}
+                              className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg  cursor-pointer hover:border-blue-500 transition-colors`}
                             >
                               <div className="flex justify-center items-center gap-2 py-3">
                                 <Icon
@@ -2003,7 +2154,7 @@ const index = () => {
                             )}
 
                             {(v.ui_files?.length ?? 0) > 0 && (
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-2">
+                              <>
                                 {(v.ui_files as any[]).map((file, idx) => (
                                   <div
                                     key={file.uid ?? idx}
@@ -2055,7 +2206,7 @@ const index = () => {
                                     </button>
                                   </div>
                                 ))}
-                              </div>
+                              </>
                             )}
                           </div>
                         </div>

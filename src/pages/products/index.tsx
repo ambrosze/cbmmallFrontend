@@ -7,11 +7,14 @@ import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import { useGetAllStoresQuery } from "@/services/admin/store";
+import { useGetAllAttributesQuery } from "@/services/attributes-values/attributes";
+import { useGetAllAttributeValuesQuery } from "@/services/attributes-values/values";
 import { useGetAllCategoryQuery } from "@/services/category";
 import {
   useDeleteProductsMutation,
   useGetAllProductsQuery,
 } from "@/services/products/product-list";
+import { useGetAllProductVariantsQuery } from "@/services/products/variant/variant-product-list";
 import { newUserTimeZoneFormatDate } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
@@ -26,14 +29,13 @@ const index = () => {
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const [isViewProductListModal, setIsViewProductListModal] = useState(false);
   const [filters, setFilters] = useState<{
-    store_id?: string;
-    item_id?: string;
-    "item.type_id"?: string;
-    "item.colour_id"?: string;
-    "item.category_id"?: string;
-    "item.material"?: string;
     out_of_stock?: string;
     low_stock?: number;
+    "variants.id"?: string | string[];
+    "variants.sku"?: string | string[];
+    "categories.id"?: string | string[];
+    "attributeValues.attribute.id"?: string | string[];
+    "attributeValues.id"?: string | string[];
   }>({});
 
   const router = useRouter();
@@ -202,6 +204,25 @@ const index = () => {
     per_page: 100,
   });
 
+  // Get attributes data for filter options
+  const { data: attributesData } = useGetAllAttributesQuery({
+    paginate: false,
+    include: "values",
+  });
+
+  // Get attribute values data for filter options
+  const { data: attributeValuesData } = useGetAllAttributeValuesQuery({
+    paginate: false,
+    include: "attribute",
+  });
+
+  // Get product variants data for filter options
+  const { data: variantsData } = useGetAllProductVariantsQuery({
+    paginate: false,
+    per_page: 200,
+    include: "product",
+  });
+
   const storeOptions =
     storesData?.data?.map((store: any) => ({
       label: store.name,
@@ -213,6 +234,36 @@ const index = () => {
       label: prod?.name || "Unnamed product",
       value: prod?.id,
     })) || [];
+
+  // Transform attributes data for filter options
+  const attributeOptions =
+    attributesData?.data?.map((attribute: any) => ({
+      label: attribute.name,
+      value: attribute.id,
+    })) || [];
+
+  // Transform attribute values data for filter options
+  const attributeValueOptions =
+    attributeValuesData?.data?.map((attributeValue: any) => ({
+      label: `${attributeValue.attribute?.name}: ${attributeValue.value}`,
+      value: attributeValue.id,
+    })) || [];
+
+  // Transform variants data for filter options
+  const variantOptions =
+    variantsData?.data?.map((variant: any) => ({
+      label: `${variant.name} (${variant.product?.name || "Product"})`,
+      value: variant.id,
+    })) || [];
+
+  // Transform variants SKU data for filter options
+  const variantSkuOptions =
+    variantsData?.data
+      ?.filter((variant: any) => variant.sku)
+      ?.map((variant: any) => ({
+        label: `${variant.sku} - ${variant.name}`,
+        value: variant.sku,
+      })) || [];
 
   // Define columns for core products
   const columns = useMemo(
@@ -296,6 +347,30 @@ const index = () => {
             typeOptions={[]}
             colourOptions={[]}
             itemOptions={itemOptions as any}
+            // Product-specific filter options
+            variantOptions={variantOptions}
+            variantSkuOptions={variantSkuOptions}
+            attributeOptions={attributeOptions}
+            attributeValueOptions={attributeValueOptions}
+            filterKeys={{
+              // keep basic keys available but use categories.id instead of item.category_id
+              essentialKeys: ["categories.id"],
+              advancedKeys: [
+                "variants.id",
+                "variants.sku",
+                "attributeValues.attribute.id",
+                "attributeValues.id",
+                "out_of_stock",
+                "low_stock",
+              ],
+              categoryKey: "categories.id",
+              stockKey: "out_of_stock",
+              lowStockKey: "low_stock",
+              variantsIdKey: true,
+              variantsSkuKey: true,
+              attributeKey: true,
+              attributeValueKey: true,
+            }}
           />
         </div>
         <TableMainComponent

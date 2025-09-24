@@ -13,6 +13,12 @@ interface FilterState {
   "item.material"?: string;
   out_of_stock?: string;
   low_stock?: number;
+  // Product-specific filters
+  "variants.id"?: string | string[];
+  "variants.sku"?: string | string[];
+  "categories.id"?: string | string[];
+  "attributeValues.attribute.id"?: string | string[];
+  "attributeValues.id"?: string | string[];
 }
 
 interface ItemsFilterProps {
@@ -27,6 +33,11 @@ interface ItemsFilterProps {
   typeOptions?: Array<{ label: string; value: string }>;
   colourOptions?: Array<{ label: string; value: string }>;
   itemOptions?: Array<{ label: string; value: string }>;
+  // Product-specific filter options
+  variantOptions?: Array<{ label: string; value: string }>;
+  variantSkuOptions?: Array<{ label: string; value: string }>;
+  attributeOptions?: Array<{ label: string; value: string }>;
+  attributeValueOptions?: Array<{ label: string; value: string }>;
   hideSomeFilters?: boolean;
   filterKeys?: {
     essentialKeys?: string[];
@@ -39,6 +50,11 @@ interface ItemsFilterProps {
     lowStockKey?: string;
     itemKey?: string;
     storeKey?: string;
+    // Product-specific flags to render extra inputs
+    variantsIdKey?: boolean;
+    variantsSkuKey?: boolean;
+    attributeKey?: boolean;
+    attributeValueKey?: boolean;
   };
 }
 
@@ -52,6 +68,11 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
   typeOptions = [],
   colourOptions = [],
   itemOptions = [],
+  // Product-specific filter options
+  variantOptions = [],
+  variantSkuOptions = [],
+  attributeOptions = [],
+  attributeValueOptions = [],
   hideSomeFilters = true,
   filterKeys = {
     essentialKeys: ["store_id", "item.category_id"],
@@ -138,10 +159,14 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
 
   const handleFilterChange = (
     key: keyof FilterState,
-    value: string | number | undefined
+    value: string | number | string[] | undefined
   ) => {
     const newFilters = { ...filters };
-    if (value !== undefined && value !== null && value !== "") {
+    if (
+      value !== undefined &&
+      value !== null &&
+      (Array.isArray(value) ? value.length > 0 : value !== "")
+    ) {
       newFilters[key] = value as any;
     } else {
       delete newFilters[key];
@@ -178,6 +203,44 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
     return Object.keys(filters).filter((key) =>
       filterKeys.advancedKeys?.includes(key)
     ).length;
+  };
+
+  // Helper functions to get display names for IDs
+  const getVariantNames = (variantIds: string[]) => {
+    return variantIds
+      .map(
+        (id) =>
+          variantOptions.find((option) => option.value === id)?.label || id
+      )
+      .join(", ");
+  };
+
+  const getVariantSkuNames = (variantSkus: string[]) => {
+    return variantSkus
+      .map(
+        (sku) =>
+          variantSkuOptions.find((option) => option.value === sku)?.label || sku
+      )
+      .join(", ");
+  };
+
+  const getAttributeNames = (attributeIds: string[]) => {
+    return attributeIds
+      .map(
+        (id) =>
+          attributeOptions.find((option) => option.value === id)?.label || id
+      )
+      .join(", ");
+  };
+
+  const getAttributeValueNames = (attributeValueIds: string[]) => {
+    return attributeValueIds
+      .map(
+        (id) =>
+          attributeValueOptions.find((option) => option.value === id)?.label ||
+          id
+      )
+      .join(", ");
   };
 
   return (
@@ -269,7 +332,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
             {/* Essential Filters - Always Visible */}
             <div className="flex flex-wrap gap-4 items-center w-full">
               {/* Store Filter */}
-              {loginResponse?.user.is_admin && (
+              {loginResponse?.user.is_admin && filterKeys.storeKey && (
                 <div className="hidden flex-col gap-2 min-w-[160px]">
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                     <Icon icon="mdi:store" className="w-3 h-3" />
@@ -304,37 +367,48 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
               )}
 
               {/* Category Filter */}
-              <div className="flex flex-col gap-2 min-w-[160px] mt-5">
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                  <Icon icon="mdi:tag" className="w-3 h-3" />
-                  Category
-                </label>
-                <Select
-                  placeholder={
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Icon icon="mdi:tag-outline" className="w-4 h-4" />
-                      <span>All Categories</span>
-                    </div>
-                  }
-                  value={filters[filterKeys.categoryKey as keyof FilterState]}
-                  onChange={(value) =>
-                    handleFilterChange(
-                      filterKeys.categoryKey as keyof FilterState,
-                      value
-                    )
-                  }
-                  allowClear
-                  style={{ minWidth: 160 }}
-                  className="custom-select"
-                  options={categoryOptions}
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label as string)
-                      ?.toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                />
-              </div>
+              {filterKeys.categoryKey && (
+                <div className="flex flex-col gap-2 min-w-[160px] mt-5">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                    <Icon icon="mdi:tag" className="w-3 h-3" />
+                    Category
+                  </label>
+                  <Select
+                    placeholder={
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <Icon icon="mdi:tag-outline" className="w-4 h-4" />
+                        <span>All Categories</span>
+                      </div>
+                    }
+                    mode={
+                      (filterKeys.categoryKey as string) === "categories.id"
+                        ? "multiple"
+                        : undefined
+                    }
+                    value={
+                      filters[filterKeys.categoryKey as keyof FilterState] as
+                        | string
+                        | string[]
+                    }
+                    onChange={(value) =>
+                      handleFilterChange(
+                        filterKeys.categoryKey as keyof FilterState,
+                        value
+                      )
+                    }
+                    allowClear
+                    style={{ minWidth: 160 }}
+                    className="custom-select"
+                    options={categoryOptions}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label as string)
+                        ?.toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  />
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-6 pt-2 border-t border-gray-200/60">
               <div className="flex items-center gap-2 mb-2">
@@ -347,103 +421,114 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
               {/* Filter Row 1 */}
               <div className="flex flex-wrap gap-4 items-center w-full">
                 {/* Type Filter */}
-                <div className="flex flex-col gap-2 min-w-[140px]">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                    <Icon icon="mdi:shape" className="w-3 h-3" />
-                    Type
-                  </label>
-                  <Select
-                    placeholder={
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Icon icon="mdi:shape-outline" className="w-4 h-4" />
-                        <span>All Types</span>
-                      </div>
-                    }
-                    value={filters[filterKeys.typeKey as keyof FilterState]}
-                    onChange={(value) =>
-                      handleFilterChange(
-                        filterKeys.typeKey as keyof FilterState,
-                        value
-                      )
-                    }
-                    allowClear
-                    style={{ minWidth: 140 }}
-                    className="custom-select"
-                    options={typeOptions}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.label as string)
-                        ?.toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                  />
-                </div>
+                {filterKeys.typeKey && (
+                  <div className="flex flex-col gap-2 min-w-[140px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:shape" className="w-3 h-3" />
+                      Type
+                    </label>
+                    <Select
+                      placeholder={
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icon icon="mdi:shape-outline" className="w-4 h-4" />
+                          <span>All Types</span>
+                        </div>
+                      }
+                      value={filters[filterKeys.typeKey as keyof FilterState]}
+                      onChange={(value) =>
+                        handleFilterChange(
+                          filterKeys.typeKey as keyof FilterState,
+                          value
+                        )
+                      }
+                      allowClear
+                      style={{ minWidth: 140 }}
+                      className="custom-select"
+                      options={typeOptions}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                    />
+                  </div>
+                )}
 
                 {/* Colour Filter */}
-                <div className="flex flex-col gap-2 min-w-[140px]">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                    <Icon icon="mdi:palette" className="w-3 h-3" />
-                    Colour
-                  </label>
-                  <Select
-                    placeholder={
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Icon icon="mdi:palette-outline" className="w-4 h-4" />
-                        <span>All Colours</span>
-                      </div>
-                    }
-                    value={filters[filterKeys.colourKey as keyof FilterState]}
-                    onChange={(value) =>
-                      handleFilterChange(
-                        filterKeys.colourKey as keyof FilterState,
-                        value
-                      )
-                    }
-                    allowClear
-                    style={{ minWidth: 140 }}
-                    className="custom-select"
-                    options={colourOptions}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.label as string)
-                        ?.toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                  />
-                </div>
+                {filterKeys.colourKey && (
+                  <div className="flex flex-col gap-2 min-w-[140px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:palette" className="w-3 h-3" />
+                      Colour
+                    </label>
+                    <Select
+                      placeholder={
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icon
+                            icon="mdi:palette-outline"
+                            className="w-4 h-4"
+                          />
+                          <span>All Colours</span>
+                        </div>
+                      }
+                      value={filters[filterKeys.colourKey as keyof FilterState]}
+                      onChange={(value) =>
+                        handleFilterChange(
+                          filterKeys.colourKey as keyof FilterState,
+                          value
+                        )
+                      }
+                      allowClear
+                      style={{ minWidth: 140 }}
+                      className="custom-select"
+                      options={colourOptions}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                    />
+                  </div>
+                )}
 
                 {/* Material Filter */}
-                <div className="flex flex-col gap-2 min-w-[160px]">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                    <Icon icon="mdi:gold" className="w-3 h-3" />
-                    Material
-                  </label>
-                  <Select
-                    placeholder={
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Icon icon="mdi:gold" className="w-4 h-4" />
-                        <span>All Materials</span>
-                      </div>
-                    }
-                    value={filters[filterKeys.materialKey as keyof FilterState]}
-                    onChange={(value) =>
-                      handleFilterChange(
-                        filterKeys.materialKey as keyof FilterState,
-                        value
-                      )
-                    }
-                    allowClear
-                    style={{ minWidth: 160 }}
-                    className="custom-select"
-                    options={materialOptions}
-                  />
-                </div>
+                {filterKeys.materialKey && (
+                  <div className="flex flex-col gap-2 min-w-[160px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:gold" className="w-3 h-3" />
+                      Material
+                    </label>
+                    <Select
+                      placeholder={
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icon icon="mdi:gold" className="w-4 h-4" />
+                          <span>All Materials</span>
+                        </div>
+                      }
+                      value={
+                        filters[filterKeys.materialKey as keyof FilterState]
+                      }
+                      onChange={(value) =>
+                        handleFilterChange(
+                          filterKeys.materialKey as keyof FilterState,
+                          value
+                        )
+                      }
+                      allowClear
+                      style={{ minWidth: 160 }}
+                      className="custom-select"
+                      options={materialOptions}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Filter Row 2 */}
               <div className="flex flex-wrap gap-4 items-center w-full">
                 {/* Stock Status Filter */}
-                {hideSomeFilters && (
+                {hideSomeFilters && filterKeys.stockKey && (
                   <div className="flex flex-col gap-2 min-w-[180px]">
                     <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                       <Icon icon="mdi:package-variant" className="w-3 h-3" />
@@ -475,7 +560,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                 )}
 
                 {/* Low Stock Threshold */}
-                {hideSomeFilters && (
+                {hideSomeFilters && filterKeys.lowStockKey && (
                   <div className="flex flex-col gap-2 min-w-[140px]">
                     <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                       <Icon icon="mdi:alert-octagon" className="w-3 h-3" />
@@ -500,6 +585,118 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Filter Row 3 - Product specific advanced filters */}
+              <div className="flex flex-wrap gap-4 items-center w-full">
+                {filterKeys && (filterKeys as any)["variantsIdKey"] && (
+                  <div className="flex flex-col gap-2 min-w-[220px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:numeric" className="w-3 h-3" />
+                      Variants
+                    </label>
+                    <Select
+                      mode="multiple"
+                      placeholder="Select variants"
+                      value={filters["variants.id"] as string[]}
+                      onChange={(value) =>
+                        handleFilterChange("variants.id", value)
+                      }
+                      style={{ minWidth: 220 }}
+                      className="custom-select"
+                      options={variantOptions}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                    />
+                  </div>
+                )}
+
+                {filterKeys && (filterKeys as any)["variantsSkuKey"] && (
+                  <div className="flex flex-col gap-2 min-w-[220px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:barcode" className="w-3 h-3" />
+                      Variant SKUs
+                    </label>
+                    <Select
+                      mode="multiple"
+                      placeholder="Select variant SKUs"
+                      value={filters["variants.sku"] as string[]}
+                      onChange={(value) =>
+                        handleFilterChange("variants.sku", value)
+                      }
+                      style={{ minWidth: 220 }}
+                      className="custom-select"
+                      options={variantSkuOptions}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                    />
+                  </div>
+                )}
+
+                {filterKeys && (filterKeys as any)["attributeKey"] && (
+                  <div className="flex flex-col gap-2 min-w-[240px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:shape-plus" className="w-3 h-3" />
+                      Attributes
+                    </label>
+                    <Select
+                      mode="multiple"
+                      placeholder="Select attributes"
+                      value={
+                        filters["attributeValues.attribute.id"] as string[]
+                      }
+                      onChange={(value) =>
+                        handleFilterChange(
+                          "attributeValues.attribute.id",
+                          value
+                        )
+                      }
+                      style={{ minWidth: 240 }}
+                      className="custom-select"
+                      options={attributeOptions}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                    />
+                  </div>
+                )}
+
+                {filterKeys && (filterKeys as any)["attributeValueKey"] && (
+                  <div className="flex flex-col gap-2 min-w-[240px]">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
+                      <Icon icon="mdi:shape-outline" className="w-3 h-3" />
+                      Attribute Values
+                    </label>
+                    <Select
+                      mode="multiple"
+                      placeholder="Select attribute values"
+                      value={filters["attributeValues.id"] as string[]}
+                      onChange={(value) =>
+                        handleFilterChange("attributeValues.id", value)
+                      }
+                      style={{ minWidth: 240 }}
+                      className="custom-select"
+                      options={attributeValueOptions}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -518,196 +715,300 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                 </span>
               </div>
               <Space wrap size={[8, 8]}>
-                {filters[filterKeys.storeKey as keyof FilterState] && (
-                  <Tag
-                    closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.storeKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color="blue"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Icon icon="mdi:store" className="w-3 h-3" />
-                    Store:{" "}
-                    {storeOptions.find(
-                      (s) =>
-                        s.value ===
-                        filters[filterKeys.storeKey as keyof FilterState]
-                    )?.label ||
-                      filters[filterKeys.storeKey as keyof FilterState]}
-                  </Tag>
-                )}
-                {filters[filterKeys.categoryKey as keyof FilterState] && (
-                  <Tag
-                    closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.categoryKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color="purple"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Icon icon="mdi:tag" className="w-3 h-3" />
-                    Category:{" "}
-                    {categoryOptions.find(
-                      (c) =>
-                        c.value ===
+                {filterKeys.storeKey &&
+                  filters[filterKeys.storeKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.storeKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color="blue"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:store" className="w-3 h-3" />
+                      Store:{" "}
+                      {storeOptions.find(
+                        (s) =>
+                          s.value ===
+                          filters[filterKeys.storeKey as keyof FilterState]
+                      )?.label ||
+                        filters[filterKeys.storeKey as keyof FilterState]}
+                    </Tag>
+                  )}
+                {filterKeys.categoryKey &&
+                  filters[filterKeys.categoryKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.categoryKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color="purple"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:tag" className="w-3 h-3" />
+                      {Array.isArray(
                         filters[filterKeys.categoryKey as keyof FilterState]
-                    )?.label ||
-                      filters[filterKeys.categoryKey as keyof FilterState]}
-                  </Tag>
-                )}
-                {filters[filterKeys.typeKey as keyof FilterState] && (
-                  <Tag
-                    closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.typeKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color="cyan"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Icon icon="mdi:shape" className="w-3 h-3" />
-                    Type:{" "}
-                    {typeOptions.find(
-                      (t) =>
-                        t.value ===
-                        filters[filterKeys.typeKey as keyof FilterState]
-                    )?.label ||
-                      filters[filterKeys.typeKey as keyof FilterState]}
-                  </Tag>
-                )}
-                {filters[filterKeys.colourKey as keyof FilterState] && (
-                  <Tag
-                    closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.colourKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color="magenta"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Icon icon="mdi:palette" className="w-3 h-3" />
-                    Colour:{" "}
-                    {colourOptions.find(
-                      (c) =>
-                        c.value ===
-                        filters[filterKeys.colourKey as keyof FilterState]
-                    )?.label ||
-                      filters[filterKeys.colourKey as keyof FilterState]}
-                  </Tag>
-                )}
-                {filters[filterKeys.materialKey as keyof FilterState] && (
-                  <Tag
-                    closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.materialKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color={getMaterialColor(
-                      filters[
-                        filterKeys.materialKey as keyof FilterState
-                      ] as string
-                    )}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Icon icon="mdi:gold" className="w-3 h-3" />
-                    Material:{" "}
-                    {filters[filterKeys.materialKey as keyof FilterState]}
-                  </Tag>
-                )}
-                {filters[filterKeys.stockKey as keyof FilterState] && (
-                  <Tag
-                    closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.stockKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color={
-                      filters[filterKeys.stockKey as keyof FilterState] === "1"
-                        ? "red"
-                        : "green"
-                    }
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Icon
-                      icon={
+                      ) ? (
+                        <>
+                          Categories:{" "}
+                          {(
+                            filters[
+                              filterKeys.categoryKey as keyof FilterState
+                            ] as string[]
+                          )
+                            .map(
+                              (id) =>
+                                categoryOptions.find((c) => c.value === id)
+                                  ?.label || id
+                            )
+                            .join(", ")}
+                        </>
+                      ) : (
+                        <>
+                          Category:{" "}
+                          {categoryOptions.find(
+                            (c) =>
+                              c.value ===
+                              (filters[
+                                filterKeys.categoryKey as keyof FilterState
+                              ] as string)
+                          )?.label ||
+                            (filters[
+                              filterKeys.categoryKey as keyof FilterState
+                            ] as string)}
+                        </>
+                      )}
+                    </Tag>
+                  )}
+                {filterKeys.typeKey &&
+                  filters[filterKeys.typeKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.typeKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color="cyan"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:shape" className="w-3 h-3" />
+                      Type:{" "}
+                      {typeOptions.find(
+                        (t) =>
+                          t.value ===
+                          filters[filterKeys.typeKey as keyof FilterState]
+                      )?.label ||
+                        filters[filterKeys.typeKey as keyof FilterState]}
+                    </Tag>
+                  )}
+                {filterKeys.colourKey &&
+                  filters[filterKeys.colourKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.colourKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color="magenta"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:palette" className="w-3 h-3" />
+                      Colour:{" "}
+                      {colourOptions.find(
+                        (c) =>
+                          c.value ===
+                          filters[filterKeys.colourKey as keyof FilterState]
+                      )?.label ||
+                        filters[filterKeys.colourKey as keyof FilterState]}
+                    </Tag>
+                  )}
+                {filterKeys.materialKey &&
+                  filters[filterKeys.materialKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.materialKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color={getMaterialColor(
+                        filters[
+                          filterKeys.materialKey as keyof FilterState
+                        ] as string
+                      )}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:gold" className="w-3 h-3" />
+                      Material:{" "}
+                      {filters[filterKeys.materialKey as keyof FilterState]}
+                    </Tag>
+                  )}
+                {filterKeys.stockKey &&
+                  filters[filterKeys.stockKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.stockKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color={
                         filters[filterKeys.stockKey as keyof FilterState] ===
                         "1"
-                          ? "mdi:alert-circle"
-                          : "mdi:check-circle"
+                          ? "red"
+                          : "green"
                       }
-                      className="w-3 h-3"
-                    />
-                    {filters[filterKeys.stockKey as keyof FilterState] === "1"
-                      ? "Out of Stock Only"
-                      : "In Stock Only"}
-                  </Tag>
-                )}
-                {filters[filterKeys.lowStockKey as keyof FilterState] && (
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon
+                        icon={
+                          filters[filterKeys.stockKey as keyof FilterState] ===
+                          "1"
+                            ? "mdi:alert-circle"
+                            : "mdi:check-circle"
+                        }
+                        className="w-3 h-3"
+                      />
+                      {filters[filterKeys.stockKey as keyof FilterState] === "1"
+                        ? "Out of Stock Only"
+                        : "In Stock Only"}
+                    </Tag>
+                  )}
+                {filterKeys.lowStockKey &&
+                  filters[filterKeys.lowStockKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.lowStockKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color="orange"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:alert-octagon" className="w-3 h-3" />
+                      Low Stock ≤{" "}
+                      {filters[filterKeys.lowStockKey as keyof FilterState]}
+                    </Tag>
+                  )}
+                {filterKeys.itemKey &&
+                  filters[filterKeys.itemKey as keyof FilterState] && (
+                    <Tag
+                      closable
+                      onClose={() =>
+                        handleFilterChange(
+                          filterKeys.itemKey as keyof FilterState,
+                          undefined
+                        )
+                      }
+                      color="geekblue"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                      style={{
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Icon icon="mdi:magnify" className="w-3 h-3" />
+                      Item:{" "}
+                      {itemOptions.find(
+                        (i) =>
+                          i.value ===
+                          filters[filterKeys.itemKey as keyof FilterState]
+                      )?.label ||
+                        filters[filterKeys.itemKey as keyof FilterState]}
+                    </Tag>
+                  )}
+
+                {/* Product-specific Active Filter Tags */}
+                {filters["variants.id"] && (
                   <Tag
                     closable
-                    onClose={() =>
-                      handleFilterChange(
-                        filterKeys.lowStockKey as keyof FilterState,
-                        undefined
-                      )
-                    }
-                    color="orange"
+                    onClose={() => handleFilterChange("variants.id", undefined)}
+                    color="geekblue"
                     className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
                     style={{
                       borderRadius: "8px",
                       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                     }}
                   >
-                    <Icon icon="mdi:alert-octagon" className="w-3 h-3" />
-                    Low Stock ≤{" "}
-                    {filters[filterKeys.lowStockKey as keyof FilterState]}
+                    <Icon icon="mdi:numeric" className="w-3 h-3" />
+                    Variants:{" "}
+                    {Array.isArray(filters["variants.id"])
+                      ? getVariantNames(filters["variants.id"] as string[])
+                      : variantOptions.find(
+                          (option) => option.value === filters["variants.id"]
+                        )?.label || filters["variants.id"]}
                   </Tag>
                 )}
-                {filters[filterKeys.itemKey as keyof FilterState] && (
+                {filters["variants.sku"] && (
+                  <Tag
+                    closable
+                    onClose={() =>
+                      handleFilterChange("variants.sku", undefined)
+                    }
+                    color="geekblue"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                    style={{
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <Icon icon="mdi:barcode" className="w-3 h-3" />
+                    Variant SKUs:{" "}
+                    {Array.isArray(filters["variants.sku"])
+                      ? getVariantSkuNames(filters["variants.sku"] as string[])
+                      : variantSkuOptions.find(
+                          (option) => option.value === filters["variants.sku"]
+                        )?.label || filters["variants.sku"]}
+                  </Tag>
+                )}
+                {filters["attributeValues.attribute.id"] && (
                   <Tag
                     closable
                     onClose={() =>
                       handleFilterChange(
-                        filterKeys.itemKey as keyof FilterState,
+                        "attributeValues.attribute.id",
                         undefined
                       )
                     }
@@ -718,14 +1019,42 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                     }}
                   >
-                    <Icon icon="mdi:magnify" className="w-3 h-3" />
-                    Item:{" "}
-                    {itemOptions.find(
-                      (i) =>
-                        i.value ===
-                        filters[filterKeys.itemKey as keyof FilterState]
-                    )?.label ||
-                      filters[filterKeys.itemKey as keyof FilterState]}
+                    <Icon icon="mdi:shape-plus" className="w-3 h-3" />
+                    Attributes:{" "}
+                    {Array.isArray(filters["attributeValues.attribute.id"])
+                      ? getAttributeNames(
+                          filters["attributeValues.attribute.id"] as string[]
+                        )
+                      : attributeOptions.find(
+                          (option) =>
+                            option.value ===
+                            filters["attributeValues.attribute.id"]
+                        )?.label || filters["attributeValues.attribute.id"]}
+                  </Tag>
+                )}
+                {filters["attributeValues.id"] && (
+                  <Tag
+                    closable
+                    onClose={() =>
+                      handleFilterChange("attributeValues.id", undefined)
+                    }
+                    color="geekblue"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium shadow-sm border-0"
+                    style={{
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <Icon icon="mdi:shape-outline" className="w-3 h-3" />
+                    Attribute Values:{" "}
+                    {Array.isArray(filters["attributeValues.id"])
+                      ? getAttributeValueNames(
+                          filters["attributeValues.id"] as string[]
+                        )
+                      : attributeValueOptions.find(
+                          (option) =>
+                            option.value === filters["attributeValues.id"]
+                        )?.label || filters["attributeValues.id"]}
                   </Tag>
                 )}
               </Space>

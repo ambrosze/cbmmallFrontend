@@ -46,7 +46,7 @@ export const storeApi = api.injectEndpoints({
         if (sort) params.sort = sort;
 
         return {
-          url: "admin/stores",
+          url: "stores",
           method: "GET",
           params,
           providesTags: ["stores"],
@@ -71,7 +71,7 @@ export const storeApi = api.injectEndpoints({
 
         if (include) params.include = include;
         return {
-          url: `/admin/stores/${id}`,
+          url: `stores/${id}`,
           method: "GET",
 
           providesTags: ["stores"],
@@ -80,7 +80,7 @@ export const storeApi = api.injectEndpoints({
     }),
     createStore: builder.mutation<any, CreateStoreType>({
       query: (body) => ({
-        url: "admin/stores",
+        url: "stores",
         method: "POST",
         body: body,
         headers: {
@@ -91,7 +91,7 @@ export const storeApi = api.injectEndpoints({
     }),
     updateStore: builder.mutation<any, { id: string; body: CreateStoreType }>({
       query: ({ id, body }) => ({
-        url: `admin/stores/${id}`,
+        url: `stores/${id}`,
         method: "PUT",
         body: body,
         headers: {
@@ -102,7 +102,7 @@ export const storeApi = api.injectEndpoints({
     }),
     deleteStore: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `admin/stores/${id}`,
+        url: `stores/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
