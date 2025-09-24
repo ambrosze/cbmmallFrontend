@@ -65,7 +65,7 @@ const index = () => {
   const { data: storesData } = useGetAllStoresQuery({
     q: search,
     page: currentPage,
-    include: "manager",
+    // include: "manager",
     per_page: 15,
     paginate: false,
   });

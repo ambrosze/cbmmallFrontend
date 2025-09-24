@@ -102,18 +102,22 @@ export const productListApi = api.injectEndpoints({
       {
         id: string;
         include?: string;
+        append?: string;
       }
     >({
       query: ({
         id,
         include,
+        append,
       }: {
         id: string; //product_id
         include?: string; //variants,images,attributeValues,categories
+        append?: string;
       }) => {
         const params: any = {};
 
         if (include) params.include = include;
+        if (append) params.append = append;
         return {
           url: `products/${id}`,
           method: "GET",

@@ -62,7 +62,7 @@ const Header = ({
     {
       q: storeSearch,
       page: currentPage,
-      include: "manager",
+      // include: "manager",
       per_page: 15,
       paginate: false,
     },
