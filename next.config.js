@@ -49,6 +49,8 @@ const nextConfig = {
   images: {
     domains: [
       "api.cbm-mall.com/storage",
+      "https://api-staging.cbm-mall.com/storage",
+      "api-staging.cbm-mall.com",
       "api.cbm-mall.com",
       "ui-avatars.com",
       "https://placehold.co",

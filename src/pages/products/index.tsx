@@ -2,47 +2,55 @@ import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
 import Header from "@/components/header";
 import ItemsFilter from "@/components/ItemComponent/ItemsFilter";
-import { itemsColumns } from "@/components/Items/itemsColumns";
 import ImageComponent from "@/components/sharedUI/ImageComponent";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
+import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import { useGetAllStoresQuery } from "@/services/admin/store";
+import { useGetAllAttributesQuery } from "@/services/attributes-values/attributes";
+import { useGetAllAttributeValuesQuery } from "@/services/attributes-values/values";
 import { useGetAllCategoryQuery } from "@/services/category";
-import { useGetAllColoursQuery } from "@/services/colour";
-import { useGetAllInventoryItemsQuery } from "@/services/InventoryItem";
-import { useGetAllTypesQuery } from "@/services/types";
-import { formatCurrency, newUserTimeZoneFormatDate } from "@/utils/fx";
+import {
+  useDeleteProductsMutation,
+  useGetAllProductsQuery,
+} from "@/services/products/product-list";
+import { useGetAllProductVariantsQuery } from "@/services/products/variant/variant-product-list";
+import { newUserTimeZoneFormatDate } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Image as AntImage } from "antd";
+
+import { Dropdown, MenuProps } from "antd";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const index = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
+  const [isViewProductListModal, setIsViewProductListModal] = useState(false);
   const [filters, setFilters] = useState<{
-    store_id?: string;
-    item_id?: string;
-    "item.type_id"?: string;
-    "item.colour_id"?: string;
-    "item.category_id"?: string;
-    "item.material"?: string;
     out_of_stock?: string;
     low_stock?: number;
+    "variants.id"?: string | string[];
+    "variants.sku"?: string | string[];
+    "categories.id"?: string | string[];
+    "attributeValues.attribute.id"?: string | string[];
+    "attributeValues.id"?: string | string[];
   }>({});
 
   const router = useRouter();
-  const { data, isLoading, refetch } = useGetAllInventoryItemsQuery({
+  const { data, isLoading, refetch } = useGetAllProductsQuery({
     paginate: true,
     per_page: 15,
     page: currentPage,
     q: search,
-    include: "store,item.category",
+    include: "variants,images,attributeValues,categories",
     filter: {
       ...filters,
     },
   });
+  const [deleteProducts, { isLoading: isDeleteLoading }] =
+    useDeleteProductsMutation();
   const {
     data: getAllCategory,
     refetch: refetchCategory,
@@ -51,24 +59,10 @@ const index = () => {
     q: search,
     paginate: false,
   });
-  const {
-    data: getAllTypesData,
-    refetch: refetchTypes,
-    isLoading: isLoadingTypes,
-  } = useGetAllTypesQuery({
-    q: search,
-    paginate: false,
-  });
-  const {
-    data: getAllColoursData,
-    refetch: refetchColours,
-    isLoading: isLoadingColours,
-  } = useGetAllColoursQuery({
-    q: search,
-    paginate: false,
-  });
+
   const [formValues, setFormValues] = useState({});
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  console.log("🚀 ~ index ~ selectedItem:", selectedItem);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -81,180 +75,118 @@ const index = () => {
       value: item.id,
     };
   });
-  const transformedTypesData = getAllTypesData?.data.map((item:any) => {
-    return {
-      label: item.name,
-      value: item.id,
-    };
-  });
-  const transformedColoursData = getAllColoursData?.data.map((item:any) => {
-    return {
-      label: item.name,
-      value: item.id,
-    };
-  });
-  // get the category by  id from the data
-  const getCategoryById = (id: string) => {
-    const category = transformedCategoryData?.find((item) => item.value === id);
-    return category ? category.label : "N/A";
-  };
-  // get the type by id from the data
-  const getTypeById = (id: string) => {
-    const type = transformedTypesData?.find((item: any) => item.value === id);
-    return type ? type.label : "N/A";
-  };
-  // get the colour by id from the data
-  const getColourById = (id: string) => {
-    const colour = transformedColoursData?.find((item: any) => item.value === id);
-    return colour ? colour.label : "N/A";
-  };
-  const transformedData = data?.data.map((item) => ({
-    key: item?.id,
-    item: (
-      <div className="flex items-center gap-2">
-        <div className="h-[40px] w-[40px]">
-          <ImageComponent
-            isLoadingImage={isLoadingImage}
-            setIsLoadingImage={setIsLoadingImage}
-            aspectRatio="1/1"
-            src={item?.item?.image || "/images/empty_box.svg"}
-            width={50}
-            height={50}
-            alt="image"
-            className="h-[40px] w-[40px]  rounded-md"
-          />
-        </div>
-        <div className="capitalize">
-          <p className="font-[500] text-[15px]">{item?.item?.material}</p>
-          <p className="text-xs text-[#858D9D]">
-            sku: {item?.item?.sku || "N/A"}
-          </p>
-        </div>
-      </div>
-    ),
-    // Export-friendly version
-    item_text: `${item?.item?.material} (SKU: ${item?.item?.sku || "N/A"})`,
-    category: getCategoryById((item as any)?.item?.category_id),
-    type: getTypeById((item as any)?.item?.type_id),
-    store_name: (item as any)?.store?.name,
-    store_location: (item as any)?.store?.address,
-    color: getColourById((item as any)?.item?.colour_id),
-    barcode: (
-      <div className="flex flex-col items-center">
-        <AntImage
-          src={item?.item?.barcode! || "/images/empty_box.svg"}
-          onError={(error) => {
-            error.currentTarget.src = "/images/empty_box.svg";
-          }}
-          width={40}
-          height={30}
-          alt="barcode"
-          className="border rounded-md object-contain"
-          preview={{
-            mask: (
-              <div className="flex flex-col items-center">
-                <Icon icon="carbon:view" width="16" height="16" />
-                <span className="text-xs">View</span>
-              </div>
-            ),
-            maskClassName: "custom-mask flex flex-col items-center",
-            rootClassName: "custom-preview-root",
-            style: { backgroundColor: "#fff" },
-            imageRender: () => {
+
+  // Note: We no longer use a single shared `items` that depends on selectedItem.
+  // Instead, we build per-row menu items using the local `prod` in transformedData.
+  // Build transformed data for core products with counts
+  const transformedData = useMemo(
+    () =>
+      data?.data.map((prod) => ({
+        key: prod?.id,
+        product: (
+          <div className="flex items-center gap-3 min-w-[220px]">
+            <div className="h-10 w-10 flex-shrink-0">
+              <ImageComponent
+                isLoadingImage={isLoadingImage}
+                setIsLoadingImage={setIsLoadingImage}
+                aspectRatio="1/1"
+                src={prod?.images?.[0]?.url || "/images/empty_box.svg"}
+                width={40}
+                height={40}
+                alt="thumb"
+                className="h-10 w-10 rounded-md object-cover"
+              />
+            </div>
+            <div className="flex flex-col">
+              <Link
+                href={`/products/${prod?.id}`}
+                className="font-[600] text-base text-black hover:underline line-clamp-1"
+                title={prod?.name}
+              >
+                {prod?.name || "Unnamed product"}
+              </Link>
+              {prod?.short_description ? (
+                <p className="text-[11px] text-[#667085] line-clamp-1">
+                  {prod?.short_description.length > 15
+                    ? prod?.short_description.substring(0, 15) + "..."
+                    : prod?.short_description}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ),
+        product_text: prod?.name || "",
+        variants_count: prod?.variants?.length || 0,
+        images_count: prod?.images?.length || 0,
+        dateInitiated: newUserTimeZoneFormatDate(
+          prod?.created_at || prod?.updated_at,
+          "DD/MM/YYYY"
+        ),
+        action: (
+          <div className="flex items-center space-x-2">
+            {(() => {
+              const items: MenuProps["items"] = [
+                {
+                  label: (
+                    <Link href={`/products/${prod?.id}`}>
+                      <button
+                        className="flex w-full items-center gap-2"
+                        type="button"
+                      >
+                        View
+                      </button>
+                    </Link>
+                  ),
+                  key: "view",
+                },
+                {
+                  label: (
+                    <Link href={`/products/edit/${prod?.id}`}>
+                      <button
+                        className="flex w-full items-center gap-2"
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                    </Link>
+                  ),
+                  key: "edit",
+                },
+                {
+                  label: (
+                    <button
+                      onClick={() => {
+                        setSelectedItem(prod);
+                        setShowDeleteModal(true);
+                      }}
+                      className="flex w-full items-center text-red-500 gap-2"
+                      type="button"
+                    >
+                      Delete
+                    </button>
+                  ),
+                  key: "delete",
+                },
+              ];
               return (
-                <div className="flex flex-col items-center justify-center gap-3 h-full">
-                  {/* <p className="text-sm font-medium">
-                    SKU: {item?.item?.sku || "N/A"}
-                  </p> */}
-                  <img
-                    src={item?.item?.barcode! || "/images/empty_box.svg"}
-                    style={{
-                      width: "120px", // Reduced from 250px to 120px
-                      height: "auto",
-                      objectFit: "contain",
+                <Dropdown menu={{ items }} trigger={["click"]}>
+                  <Icon
+                    onClick={(e) => {
+                      e.preventDefault();
                     }}
-                    alt="barcode"
+                    icon="mdi:dots-vertical-circle-outline"
+                    width="30"
+                    height="30"
+                    className="text-gray-600 cursor-pointer"
                   />
-                  <div className="flex flex-row gap-2 mt-10">
-                    <button
-                      className="bg-primary-40 text-white px-3 py-1.5 rounded-md text-xs flex items-center gap-1"
-                      onClick={() => {
-                        const printWindow = window.open("", "_blank");
-                        if (printWindow) {
-                          (printWindow.document as any).write(`
-                              <html>
-                                <head><title>Print Barcode</title></head>
-                                <body style="margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
-                                 
-                                  <img 
-                                    src="${
-                                      item?.item?.barcode! ||
-                                      "/images/empty_box.svg"
-                                    }" 
-                                    style="max-width: 100%; width: 120px; height: auto;"
-                                    onload="window.print(); window.close();"
-                                  />
-                                </body>
-                              </html>
-                            `);
-                          printWindow.document.close();
-                        }
-                      }}
-                    >
-                      <Icon icon="ph:printer" width="12" height="12" />
-                      Print Small
-                    </button>
-                    <button
-                      className="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs flex items-center gap-1"
-                      onClick={() => {
-                        const printWindow = window.open("", "_blank");
-                        if (printWindow) {
-                          printWindow.document.write(`
-                              <html>
-                                <head><title>Print Barcode</title></head>
-                                <body style="margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
-                                  
-                                  <img 
-                                    src="${
-                                      item?.item?.barcode! ||
-                                      "/images/empty_box.svg"
-                                    }"
-                                    style="max-width: 100%; width: 200px; height: auto;"
-                                    onload="window.print(); window.close();"
-                                  />
-                                </body>
-                              </html>
-                            `);
-                          printWindow.document.close();
-                        }
-                      }}
-                    >
-                      <Icon icon="ph:printer-fill" width="12" height="12" />
-                      Print Large
-                    </button>
-                  </div>
-                </div>
+                </Dropdown>
               );
-            },
-          }}
-        />
-        <span className="text-xs mt-1 text-gray-500">
-          {item?.item?.sku || "N/A"}
-        </span>
-      </div>
-    ),
-    // Export-friendly version
-    barcode_text: item?.item?.sku || "N/A",
-    weight: (item as any)?.item?.weight,
-    price: formatCurrency((item as any)?.item?.price || 0),
-    // Export-friendly version
-    price_text: (item as any)?.item?.price || 0,
-    quantity: item?.quantity || 0,
-    dateInitiated: newUserTimeZoneFormatDate(
-      item?.created_at || item?.updated_at,
-      "DD/MM/YYYY"
-    ),
-  }));
+            })()}
+          </div>
+        ),
+      })) || [],
+    [data, isLoadingImage]
+  );
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
@@ -272,6 +204,25 @@ const index = () => {
     per_page: 100,
   });
 
+  // Get attributes data for filter options
+  const { data: attributesData } = useGetAllAttributesQuery({
+    paginate: false,
+    include: "values",
+  });
+
+  // Get attribute values data for filter options
+  const { data: attributeValuesData } = useGetAllAttributeValuesQuery({
+    paginate: false,
+    include: "attribute",
+  });
+
+  // Get product variants data for filter options
+  const { data: variantsData } = useGetAllProductVariantsQuery({
+    paginate: false,
+    per_page: 200,
+    include: "product",
+  });
+
   const storeOptions =
     storesData?.data?.map((store: any) => ({
       label: store.name,
@@ -279,30 +230,90 @@ const index = () => {
     })) || [];
 
   const itemOptions =
-    data?.data?.map((item) => ({
-      label: `${item.item?.material} - ${item.item?.weight || "N/A"}g`,
-      value: item.item?.id,
+    data?.data?.map((prod: any) => ({
+      label: prod?.name || "Unnamed product",
+      value: prod?.id,
     })) || [];
 
-  // Create export columns with text versions
-  const exportColumns = itemsColumns
-    .filter(
-      (column: any) =>
-        column.key !== "actions" && column.dataIndex !== "actions"
-    )
-    .map((column: any) => {
-      // Map complex fields to their text versions
-      if (column.dataIndex === "item") {
-        return { ...column, dataIndex: "item_text" };
-      }
-      if (column.dataIndex === "barcode") {
-        return { ...column, dataIndex: "barcode_text" };
-      }
-      if (column.dataIndex === "price") {
-        return { ...column, dataIndex: "price_text" };
-      }
-      return column;
-    });
+  // Transform attributes data for filter options
+  const attributeOptions =
+    attributesData?.data?.map((attribute: any) => ({
+      label: attribute.name,
+      value: attribute.id,
+    })) || [];
+
+  // Transform attribute values data for filter options
+  const attributeValueOptions =
+    attributeValuesData?.data?.map((attributeValue: any) => ({
+      label: `${attributeValue.attribute?.name}: ${attributeValue.value}`,
+      value: attributeValue.id,
+    })) || [];
+
+  // Transform variants data for filter options
+  const variantOptions =
+    variantsData?.data?.map((variant: any) => ({
+      label: `${variant.name} (${variant.product?.name || "Product"})`,
+      value: variant.id,
+    })) || [];
+
+  // Transform variants SKU data for filter options
+  const variantSkuOptions =
+    variantsData?.data
+      ?.filter((variant: any) => variant.sku)
+      ?.map((variant: any) => ({
+        label: `${variant.sku} - ${variant.name}`,
+        value: variant.sku,
+      })) || [];
+
+  // Define columns for core products
+  const columns = useMemo(
+    () => [
+      {
+        title: "Product",
+        dataIndex: "product",
+        width: 200,
+      },
+      {
+        title: "Variants",
+        dataIndex: "variants_count",
+        width: 120,
+      },
+      {
+        title: "Images",
+        dataIndex: "images_count",
+        width: 120,
+      },
+      {
+        title: "Created",
+        dataIndex: "dateInitiated",
+        width: 160,
+        sorter: {
+          compare: (a: any, b: any) =>
+            new Date(a.dateInitiated).getTime() -
+            new Date(b.dateInitiated).getTime(),
+          multiple: 1,
+        },
+      },
+      {
+        title: "Action",
+        dataIndex: "action",
+        width: 50,
+        fixed: "right" as const,
+      },
+    ],
+    []
+  );
+
+  // Create export columns (use text versions where needed)
+  const exportColumns = useMemo(
+    () => [
+      { title: "Product", dataIndex: "product_text" },
+      { title: "Variants", dataIndex: "variants_count" },
+      { title: "Images", dataIndex: "images_count" },
+      { title: "Created", dataIndex: "dateInitiated" },
+    ],
+    []
+  );
 
   return (
     <div className={``}>
@@ -318,7 +329,9 @@ const index = () => {
         headerText="All Products"
         showAddButton={true}
         btnText="Add New Product"
-        onClick={() => {}}
+        onClick={() => {
+          router.push("/products/create");
+        }}
       />
       <SharedLayout>
         <div className="">
@@ -331,17 +344,41 @@ const index = () => {
             setSelectedFilterTypes={setSelectedFilterTypes}
             storeOptions={storeOptions}
             categoryOptions={transformedCategoryData || []}
-            typeOptions={transformedTypesData || []}
-            colourOptions={transformedColoursData || []}
+            typeOptions={[]}
+            colourOptions={[]}
             itemOptions={itemOptions as any}
+            // Product-specific filter options
+            variantOptions={variantOptions}
+            variantSkuOptions={variantSkuOptions}
+            attributeOptions={attributeOptions}
+            attributeValueOptions={attributeValueOptions}
+            filterKeys={{
+              // keep basic keys available but use categories.id instead of item.category_id
+              essentialKeys: ["categories.id"],
+              advancedKeys: [
+                "variants.id",
+                "variants.sku",
+                "attributeValues.attribute.id",
+                "attributeValues.id",
+                "out_of_stock",
+                "low_stock",
+              ],
+              categoryKey: "categories.id",
+              stockKey: "out_of_stock",
+              lowStockKey: "low_stock",
+              variantsIdKey: true,
+              variantsSkuKey: true,
+              attributeKey: true,
+              attributeValueKey: true,
+            }}
           />
         </div>
         <TableMainComponent
-          DeleteModalText="Are you sure you want to delete this item?"
+          DeleteModalText={selectedItem?.name}
           data={selectedItem}
-          deleteCardApi={() => {}}
-          isDeleteLoading={false}
-          printTitle="Inventory Items"
+          deleteCardApi={deleteProducts}
+          isDeleteLoading={isDeleteLoading}
+          printTitle="Products"
           showExportButton={true}
           showPrintButton={true}
           showDeleteModal={showDeleteModal}
@@ -349,7 +386,7 @@ const index = () => {
           formValues={formValues}
           setShowDeleteModal={setShowDeleteModal}
           isLoading={isLoading}
-          columnsTable={itemsColumns as any}
+          columnsTable={columns as any}
           exportColumns={exportColumns as any}
           transformedData={transformedData}
         />
@@ -371,6 +408,16 @@ const index = () => {
           </div>
         </div>
       </SharedLayout>
+      {isViewProductListModal && (
+        <PlannerModal
+          modalOpen={isViewProductListModal}
+          setModalOpen={setIsViewProductListModal}
+          className=""
+          width={850}
+          title="View ProductList"
+          onCloseModal={() => setIsViewProductListModal(false)}
+        ></PlannerModal>
+      )}
     </div>
   );
 };

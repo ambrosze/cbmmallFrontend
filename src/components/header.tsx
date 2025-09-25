@@ -11,12 +11,10 @@ import { useGetAllProfileQuery } from "@/services/profile";
 import { UserResponseTopLevel } from "@/types/loginInUserType";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Badge, Button, Dropdown, Empty, Space, Tooltip } from "antd";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useLocalStorage } from "react-use";
-import Avatar from "../../public/images/Avatar.png";
 import InputSearch from "./Input/InputSearch";
 import { initialsFromName } from "./Profile/ProfileAvatarCard";
 import PlannerModal from "./sharedUI/PlannerModal";
@@ -64,7 +62,7 @@ const Header = ({
     {
       q: storeSearch,
       page: currentPage,
-      include: "manager",
+      // include: "manager",
       per_page: 15,
       paginate: false,
     },
@@ -571,13 +569,19 @@ const Header = ({
                 menu={{ items }}
                 trigger={["click"]}
               >
-                <Image
-                  src={profile?.profile_photo_url ?? Avatar}
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                  alt="avatar"
-                />
+                <a onClick={(e) => e.preventDefault()}>
+                  {profile?.profile_photo_url ? (
+                    <img
+                      src={profile?.profile_photo_url}
+                      alt={fullName}
+                      className="w-[40px] h-[40px] cursor-pointer object-cover rounded-full ring-4 ring-blue-500/40"
+                    />
+                  ) : (
+                    <div className="w-[40px] h-[40px] rounded-full cursor-pointer bg-gradient-to-br from-primary-40/20 to-primary-40/40 flex items-center justify-center text-base font-semibold text-primary-900 ring-4 ring-blue-500/40">
+                      {initialsFromName(fullName || "User")}
+                    </div>
+                  )}
+                </a>
               </Dropdown>
             </div>
 

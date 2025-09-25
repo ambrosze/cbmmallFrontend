@@ -199,6 +199,6 @@ export const StaffForm = ({
           </div>
         </div>
       </form>
-    </div>
+  </div>
   );
 };

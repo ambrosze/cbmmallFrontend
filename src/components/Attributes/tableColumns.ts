@@ -47,6 +47,6 @@ export const columnsTable: TableColumnsType<any> = [
     title: "Action",
     fixed: "right",
     dataIndex: "action",
-    width: 140,
+    width: 50,
   },
 ];

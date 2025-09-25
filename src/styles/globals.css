@@ -336,3 +336,115 @@ h6 {
 .group:hover .group-hover\:opacity-100 {
   opacity: 1;
 }
+/* Quill Editor Styles */
+
+.ql-content h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+.ql-content h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+.ql-content h3 {
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-bottom: 0.4em;
+}
+.ql-content h4 {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 0.3em;
+}
+.ql-content h5 {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-bottom: 0.2em;
+}
+.ql-content h6 {
+  font-size: 1em;
+  font-weight: bold;
+  margin-bottom: 0.1em;
+}
+
+/* Quill Editor Size Styles */
+.ql-content .ql-size-small {
+  font-size: 0.75em;
+}
+.ql-content .ql-size-large {
+  font-size: 1.5em;
+}
+.ql-content .ql-size-huge {
+  font-size: 2.5em;
+}
+
+.ql-content ul {
+  list-style-type: disc;
+  padding-left: 2em;
+  margin-bottom: 1em;
+}
+.ql-content ol {
+  list-style-type: decimal;
+  padding-left: 2em;
+  margin-bottom: 1em;
+}
+.ql-content blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 16px;
+  margin: 10px 0;
+  font-style: italic;
+}
+.ql-content p {
+  margin-bottom: 0.5em;
+}
+.ql-content a {
+  color: #0d6efd;
+  text-decoration: underline;
+}
+.ql-content strong {
+  font-weight: bold;
+}
+.ql-content em {
+  font-style: italic;
+}
+.ql-content s {
+  text-decoration: line-through;
+}
+
+/* Ensure bullet styles render correctly inside Quill content */
+.ql-content ul,
+.ql-content ul li {
+  list-style-type: disc !important;
+  list-style-position: outside;
+}
+.ql-content ol,
+.ql-content ol li {
+  list-style-type: decimal !important;
+  list-style-position: outside;
+}
+
+/* Handle Quill bullet lists that are incorrectly wrapped in <ol> tags */
+.ql-content ol li[data-list="bullet"],
+.ql-content ol[data-list="bullet"] li {
+  list-style-type: disc !important;
+  list-style-position: outside;
+}
+
+/* Handle Quill ordered lists */
+.ql-content ol li[data-list="ordered"],
+.ql-content ol[data-list="ordered"] li {
+  list-style-type: decimal !important;
+  list-style-position: outside;
+}
+
+/* Prevent accidental counters or list styles on headings inside rich content */
+.ql-content h1,
+.ql-content h2,
+.ql-content h3,
+.ql-content h4,
+.ql-content h5,
+.ql-content h6 {
+  list-style: none !important;
+}

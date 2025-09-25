@@ -1,6 +1,5 @@
 import { api } from "@/services";
 
-
 interface CreateProductsType {
   name: string;
   price: number;
@@ -82,22 +81,26 @@ export const variantProductListApi = api.injectEndpoints({
       {
         product_variant_id: string;
         include?: string;
+        append?: string;
       }
     >({
       query: ({
         product_variant_id,
         include,
+        append,
       }: {
         product_variant_id: string; //product_variant_id
         include?: string; //product.categories
+        append?: string;
       }) => {
         const params: any = {};
 
         if (include) params.include = include;
+        if (append) params.append = append;
         return {
           url: `product-variants/${product_variant_id}`,
           method: "GET",
-
+          params,
           providesTags: ["product-variants", "products"],
         };
       },

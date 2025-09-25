@@ -1,10 +1,18 @@
-
+import {
+  IProductListResponse,
+  ISingleProductResponse,
+} from "@/types/productTypes";
 import { api } from "..";
-
+interface CreateUpdateType {
+  name: string;
+  short_description: string;
+  description: string;
+}
 interface CreateProductsType {
   name: string;
   price: number;
   compare_price: null | number;
+  cost_price: number;
   quantity: number;
   short_description: string;
   description: string;
@@ -13,12 +21,24 @@ interface CreateProductsType {
   attribute_value_ids: string[]; //attribute value ids
   is_serialized: 1 | 0;
   serial_number: string; //required_if:is_serialized-true|unique
+  variants: {
+    name: string;
+    price: number;
+    compare_price: null | number;
+    cost_price: number;
+    quantity: number;
+    is_serialized: 1 | 0;
+    serial_number?: string; // required if is_serialized === 1 and should be unique
+    images?: string[];
+    attribute_value_ids?: string[];
+    batch_number?: string;
+  }[];
 }
 export const productListApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getAllProducts: builder.query<
-      any,
+      IProductListResponse,
       {
         sort?: string;
         q?: string;
@@ -78,26 +98,30 @@ export const productListApi = api.injectEndpoints({
       },
     }),
     getSingleProducts: builder.query<
-      any,
+      ISingleProductResponse,
       {
         id: string;
         include?: string;
+        append?: string;
       }
     >({
       query: ({
         id,
         include,
+        append,
       }: {
         id: string; //product_id
         include?: string; //variants,images,attributeValues,categories
+        append?: string;
       }) => {
         const params: any = {};
 
         if (include) params.include = include;
+        if (append) params.append = append;
         return {
           url: `products/${id}`,
           method: "GET",
-
+          params,
           providesTags: ["products"],
         };
       },
@@ -115,7 +139,7 @@ export const productListApi = api.injectEndpoints({
     }),
     updateProducts: builder.mutation<
       any,
-      { id: string; body: CreateProductsType }
+      { id: string; body: CreateUpdateType }
     >({
       query: ({ id, body }) => ({
         url: `products/${id}`,

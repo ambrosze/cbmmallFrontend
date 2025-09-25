@@ -131,8 +131,8 @@ const ImageComponent = ({
               loading={shouldPrioritize ? undefined : "lazy"}
               onError={() => {
                 // Switch to local fallback image on error/timeouts
-                if (imageSrc !== "/images/empty_box.svg") {
-                  setImageSrc("/images/empty_box.svg");
+                if (imageSrc !== "/images/loading_img.png") {
+                  setImageSrc("/images/loading_img.png");
                 }
                 setIsLoadingImage(false);
               }}
