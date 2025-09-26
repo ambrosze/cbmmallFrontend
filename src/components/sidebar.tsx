@@ -49,7 +49,6 @@ const Sidebar = ({
     if (path.includes("/admin/stocks")) return ["53", "sub4"];
     if (path.includes("/admin/staffs")) return ["50", "sub4"];
     if (path.includes("/admin/daily-gold-price")) return ["55", "sub4"];
-    if (path.includes("/stores")) return ["51", "sub4"];
     if (path.includes("/admin/roles")) return ["52", "sub4"];
     if (path.includes("/admin/discounts")) return ["56", "sub4"];
 
@@ -71,6 +70,14 @@ const Sidebar = ({
     if (path.includes("/attributes/colours")) return ["32", "sub3"];
     if (path.includes("/help")) return ["100"];
     if (path.includes("/settings")) return ["101"];
+    // stores
+    if (path.includes("/stores/inventories")) return ["30", "sub3"];
+    if (path.includes("/stores")) return ["31", "sub3"];
+    // people
+    if (path.includes("/people/customers")) return ["40", "sub5"];
+    if (path.includes("/people/suppliers")) return ["41", "sub5"];
+    if (path.includes("/people/users")) return ["42", "sub5"];
+
 
     return ["1"]; // Default to dashboard
   };
@@ -78,7 +85,7 @@ const Sidebar = ({
   const items: MenuItem[] = [
     {
       key: "1",
-      icon: <Icon icon="mage:dashboard" width="20" height="20" />,
+      icon: <Icon icon="mage:dashboard" width="28" height="28" />,
       label: <span className="font-[500]">Dashboard</span>,
       onClick: () => {
         router.push("/dashboard");
@@ -88,7 +95,7 @@ const Sidebar = ({
     {
       key: "sub1",
       label: <span className="font-[500]">Products</span>,
-      icon: <Icon icon="fluent:box-24-regular" width="20" height="20" />,
+      icon: <Icon icon="fluent:box-24-regular" width="28" height="28" />,
       children: [
         {
           key: "5",
@@ -154,7 +161,7 @@ const Sidebar = ({
     {
       key: "sub2",
       label: <span className="font-[500]">Sales</span>,
-      icon: <Icon icon="mynaui:cart" width="20" height="20" />,
+      icon: <Icon icon="mynaui:cart" width="28" height="28" />,
       children: [
         {
           key: "20",
@@ -177,41 +184,108 @@ const Sidebar = ({
       ],
     },
 
-    // {
-    //   key: "sub3",
-    //   label: "Attributes",
-    //   icon: <Icon icon="system-uicons:list-add" width="21" height="21" />,
-    //   children: [
-    //     {
-    //       key: "30",
-    //       label: "Category",
-    //       onClick: () => {
-    //         router.push("/attributes/category");
-    //       },
-    //     },
-    //     {
-    //       key: "31",
-    //       label: "Types",
-    //       onClick: () => {
-    //         router.push("/attributes/types");
-    //       },
-    //     },
-    //     {
-    //       key: "32",
-    //       label: "Colours",
-    //       onClick: () => {
-    //         router.push("/attributes/colours");
-    //       },
-    //     },
-    //   ],
-    // },
+    {
+      key: "sub3",
+      label: "Stores",
+      icon: <Icon icon="ant-design:shop-outlined" width="26" height="26" />,
+      children: [
+        {
+          key: "30",
+          label: "All Inventory",
+          icon: <Icon icon="ic:round-inventory" width="20" height="20" />,
+          onClick: () => {
+            router.push("/stores/inventories");
+          },
+        },
+        {
+          key: "31",
+          icon: <Icon icon="pepicons-pencil:list" width="20" height="20" />,
+          label: "Stores",
+          onClick: () => {
+            router.push("/stores");
+          },
+        },
+        // {
+        //   key: "31",
+        //   label: "Types",
+        //   onClick: () => {
+        //     router.push("/attributes/types");
+        //   },
+        // },
+      ],
+    },
+    {
+      key: "sub2",
+      label: <span className="font-[500]">Sales</span>,
+      icon: <Icon icon="mynaui:cart" width="28" height="28" />,
+      children: [
+        {
+          key: "20",
+          icon: <Icon icon="iconoir:home-sale" width="20" height="20" />,
+          label: <span className="">Sales</span>,
+          onClick: () => {
+            router.push("/sales/sales-list");
+          },
+        },
+
+        {
+          key: "22",
+          label: <span className="">Pos</span>,
+          icon: <Icon icon="mdi:line-scan" width="20" height="20" />,
+          onClick: () => {
+            router.push("/sales/pos");
+          },
+        },
+        // { key: "23", label: "Return Item" },
+      ],
+    },
+
+    {
+      key: "sub5",
+      label: "People",
+      icon: <Icon icon="mdi:account-group-outline" width="26" height="26" />,
+      children: [
+        {
+          key: "40",
+          label: "Customers",
+          icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
+          onClick: () => {
+            router.push("/people/customers");
+          },
+        },
+        {
+          key: "41",
+          icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
+          label: "Suppliers",
+          onClick: () => {
+            router.push("/people/suppliers");
+          },  
+        },
+        {
+          key: "42",
+          icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
+          label: "Users",
+          onClick: () => {
+            router.push("/people/users");
+          },
+        },
+
+        // {
+        //   key: "31",
+        //   label: "Types",
+        //   onClick: () => {
+        //     router.push("/attributes/types");
+        //   },
+        // },
+      ],
+    },
     ...(loginResponse?.user.is_admin
       ? [
           {
             key: "sub4",
             label: <span className="font-[500]">Admin</span>,
             icon: (
-              <Icon icon="eos-icons:admin-outlined" width="20" height="20" />
+              <Icon icon="eos-icons:admin-outlined" width="28" height="28" />
             ),
             children: [
               {
@@ -252,20 +326,7 @@ const Sidebar = ({
                   router.push("/admin/discounts");
                 },
               },
-              {
-                key: "51",
-                icon: (
-                  <Icon
-                    icon="streamline:shopping-store-2-store-shop-shops-stores"
-                    width="16"
-                    height="16"
-                  />
-                ),
-                label: "Stores",
-                onClick: () => {
-                  router.push("/stores");
-                },
-              },
+
               {
                 key: "52",
                 icon: (
@@ -312,7 +373,7 @@ const Sidebar = ({
     {
       key: "100",
       icon: (
-        <Icon icon="material-symbols:info-outline" width="20" height="20" />
+        <Icon icon="material-symbols:info-outline" width="28" height="28" />
       ),
       label: "Help",
       onClick: () => {
@@ -321,7 +382,7 @@ const Sidebar = ({
     },
     {
       key: "101",
-      icon: <Icon icon="solar:user-linear" width="20" height="20" />,
+      icon: <Icon icon="solar:user-linear" width="28" height="28" />,
       label: "Profile",
       onClick: () => {
         router.push("/profile");
@@ -336,7 +397,7 @@ const Sidebar = ({
         <div className="flex justify-between gap-4 items-baseline px-5">
           <Image
             src={Logo}
-            width={160}
+            width={200}
             height={80}
             className="py-[21px]"
             alt={"Goldwise Logo"}

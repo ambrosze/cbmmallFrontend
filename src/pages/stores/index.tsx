@@ -16,6 +16,7 @@ import {
 } from "@/services/admin/staff";
 import {
   useCreateStoreMutation,
+  useDeleteStoreMutation,
   useGetAllStoresQuery,
   useUpdateStoreMutation,
 } from "@/services/admin/store";
@@ -38,9 +39,12 @@ const index = () => {
   const router = useRouter();
   const [formValues, setFormValues] = useState({
     name: "",
+    email: "",
+    phone_number: "",
+    country: "",
+    city: "",
     address: "",
-    manager_staff_id: "",
-    is_headquarters: 0,
+    is_warehouse: 0,
   });
   const [selectedItem, setSelectedItem] = useState<IStoreDatum | null>(null);
   console.log("🚀 ~ index ~ selectedItem:", selectedItem);
@@ -63,19 +67,9 @@ const index = () => {
     paginate: true,
   });
   console.log("🚀 ~ index ~ data:", data);
-  const {
-    data: allStaff,
-    refetch: refetchStaff,
-    isLoading: isLoadingStaff,
-  } = useGetAllStaffQuery({
-    q: search,
-    page: currentPage,
-    include: "user,managedStore,store",
-    per_page: 15,
-    paginate: false,
-  });
-  const [deleteStaff, { isLoading: isDeleteLoading }] =
-    useDeleteStaffMutation();
+  
+  const [deleteStore, { isLoading: isDeleteLoading }] =
+    useDeleteStoreMutation();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues((prev: any) => ({
@@ -88,12 +82,15 @@ const index = () => {
       setFormValues({
         name: selectedItem?.name || "",
         address: selectedItem?.address || "",
-        manager_staff_id: selectedItem?.manager_staff_id || "",
-        is_headquarters: selectedItem?.is_headquarters || 0,
+        email: selectedItem?.email || "",
+        phone_number: selectedItem?.phone_number || "",
+        country: selectedItem?.country || "",
+        city: selectedItem?.city || "",
+        is_warehouse: selectedItem?.is_warehouse || 0,
       });
       setChecked(
-        (selectedItem as any)?.is_headquarters === "1" ||
-          (selectedItem as any)?.is_headquarters === 1
+        (selectedItem as any)?.is_warehouse === "1" ||
+          (selectedItem as any)?.is_warehouse === 1
       );
     }
   }, [selectedItem, showEditModal]);
@@ -104,14 +101,30 @@ const index = () => {
       setFormValues({
         name: "",
         address: "",
-        manager_staff_id: "",
-        is_headquarters: 0,
+        email: "",
+        phone_number: "",
+        country: "",
+        city: "",
+        is_warehouse: 0,
       });
     }
   }, [showEditModal, isOpenModal]);
   const transformedData = data?.data?.map((item) => ({
     key: item?.id,
-    name: <div className="flex items-center gap-2">{item?.name}</div>,
+    name: <div className="flex items-center gap-2 font-semibold">{item?.name}</div>,
+    email: <div className="flex items-center gap-2">{item?.email || "-"}</div>,
+    phone_number: (
+      <div className="flex items-center gap-2">{item?.phone_number || "-"}</div>
+    ),
+    phone_number_text: item?.phone_number || "-",
+    email_text: item?.email || "-",
+    country_text: item?.country || "-",
+    city_text: item?.city || "-",
+    country: (
+      <div className="flex items-center gap-2">{item?.country || "-"}</div>
+    ),
+    city: <div className="flex items-center gap-2">{item?.city || "-"}</div>,
+
     // Export-friendly version
     name_text: item?.name,
     address: (
@@ -119,14 +132,14 @@ const index = () => {
     ),
     // Export-friendly version
     address_text: item?.address || "-",
-    is_headquarters: (
+    is_warehouse: (
       <div className="flex items-center gap-2">
-        {(item as any)?.is_headquarters === "1" ||
-        (item as any)?.is_headquarters === 1 ? (
+        {(item as any)?.is_warehouse === "1" ||
+        (item as any)?.is_warehouse === 1 ? (
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-md">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-primary-40 text-white shadow-md">
               <Icon icon="mdi:crown" className="mr-1" width="14" height="14" />
-              Headquarters
+              Warehouse
             </span>
           </div>
         ) : (
@@ -137,10 +150,9 @@ const index = () => {
       </div>
     ),
     // Export-friendly version
-    is_headquarters_text:
-      (item as any)?.is_headquarters === "1" ||
-      (item as any)?.is_headquarters === 1
-        ? "Headquarters"
+    is_warehouse_text:
+      (item as any)?.is_warehouse === "1" || (item as any)?.is_warehouse === 1
+        ? "Warehouse"
         : "Branch",
     dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
 
@@ -192,11 +204,23 @@ const index = () => {
       if (column.dataIndex === "name") {
         return { ...column, dataIndex: "name_text" };
       }
+      if (column.dataIndex === "email") {
+        return { ...column, dataIndex: "email_text" };
+      }
+      if (column.dataIndex === "phone_number") {
+        return { ...column, dataIndex: "phone_number_text" };
+      }
+      if (column.dataIndex === "country") {
+        return { ...column, dataIndex: "country_text" };
+      }
+      if (column.dataIndex === "city") {
+        return { ...column, dataIndex: "city_text" };
+      }
       if (column.dataIndex === "address") {
         return { ...column, dataIndex: "address_text" };
       }
-      if (column.dataIndex === "is_headquarters") {
-        return { ...column, dataIndex: "is_headquarters_text" };
+      if (column.dataIndex === "is_warehouse") {
+        return { ...column, dataIndex: "is_warehouse_text" };
       }
       return column;
     });
@@ -204,15 +228,6 @@ const index = () => {
     setCurrentPage(page);
     refetch();
   };
-  const staffList = allStaff?.data.map((item) => {
-    return {
-      label:
-        capitalizeOnlyFirstLetter(item.user?.first_name) +
-        " " +
-        capitalizeOnlyFirstLetter(item.user?.last_name),
-      value: item.id,
-    };
-  });
 
   const handleSubmit = async () => {
     try {
@@ -225,11 +240,14 @@ const index = () => {
       setFormErrors({});
       let payload = {
         name: formValues.name,
-        ...(formValues.manager_staff_id && {
-          manager_staff_id: formValues.manager_staff_id,
+        ...(formValues.email && { email: formValues.email }),
+        ...(formValues.phone_number && {
+          phone_number: formValues.phone_number,
         }),
+        ...(formValues.country && { country: formValues.country }),
+        ...(formValues.city && { city: formValues.city }),
         ...(formValues.address && { address: formValues.address }),
-        is_headquarters: checked ? 1 : 0,
+        is_warehouse: checked ? 1 : 0,
       };
 
       // remove middle name if it is empty
@@ -296,11 +314,14 @@ const index = () => {
       setFormErrors({});
       let payload = {
         name: formValues.name,
-        ...(formValues.manager_staff_id && {
-          manager_staff_id: formValues.manager_staff_id,
+        ...(formValues.email && { email: formValues.email }),
+        ...(formValues.phone_number && {
+          phone_number: formValues.phone_number,
         }),
+        ...(formValues.country && { country: formValues.country }),
+        ...(formValues.city && { city: formValues.city }),
         ...(formValues.address && { address: formValues.address }),
-        is_headquarters: checked ? 1 : 0,
+        is_warehouse: checked ? 1 : 0,
       };
 
       // Proceed with server-side submission
@@ -332,6 +353,8 @@ const index = () => {
       });
       refetch();
       setIsOpenModal(false);
+      setShowEditModal(false);
+      setSelectedItem(null);
     } catch (err: any) {
       if (err.name === "ValidationError") {
         // Handle client-side validation errors
@@ -390,8 +413,11 @@ const index = () => {
           setFormValues({
             name: "",
             address: "",
-            manager_staff_id: "",
-            is_headquarters: 0,
+            email: "",
+            phone_number: "",
+            country: "",
+            city: "",
+            is_warehouse: 0,
           });
         }}
       />
@@ -405,7 +431,7 @@ const index = () => {
                 <>{capitalizeOnlyFirstLetter(selectedItem?.name!)}</>
               }
               data={selectedItem}
-              deleteCardApi={deleteStaff}
+              deleteCardApi={deleteStore}
               isDeleteLoading={isDeleteLoading}
               printTitle="Stores"
               showExportButton={true}
@@ -478,7 +504,6 @@ const index = () => {
             error={error}
             setChecked={setChecked}
             checked={checked}
-            staffList={staffList}
             btnText="Create Store"
             formErrors={formErrors}
             formValues={formValues}
@@ -506,7 +531,6 @@ const index = () => {
           <StoreForm
             setChecked={setChecked}
             checked={checked}
-            staffList={staffList}
             error={errorUpdate}
             setFormValues={setFormValues}
             btnText="Edit Store"

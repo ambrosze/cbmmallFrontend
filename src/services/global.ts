@@ -2,6 +2,16 @@
 import { UserProfileTopLevel } from "@/types/userProfileTypes";
 import { api } from ".";
 import { CountryTopLevel, StateTopLevel } from "@/types/globalTypes";
+export interface IEnumsResponse {
+  enum: string;
+  values: IEnumsValue[];
+}
+
+export interface IEnumsValue {
+  name: string;
+  value: string;
+  label: string;
+}
 
 export const authApi = api.injectEndpoints({
   overrideExisting: true,
@@ -22,6 +32,31 @@ export const authApi = api.injectEndpoints({
           method: "GET",
           params,
           providesTags: ["user"],
+        };
+      },
+    }),
+    getAllEnums: builder.query<
+      IEnumsResponse,
+      {
+        enum?:
+          | "NotificationLevel"
+          | "AttributeType"
+          | "PaymentMethod"
+          | "SaleChannel"
+          | "ScrapeType"
+          | "ConditionStatus"
+          | "Status"
+          | "InventoryStatus";
+      }
+    >({
+      query: ({ enum: enumValue }: { enum?: string }) => {
+        const params: any = {};
+        if (enumValue) params.enum = enumValue;
+        return {
+          url: "enums",
+          method: "GET",
+          params,
+          providesTags: ["enum"],
         };
       },
     }),
@@ -102,6 +137,7 @@ export const authApi = api.injectEndpoints({
 
 export const {
   useGetUserProfileQuery,
+  useGetAllEnumsQuery,
   useGetAllCountriesQuery,
   useGetAllStatesQuery,
 } = authApi;

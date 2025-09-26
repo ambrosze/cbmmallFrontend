@@ -33,7 +33,7 @@ export interface StockTransferStore {
   id: string;
   name: string;
   address: string;
-  is_headquarters: string;
+  is_warehouse: string;
   manager_staff_id: string;
   created_at: string;
   updated_at: string;
@@ -106,7 +106,7 @@ export interface SingleStockTransferStore {
   id: string;
   name: string;
   address: string;
-  is_headquarters: string;
+  is_warehouse: string;
   manager_staff_id: string;
   created_at: string;
   updated_at: string;

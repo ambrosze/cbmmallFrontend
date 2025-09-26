@@ -76,7 +76,10 @@ export const staffSchema = yup.object().shape({
 });
 export const storeSchema = yup.object().shape({
   name: yup.string().required("First Name is required"),
-  is_headquarters: yup.number().required("Last Name is required"),
+  email: yup
+    .string()
+    .email("Invalid email address"),
+  is_warehouse: yup.number().required("Last Name is required"),
 });
 
 export const adminItemsSchema = yup.object().shape({

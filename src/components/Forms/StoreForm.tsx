@@ -4,6 +4,7 @@ import SelectInput from "../Input/SelectInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
+import PhoneInputWithCountry from "../Input/PhoneInputWithCountry";
 
 interface IProps {
   formErrors: any;
@@ -15,7 +16,6 @@ interface IProps {
   isLoadingCreate: boolean;
   setIsOpenModal: any;
   btnText: string;
-  staffList: any;
   setChecked: any;
   checked: any;
 }
@@ -29,7 +29,6 @@ export const StoreForm = ({
   handleSubmit,
   isLoadingCreate,
   setIsOpenModal,
-  staffList,
   setChecked,
   checked,
 }: IProps) => {
@@ -46,6 +45,7 @@ export const StoreForm = ({
           <div className="w-full">
             <TextInput
               type="text"
+              id="name"
               name="name"
               errorMessage={
                 formErrors.name ||
@@ -61,9 +61,83 @@ export const StoreForm = ({
             />
           </div>
         </div>
+        <div className="flex flex-col md:flex-row gap-5">
+          <div className="space-y-1.5 w-full">
+            <label className="text-sm font-medium">Phone Number</label>
+            <PhoneInputWithCountry
+            
+              disabled={false}
+              value={formValues.phone_number}
+              onChange={(e) =>
+                setFormValues((p:any) => ({
+                  ...p,
+                  phone_number: e,
+                }))
+              }
+              placeholder="Enter phone number"
+              className="w-full border rounded text-sm"
+            />
+          </div>
+          <div className="w-full">
+            <TextInput
+              type="text"
+              id="email"
+              name="email"
+              className="py-[13px]"
+              errorMessage={
+                formErrors.email ||
+                (error as any)?.data?.errors?.email?.map((err: any) => err) ||
+                ""
+              }
+              value={formValues.email}
+              onChange={handleInputChange}
+              placeholder="Enter an email"
+              title={<span className="font-[500]">Email</span>}
+              required={false}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col md:flex-row gap-5">
+          <div className="w-full">
+            <TextInput
+              type="text"
+              name="country"
+              className="py-[13px]"
+              errorMessage={
+                formErrors.country ||
+                (error as any)?.data?.errors?.country?.map((err: any) => err) ||
+                ""
+              }
+              value={formValues.country}
+              onChange={handleInputChange}
+              placeholder="Enter an country"
+              title={<span className="font-[500]">Country</span>}
+              required={false}
+            />
+          </div>
+          <div className="w-full">
+            <TextInput
+              type="text"
+              id="city"
+              name="city"
+              className="py-[13px]"
+              errorMessage={
+                formErrors.city ||
+                (error as any)?.data?.errors?.city?.map((err: any) => err) ||
+                ""
+              }
+              value={formValues.city}
+              onChange={handleInputChange}
+              placeholder="Enter an city"
+              title={<span className="font-[500]">State</span>}
+              required={false}
+            />
+          </div>
+        </div>
         <div className="w-full">
           <TextInput
             type="text"
+            id="address"
             name="address"
             className="py-[13px]"
             errorMessage={
@@ -78,7 +152,7 @@ export const StoreForm = ({
             required={false}
           />
         </div>
-        <div className="">
+        {/* <div className="">
           <div className={`pb-1`}>
             <label className={"text-sm capitalize text-[#2C3137]"}>
               Manager Name
@@ -101,12 +175,12 @@ export const StoreForm = ({
                 ""}
             </p>
           ) : null}
-        </div>
+        </div> */}
 
         <div className="">
           {/* checkbox for active status   */}
           <Checkbox checked={checked} onChange={(e) => handleCheckboxChange(e)}>
-            <span className="text-[#2C3137]"> Headquater</span>
+            <span className="text-[#2C3137]">Is Warehouse</span>
           </Checkbox>
         </div>
 

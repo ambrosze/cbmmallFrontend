@@ -142,7 +142,7 @@ const Header = ({
             id: store.id,
             name: store.name,
             address: store.address,
-            is_headquarters: store.is_headquarters,
+            is_warehouse: store.is_warehouse,
           },
         };
 
@@ -719,7 +719,7 @@ const Header = ({
                           }`}
                         >
                           {store.name}
-                          {store.is_headquarters === "1" && (
+                          {store.is_warehouse === "1" && (
                             <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
                               HQ
                             </span>

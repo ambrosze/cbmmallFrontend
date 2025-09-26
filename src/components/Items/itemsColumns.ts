@@ -252,6 +252,42 @@ export const storesColumns: TableColumnsType<any> = [
     // },
   },
   {
+    title: "Email",
+    dataIndex: "email",
+    width: 200,
+    // sorter: {
+    //   compare: (a, b) => a.email.localeCompare(b.email),
+    //   multiple: 3,
+    // },
+  },
+  {
+    title: "Phone Number",
+    dataIndex: "phone_number",
+    width: 200,
+    // sorter: {
+    //   compare: (a, b) => a.name.localeCompare(b.name),
+    //   multiple: 3,
+    // },
+  },
+  {
+    title: "Country",
+    dataIndex: "country",
+    width: 200,
+    // sorter: {
+    //   compare: (a, b) => a.name.localeCompare(b.name),
+    //   multiple: 3,
+    // },
+  },
+  {
+    title: "City",
+    dataIndex: "city",
+    width: 200,
+    // sorter: {
+    //   compare: (a, b) => a.name.localeCompare(b.name),
+    //   multiple: 3,
+    // },
+  },
+  {
     title: "Address",
     dataIndex: "address",
     width: 350,
@@ -262,11 +298,11 @@ export const storesColumns: TableColumnsType<any> = [
   },
 
   {
-    title: "Is Headquarters",
-    dataIndex: "is_headquarters",
+    title: "Is Warehouse",
+    dataIndex: "is_warehouse",
     width: 150,
     // sorter: {
-    //   compare: (a, b) => a.is_headquarters.localeCompare(b.is_headquarters),
+    //   compare: (a, b) => a.is_warehouse.localeCompare(b.is_warehouse),
     //   multiple: 1,
     // },
   },
