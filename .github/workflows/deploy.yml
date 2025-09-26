@@ -35,7 +35,7 @@ jobs:
             git reset --hard origin/staging
 
             echo "📦 Installing dependencies..."
-            npm ci --omit=dev
+            npm install
 
             echo "⚙️ Running nextjs build..."
             npm run build
@@ -72,7 +72,7 @@ jobs:
             git reset --hard origin/main
 
             echo "📦 Installing dependencies..."
-            npm ci --omit=dev
+            npm install
 
             echo "⚙️ Running nextjs build..."
             npm run build
