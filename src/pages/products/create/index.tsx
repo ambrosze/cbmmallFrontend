@@ -1208,7 +1208,7 @@ const index = () => {
                   }}
                   className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
                 >
-                  Cancel
+                  Clear
                 </CustomButton>
                 <CustomButton
                   type="button"

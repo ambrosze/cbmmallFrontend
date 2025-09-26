@@ -134,7 +134,7 @@ const index = () => {
       label: (
         <button
           onClick={() => {
-            router.push(`/attributes/values/${selectedItem?.id}`);
+            router.push(`/products/attributes/values/${selectedItem?.id}`);
           }}
           className="flex w-full items-center gap-2"
           type="button"
