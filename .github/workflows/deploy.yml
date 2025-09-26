@@ -1,5 +1,5 @@
 name: Deploy
-run-name: "🚀 Deploy by ${{ github.actor }} to Inventory Commerce API [${{ github.ref_name }}]"
+run-name: "🚀 Deploy by ${{ github.actor }} to CBM-MALL FRONTEND [${{ github.ref_name }}]"
 
 on:
   push:
