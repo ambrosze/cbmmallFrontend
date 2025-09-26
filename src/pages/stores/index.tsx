@@ -59,7 +59,6 @@ const index = () => {
   const { data, refetch, isLoading } = useGetAllStoresQuery({
     q: search,
     page: currentPage,
-    include: "manager",
     per_page: 15,
     paginate: true,
   });

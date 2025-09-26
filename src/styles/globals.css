@@ -336,6 +336,80 @@ h6 {
 .group:hover .group-hover\:opacity-100 {
   opacity: 1;
 }
+
+/* Sidebar pretty menu styles (scoped) */
+.pretty-sidebar .pretty-menu.ant-menu {
+  --menu-radius: 10px;
+  --menu-item-radius: 10px;
+  --menu-hover: rgba(51, 53, 125, 0.06);
+  --menu-active: rgba(51, 53, 125, 0.12);
+  --menu-border: #eef1f6;
+  background: transparent !important;
+}
+
+.pretty-sidebar .pretty-menu.ant-menu-inline > .ant-menu-item,
+.pretty-sidebar
+  .pretty-menu.ant-menu-inline
+  > .ant-menu-submenu
+  > .ant-menu-submenu-title {
+  margin-inline: 6px !important;
+  margin-block: 4px !important;
+  border-radius: var(--menu-item-radius);
+  padding-block: 10px;
+  transition: all 0.2s ease;
+}
+
+.pretty-sidebar .pretty-menu .ant-menu-item:hover,
+.pretty-sidebar .pretty-menu .ant-menu-submenu-title:hover {
+  background: var(--menu-hover);
+}
+
+.pretty-sidebar .pretty-menu .ant-menu-item-selected {
+  background: var(--menu-active) !important;
+  font-weight: 600;
+}
+
+.pretty-sidebar .pretty-menu .ant-menu-item .ant-menu-item-icon,
+.pretty-sidebar .pretty-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(
+    135deg,
+    rgba(51, 53, 125, 0.08) 0%,
+    rgba(51, 53, 125, 0.02) 100%
+  );
+  margin-right: 10px;
+}
+
+.pretty-sidebar .pretty-menu .ant-menu-submenu-expand-icon,
+.pretty-sidebar .pretty-menu .ant-menu-submenu-arrow {
+  color: #586283;
+}
+
+.pretty-sidebar
+  .pretty-menu
+  .ant-menu-submenu-selected
+  > .ant-menu-submenu-title {
+  background: var(--menu-active);
+  font-weight: 600;
+}
+
+.pretty-sidebar .pretty-menu .ant-menu-submenu .ant-menu {
+  background: transparent !important;
+}
+
+.pretty-sidebar .pretty-menu .ant-menu-item:active {
+  transform: translateY(0px) scale(0.99);
+}
+
+.pretty-sidebar .ant-menu-inline .ant-menu-item::after {
+  inset-inline-end: 6px; /* pull the active bar inward to respect rounded corners */
+  border-radius: 2px 0 0 2px;
+}
 /* Quill Editor Styles */
 
 .ql-content h1 {
