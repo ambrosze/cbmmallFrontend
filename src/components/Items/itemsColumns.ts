@@ -673,4 +673,104 @@ export const stockTransferInventoriesColumns: TableColumnsType<any> = [
   },
   { title: "Action", fixed: "right", dataIndex: "action", width: 100 },
 ];
-// file end
+export const itemsScrapesColumns = [
+  {
+    title: "Item",
+    dataIndex: "item",
+    key: "item",
+    width: 200,
+  },
+  {
+    title: "Type",
+    dataIndex: "scrape_type",
+    key: "scrape_type",
+    width: 100,
+  },
+  {
+    title: "Customer",
+    dataIndex: "customer_name",
+    key: "customer_name",
+    width: 150,
+  },
+  {
+    title: "Store",
+    dataIndex: "store_name",
+    key: "store_name",
+    width: 150,
+  },
+  {
+    title: "Quantity",
+    dataIndex: "quantity",
+    key: "quantity",
+    width: 100,
+  },
+  {
+    title: "Comment",
+    dataIndex: "comment",
+    key: "comment",
+    width: 200,
+  },
+  {
+    title: "Date Initiated",
+    dataIndex: "dateInitiated",
+    key: "dateInitiated",
+    width: 130,
+  },
+  {
+    title: "Actions",
+    dataIndex: "actions",
+    key: "actions",
+    width: 120,
+    fixed: "right" as const,
+  },
+];
+
+export const stockTransferColumns: TableColumnsType<any> = [
+  {
+    title: "Reference No",
+    dataIndex: "reference_no",
+    width: 200,
+  },
+  {
+    title: "Driver Name",
+    dataIndex: "driver_name",
+    width: 200,
+  },
+  {
+    title: "From Store",
+    dataIndex: "from_store",
+    width: 200,
+  },
+  {
+    title: "To Store",
+    dataIndex: "to_store",
+    width: 200,
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    width: 120,
+  },
+  {
+    title: "Inventories Count",
+    dataIndex: "inventories_count",
+    width: 150,
+  },
+  {
+    title: "Initiated Date",
+    dataIndex: "dateInitiated",
+    width: 200,
+    sorter: {
+      compare: (a, b) =>
+        new Date(a.dateInitiated).getTime() -
+        new Date(b.dateInitiated).getTime(),
+      multiple: 1,
+    },
+  },
+  {
+    title: "Action",
+    fixed: "right",
+    dataIndex: "action",
+    width: 140,
+  },
+];

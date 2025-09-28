@@ -56,6 +56,7 @@ const Sidebar = ({
     if (path.includes("/products/create")) return ["5", "sub1"];
     if (path.includes("/products/attributes")) return ["6", "sub1"];
     if (path.includes("/products/category")) return ["7", "sub1"];
+    if (path.includes("/products/discounts")) return ["8", "sub1"];
     if (path.includes("/products")) return ["2", "sub1"];
     if (path.includes("/stock-transfer")) return ["4", "sub1"];
     if (path.includes("/scrapes")) return ["3", "sub1"];
@@ -153,6 +154,15 @@ const Sidebar = ({
             router.push("/products/category");
           },
         },
+        {
+          key: "8",
+          label: <span className="">Discounts</span>,
+          icon: <Icon icon="ic:outline-discount" width="20" />,
+
+          onClick: () => {
+            router.push("/products/discounts");
+          },
+        },
         // { key: "4", label: "Awaiting Stock", onClick: () => {} },
         // { key: "5", label: "Return stock", onClick: () => {} },
       ],
@@ -233,7 +243,7 @@ const Sidebar = ({
           label: "Suppliers",
           onClick: () => {
             router.push("/people/suppliers");
-          },  
+          },
         },
         {
           key: "42",
@@ -289,15 +299,6 @@ const Sidebar = ({
                 label: <span className="">Daily Gold Price</span>,
                 onClick: () => {
                   router.push("/admin/daily-gold-price");
-                },
-              },
-              {
-                key: "56",
-                label: <span className="">Discounts</span>,
-                icon: <Icon icon="ic:outline-discount" width="20" />,
-
-                onClick: () => {
-                  router.push("/admin/discounts");
                 },
               },
 
