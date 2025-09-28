@@ -12,7 +12,7 @@ export interface AdminDiscountDatum {
   description: null;
   percentage: string;
   expires_at: null;
-  is_active: string;
+  is_active: number;
   created_at: string;
   updated_at: string;
   deleted_at: null;
@@ -46,7 +46,7 @@ export interface CreateDiscountAdminType {
   description: string;
   percentage: string;
   expires_at: string;
-  is_active: string;
+  is_active: number;
 }
 
 export interface AdminDiscountSingleTopLevel {

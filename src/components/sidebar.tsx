@@ -159,32 +159,6 @@ const Sidebar = ({
     },
 
     {
-      key: "sub2",
-      label: <span className="font-[500]">Sales</span>,
-      icon: <Icon icon="mynaui:cart" width="28" height="28" />,
-      children: [
-        {
-          key: "20",
-          icon: <Icon icon="iconoir:home-sale" width="20" height="20" />,
-          label: <span className="">Sales</span>,
-          onClick: () => {
-            router.push("/sales/sales-list");
-          },
-        },
-
-        {
-          key: "22",
-          label: <span className="">Pos</span>,
-          icon: <Icon icon="mdi:line-scan" width="20" height="20" />,
-          onClick: () => {
-            router.push("/sales/pos");
-          },
-        },
-        // { key: "23", label: "Return Item" },
-      ],
-    },
-
-    {
       key: "sub3",
       label: "Stores",
       icon: <Icon icon="ant-design:shop-outlined" width="26" height="26" />,

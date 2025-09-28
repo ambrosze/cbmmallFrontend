@@ -94,6 +94,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
     storeKey: "store_id",
   },
 }) => {
+  // Expanded by default to match InventoryFilter UX
   const [isExpanded, setIsExpanded] = useState(false);
   const [loginResponse, setLoginResponse] =
     useLocalStorage<UserResponseTopLevel | null>("authLoginResponse", null);
@@ -255,10 +256,10 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
           {/* Filter Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 rounded-xl shadow-sm">
+              <div className="p-2 bg-indigo-100 rounded-xl shadow-sm">
                 <Icon
                   icon="mdi:filter-variant"
-                  className="w-5 h-5 text-emerald-600"
+                  className="w-5 h-5 text-indigo-600"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -269,8 +270,8 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                   <Badge
                     count={getActiveFiltersCount()}
                     style={{
-                      backgroundColor: "#10b981",
-                      boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
+                      backgroundColor: "#6366f1",
+                      boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
                     }}
                     size="small"
                   />
@@ -283,7 +284,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
               <Button
                 onClick={() => setIsExpanded(!isExpanded)}
                 type="text"
-                className="text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 rounded-xl px-4 py-2 font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                className="text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl px-4 py-2 font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                 style={{ borderRadius: "12px" }}
               >
                 <div className="flex items-center gap-2">
@@ -368,7 +369,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
 
               {/* Category Filter */}
               {filterKeys.categoryKey && (
-                <div className="flex flex-col gap-2 min-w-[160px] mt-5">
+                <div className="flex flex-col gap-2 lg:min-w-[30%] min-w-full mt-5">
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                     <Icon icon="mdi:tag" className="w-3 h-3" />
                     Category
@@ -410,7 +411,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-6 pt-2 border-t border-gray-200/60">
+            <div className="flex flex-col gap-2 pt-2 mt-2 border-t border-gray-200/60">
               <div className="flex items-center gap-2 mb-2">
                 <Icon icon="mdi:tune" className="w-4 h-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-600">
@@ -1072,13 +1073,13 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
             }
             :global(.custom-select .ant-select-selector:hover),
             :global(.custom-input .ant-input-number:hover) {
-              border-color: #10b981 !important;
-              box-shadow: 0 4px 12px 0 rgba(16, 185, 129, 0.15) !important;
+              border-color: #6366f1 !important;
+              box-shadow: 0 4px 12px 0 rgba(99, 102, 241, 0.15) !important;
             }
             :global(.custom-select.ant-select-focused .ant-select-selector),
             :global(.custom-input .ant-input-number-focused) {
-              border-color: #10b981 !important;
-              box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+              border-color: #6366f1 !important;
+              box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
             }
           `}</style>
         </div>

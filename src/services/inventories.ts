@@ -1,11 +1,12 @@
 import { InventoryItemTopLevel } from "@/types/InventoryItemTypes";
 import { api } from ".";
+import { InventoryTopLevel } from "@/types/inventoryListType";
 
 export const inventoryApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getAllInventory: builder.query<
-      InventoryItemTopLevel,
+      InventoryTopLevel,
       {
         sort?: string;
         q?: string;
@@ -65,7 +66,7 @@ export const inventoryApi = api.injectEndpoints({
       },
     }),
     getSingleInventory: builder.query<
-      ISingleCategoryTopLevel,
+      any,
       {
         id: string;
         include?: string;

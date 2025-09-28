@@ -41,10 +41,11 @@ const index = () => {
 
   const { data, refetch, isLoading } = useGetSingleSalesQuery({
     id: router.query.id as string,
-    include: "saleInventories.inventory.item",
+    include:
+      "saleInventories.inventory.productVariant,discount,cashier.user,buyerable",
   });
 
-  const transformedData = data?.data?.sale_inventories?.map((item) => ({
+  const transformedData = data?.data?.sale_inventories?.map((item: any) => ({
     key: item?.id,
     customer_name: (
       <div className="flex items-center gap-2">{data?.data?.customer_name}</div>
@@ -54,22 +55,23 @@ const index = () => {
         {data?.data?.payment_method}
       </div>
     ),
-    amount: (
+    item_name:
+      item?.inventory?.product_variant?.name ||
+      item?.inventory?.item?.material ||
+      item?.inventory_id ||
+      "-",
+    unit_price: (
       <span className=" font-[500]">
-        {formatCurrency(item?.total_price || 0)}
-      </span>
-    ),
-
-    price_per_gram: (
-      <span className=" font-[500]">
-        {formatCurrency(item?.price_per_gram || 0)}
+        {formatCurrency((item as any)?.price || 0)}
       </span>
     ),
     quantity: (
       <span className=" font-[500] text-center">{item?.quantity || "-"}</span>
     ),
-    weight: (
-      <span className=" font-[500] text-center">{item?.weight || "-"}</span>
+    amount: (
+      <span className=" font-[500]">
+        {formatCurrency(item?.total_price || 0)}
+      </span>
     ),
 
     dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),

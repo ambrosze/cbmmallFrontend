@@ -10,20 +10,21 @@ import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
-import { useGetAllDailyGoldPricesQuery } from "@/services/admin/daily-gold-price";
-import { useGetAllInventoryItemsQuery } from "@/services/InventoryItem";
+import { useGetAllInventoryQuery } from "@/services/inventories";
 import {
   useCreateSalesMutation,
   useDeleteSalesMutation,
   useGetAllSalesQuery,
   useUpdateSalesMutation,
 } from "@/services/sales/sales";
+import { InventoryDatum } from "@/types/inventoryListType";
 import { SalesDatum } from "@/types/SalesTypes";
 import {
   capitalizeOnlyFirstLetter,
   formatCurrency,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
+import { inventorySchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
@@ -52,20 +53,19 @@ interface InventoryDataItem {
 interface InventoryListItem {
   label: string;
   value: string | number;
-  price?: number;
-  category_id?: number | string;
+  price?: number | string;
+  quantity?: number; // available quantity from inventory
+  cost_price?: string; // cost price from product variant
 }
 const index = () => {
   const [search, setSearch] = useState("");
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const router = useRouter();
   const [formValues, setFormValues] = useState({
-    customer_name: "",
-    customer_phone_number: "",
-    customer_email: "",
+    customer_id: "",
     payment_method: "",
     discount_code: "",
-    sale_inventories: [{ inventory_id: "", quantity: "", price_per_gram: "" }],
+    sale_inventories: [{ inventory_id: "", quantity: "" }],
   });
   const [selectedItem, setSelectedItem] = useState<SalesDatum | null>(null);
   console.log("🚀 ~ index ~ selectedItem:", selectedItem);
@@ -82,30 +82,20 @@ const index = () => {
   const { data, refetch, isLoading } = useGetAllSalesQuery({
     q: search,
     page: currentPage,
-    include: "saleInventories.inventory.item,discount",
+    include:
+      "saleInventories.inventory.productVariant,discount,cashier.user,buyerable",
     per_page: 15,
     paginate: true,
   });
-  const { data: inventoryData } = useGetAllInventoryItemsQuery({
-    paginate: false,
-    per_page: 15,
-    include: "store,item.category",
-    page: currentPage,
-    q: search,
-  });
+  const { data: inventoryData, refetch: refetchInventory } =
+    useGetAllInventoryQuery({
+      paginate: false,
+      per_page: 15,
+      page: currentPage,
+      q: search,
+    });
   console.log("🚀 ~ index ~ inventoryData:", inventoryData);
-  const { data: dailyColdPriceData } = useGetAllDailyGoldPricesQuery({
-    paginate: false,
-    per_page: 15,
-    page: currentPage,
-    q: search,
-    include: "category",
-    sort: "recorded_on",
-    filter: {
-      period: "daily",
-    },
-  });
-  console.log("🚀 ~ index ~ dailyColdPriceData:", dailyColdPriceData);
+
   const [deleteSales, { isLoading: isDeleteLoading }] =
     useDeleteSalesMutation();
   const [showInvoice, setShowInvoice] = useState(false);
@@ -119,9 +109,7 @@ const index = () => {
   useEffect(() => {
     if (selectedItem && showEditModal) {
       setFormValues({
-        customer_name: selectedItem?.customer_name || "",
-        customer_phone_number: selectedItem?.customer_phone_number || "",
-        customer_email: selectedItem?.customer_email || "",
+        customer_id: (selectedItem as any)?.buyerable_id || "",
         payment_method: selectedItem?.payment_method || "",
         discount_code: (selectedItem as any)?.metadata?.discount?.code || "",
         sale_inventories:
@@ -129,7 +117,12 @@ const index = () => {
             id: saleItem?.id || null,
             inventory_id: saleItem?.inventory_id || "",
             quantity: saleItem?.quantity || "",
-            price_per_gram: saleItem?.price_per_gram || "",
+            cost_price:
+              (inventoryList || []).find(
+                (opt) => opt.value === saleItem?.inventory_id
+              )?.cost_price ||
+              saleItem?.price_per_gram ||
+              "",
           })) || [],
       });
     }
@@ -209,7 +202,9 @@ const index = () => {
     ),
 
     payment_method: (
-      <div className="flex items-center gap-2">{item?.payment_method ?? "-"}</div>
+      <div className="flex items-center gap-2">
+        {item?.payment_method ?? "-"}
+      </div>
     ),
     invoice_number: (
       <span className=" font-[500]">{item?.invoice_number || "-"}</span>
@@ -234,9 +229,7 @@ const index = () => {
               setSelectedItem(itemToEdit);
               // Directly set form values here to ensure correct data is used
               setFormValues({
-                customer_name: itemToEdit?.customer_name || "",
-                customer_phone_number: itemToEdit?.customer_phone_number || "",
-                customer_email: itemToEdit?.customer_email || "",
+                customer_id: (itemToEdit as any)?.customer_user_id || "",
                 payment_method: itemToEdit?.payment_method || "",
                 discount_code:
                   (itemToEdit as any)?.metadata?.discount?.code || "",
@@ -245,7 +238,12 @@ const index = () => {
                     id: saleItem?.id || null,
                     inventory_id: saleItem?.inventory_id || "",
                     quantity: saleItem?.quantity || "",
-                    price_per_gram: saleItem?.price_per_gram || "",
+                    cost_price:
+                      (inventoryList || []).find(
+                        (opt) => opt.value === saleItem?.inventory_id
+                      )?.cost_price ||
+                      saleItem?.price_per_gram ||
+                      "",
                   })) || [],
               });
             }}
@@ -262,37 +260,34 @@ const index = () => {
   };
 
   const inventoryList: InventoryListItem[] | undefined =
-    inventoryData?.data.map((item: InventoryDataItem): InventoryListItem => {
+    inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
       return {
-        label:
-          item?.item?.material +
-          "-" +
-          `${item?.item?.weight}g` +
-          ((item as any)?.item?.category?.name
-            ? "-" + (item as any)?.item?.category?.name
-            : ""),
+        label: item?.product_variant?.name,
         value: item.id,
-        price: item?.item?.price,
-        category_id: item?.item?.category_id,
+        price: item?.product_variant?.price,
+        quantity: item?.quantity,
+        cost_price: item?.product_variant?.cost_price,
       };
     });
+  console.log("🚀 ~ inventoryList:", inventoryList);
 
   const handleSubmit = async () => {
     try {
+      // Validate form values using yup
+      await inventorySchema.validate(formValues, {
+        abortEarly: false,
+      });
       // Clear previous form errors if validation is successful
       setFormErrors({});
 
       // Prepare the payload with the correct field name
       const payload = {
-        customer_name: formValues.customer_name,
-        customer_phone_number: formValues.customer_phone_number,
+        customer_id: formValues.customer_id,
         payment_method: formValues.payment_method,
-        customer_email: formValues.customer_email,
         discount_code: formValues.discount_code,
         sale_inventories: formValues.sale_inventories.map((item) => ({
           inventory_id: item.inventory_id,
           quantity: Number(item.quantity),
-          price_per_gram: Number(item.price_per_gram),
         })),
       };
       // Proceed with server-side submission
@@ -313,6 +308,7 @@ const index = () => {
         message: "Sale has been recorded successfully.",
       });
       refetch();
+      refetchInventory();
       setIsOpenModal(false);
     } catch (err: any) {
       if (err.name === "ValidationError") {
@@ -349,23 +345,20 @@ const index = () => {
   const handleUpdateSubmit = async () => {
     try {
       // Validate form values using yup
-      // await staffSchema.validate(formValues, {
-      //   abortEarly: false,
-      // });
+      await inventorySchema.validate(formValues, {
+        abortEarly: false,
+      });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       const payload = {
-        customer_name: formValues.customer_name,
-        customer_phone_number: formValues.customer_phone_number,
+        customer_id: formValues.customer_id,
         payment_method: formValues.payment_method,
-        customer_email: formValues.customer_email,
         discount_code: formValues.discount_code,
         sale_inventories: formValues.sale_inventories.map((item: any) => ({
           id: item.id || null,
           inventory_id: item.inventory_id,
           quantity: Number(item.quantity),
-          price_per_gram: Number(item.price_per_gram),
         })),
       };
 
@@ -374,6 +367,7 @@ const index = () => {
         id: selectedItem?.id!,
         body: payload,
       }).unwrap();
+      setShowEditModal(false);
       showPlannerToast({
         options: {
           customToast: (
@@ -397,6 +391,7 @@ const index = () => {
         message: "Please check your email for verification.",
       });
       refetch();
+      refetchInventory();
       setIsOpenModal(false);
     } catch (err: any) {
       if (err.name === "ValidationError") {
@@ -453,14 +448,10 @@ const index = () => {
         onClick={() => {
           setIsOpenModal(true);
           setFormValues({
-            customer_name: "",
-            customer_phone_number: "",
-            customer_email: "",
+            customer_id: "",
             payment_method: "",
             discount_code: "",
-            sale_inventories: [
-              { inventory_id: "", quantity: "", price_per_gram: "" },
-            ],
+            sale_inventories: [{ inventory_id: "", quantity: "" }],
           });
         }}
       />
@@ -520,7 +511,6 @@ const index = () => {
           <SalesForm
             error={error}
             inventoryData={inventoryList || []}
-            dailyGoldPrices={dailyColdPriceData?.data || []}
             btnText="Create Sale"
             formErrors={formErrors}
             formValues={formValues}
@@ -543,7 +533,6 @@ const index = () => {
         >
           <SalesForm
             inventoryData={inventoryList || []}
-            dailyGoldPrices={dailyColdPriceData?.data || []}
             error={errorUpdate}
             setFormValues={setFormValues}
             btnText="Update Sale"
@@ -561,7 +550,7 @@ const index = () => {
           modalOpen={showInvoice}
           setModalOpen={setShowInvoice}
           className=""
-          width={800}
+          width={400}
           title="Invoice"
           onCloseModal={() => setShowInvoice(false)}
         >
