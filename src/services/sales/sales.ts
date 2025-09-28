@@ -125,6 +125,7 @@ export const salesApi = api.injectEndpoints({
         return {
           url: `sales/${id}`,
           method: "GET",
+          params,
           providesTags: ["sales"],
         };
       },

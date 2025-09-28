@@ -482,7 +482,7 @@ const index = () => {
           setModalOpen={setIsOpenModal}
           className=""
           width={600}
-          title="Create Store"
+          title="Create Customer"
           onCloseModal={() => setIsOpenModal(false)}
         >
           <CustomerForm

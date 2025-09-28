@@ -6,6 +6,7 @@ import SelectInput from "../Input/SelectInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
+import { AdminDiscountDatum } from "@/types/discountTypes";
 
 interface IProps {
   formErrors: any;
@@ -17,8 +18,9 @@ interface IProps {
   isLoadingCreate: boolean;
   setIsOpenModal: any;
   btnText: string;
-  inventoryData?: any;
-  dailyGoldPrices?: any[]; // legacy; not used for this form currently
+  inventoryData: any;
+  discountData: AdminDiscountDatum[]; // legacy; not used for this form currently
+  isLoadingDiscount?: boolean; // legacy; not used for this form currently
 }
 
 export const SalesForm = ({
@@ -32,8 +34,10 @@ export const SalesForm = ({
   isLoadingCreate,
   setIsOpenModal,
   inventoryData,
-  dailyGoldPrices,
+  discountData,
+  isLoadingDiscount,
 }: IProps) => {
+  console.log("🚀 ~ SalesForm ~ discountData:", discountData)
   const { data, isLoading } = useGetAllEnumsQuery(
     {
       enum: "PaymentMethod",
@@ -187,24 +191,39 @@ export const SalesForm = ({
             ) : null}
           </div>
           <div className="w-full">
-            <TextInput
-              type="text"
-              name="discount_code"
-              className="py-[13px]"
-              errorMessage={
-                formErrors.discount_code ||
-                (error as any)?.data?.errors?.discount_code?.map(
-                  (err: any) => err
-                ) ||
-                ""
+            <div className={`pb-1`}>
+              <label className={"text-sm font-[500] capitalize text-[#2C3137]"}>
+                Discount Code
+              </label>
+            </div>
+            <SelectInput
+              onChange={(value) => {
+                setFormValues({ ...formValues, discount_code: value });
+              }}
+              loading={isLoadingDiscount}
+              value={formValues.discount_code || undefined}
+              placeholder={
+                <span className="text-sm font-bold">Select discount code</span>
               }
-              value={formValues.discount_code}
-              onChange={handleInputChange}
-              placeholder="Enter discount code"
-              title={<span className="font-[500]">Discount Code</span>}
-              required={false}
+              className="py-[3px]"
+              data={
+                discountData?.map((item) => ({
+                  label: item.code,
+                  value: item.code,
+                })) || []
+              }
             />
+            {formErrors.discount_code || error ? (
+              <p className="flex flex-col gap-1 text-xs italic text-red-600">
+                {formErrors.discount_code ||
+                  (error as any)?.data?.errors?.discount_code?.map(
+                    (err: any) => err
+                  ) ||
+                  ""}
+              </p>
+            ) : null}
           </div>
+        
         </div>
 
         <div className="mt-4">

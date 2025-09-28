@@ -603,27 +603,23 @@ export const invoiceColumns = [
 ];
 
 export const salesColumns: TableColumnsType<any> = [
+  { title: "Invoice #", dataIndex: "invoice_number", width: 160 },
   {
-    title: "Customer Name",
+    title: "Customer",
     dataIndex: "customer_name",
     width: 200,
-    // sorter: {
-    //   compare: (a, b) => a.name.localeCompare(b.name),
-    //   multiple: 3,
-    // },
   },
+  { title: "Items", dataIndex: "items_count", width: 100 },
+  { title: "Payment", dataIndex: "payment_method", width: 140 },
+  { title: "Channel", dataIndex: "channel", width: 120 },
+  { title: "Subtotal", dataIndex: "subtotal_price", width: 150 },
+  { title: "Discount %", dataIndex: "discount_percentage", width: 130 },
+  { title: "Total", dataIndex: "total_price", width: 150 },
+  { title: "Cashier", dataIndex: "cashier_name", width: 180 },
   {
-    title: "Amount",
-    dataIndex: "amount",
-    width: 250,
-  },
-  { title: "Payment Method", dataIndex: "payment_method", width: 150 },
-  { title: "Invoice number", dataIndex: "invoice_number", width: 150 },
-  { title: "Sales Inventory", dataIndex: "sales_inventory", width: 150 },
-  {
-    title: "Initiated Date",
+    title: "Date",
     dataIndex: "dateInitiated",
-    width: 200,
+    width: 180,
     sorter: {
       compare: (a, b) =>
         new Date(a.dateInitiated).getTime() -
@@ -631,7 +627,7 @@ export const salesColumns: TableColumnsType<any> = [
       multiple: 1,
     },
   },
-  { title: "Action", fixed: "right", dataIndex: "action", width: 140 },
+  { title: "Action", fixed: "right", dataIndex: "action", width: 80 },
 ];
 
 export const salesInventoriesColumns: TableColumnsType<any> = [

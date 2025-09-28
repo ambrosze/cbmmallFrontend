@@ -32,6 +32,7 @@ import { useEffect, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+import { useGetAllDiscountAdminQuery } from "@/services/admin/discount";
 
 interface InventoryCategory {
   name?: string;
@@ -94,6 +95,15 @@ const index = () => {
       page: currentPage,
       q: search,
     });
+  const { data: discountData, refetch: refetchDiscount, isLoading: isLoadingDiscount } = useGetAllDiscountAdminQuery({
+      paginate: true,
+      per_page: 15,
+      page: currentPage,
+      q: search,
+      filter: {
+        is_active: 1,
+      },
+    });
   console.log("🚀 ~ index ~ inventoryData:", inventoryData);
 
   const [deleteSales, { isLoading: isDeleteLoading }] =
@@ -155,7 +165,7 @@ const index = () => {
           className="flex w-full items-center gap-2"
           type="button"
         >
-          View Sales Inventories
+          View details
         </button>
       ),
       key: "4",
@@ -192,29 +202,53 @@ const index = () => {
   ];
   const transformedData = data?.data?.map((item) => ({
     key: item?.id,
-    customer_name: (
-      <div className="flex items-center gap-2">{item?.customer_name}</div>
+    invoice_number: (
+      <span className="font-[500]">{item?.invoice_number || "-"}</span>
     ),
-    amount: (
-      <span className=" font-[500]">
-        {formatCurrency(item?.total_price || 0)}
+    customer_name: (
+      <div className="flex items-center gap-2">{(item as any)?.buyerable?.name}</div>
+    ),
+    items_count: (
+      <span className="font-[500] text-center">
+        {item?.sale_inventories?.length || 0}
       </span>
     ),
-
     payment_method: (
       <div className="flex items-center gap-2">
         {item?.payment_method ?? "-"}
       </div>
     ),
-    invoice_number: (
-      <span className=" font-[500]">{item?.invoice_number || "-"}</span>
+    channel: (
+      <span className="font-[500]">{(item as any)?.channel ?? "-"}</span>
     ),
-    sales_inventory: (
-      <span className=" font-[500] text-center">
-        {item?.sale_inventories.length || "-"}
+    subtotal_price: (
+      <span className="font-[500]">
+        {formatCurrency((item as any)?.subtotal_price || 0)}
       </span>
     ),
-
+    discount_percentage: (
+      <span className="font-[500]">
+        {
+          ((item as any)?.metadata?.discount?.percentage
+            ? `${(item as any)?.metadata?.discount?.percentage}%`
+            : "-") as any
+        }
+      </span>
+    ),
+    total_price: (
+      <span className="font-[600]">
+        {formatCurrency(item?.total_price || 0)}
+      </span>
+    ),
+    cashier_name: (
+      <span>
+        {(item as any)?.cashier?.user
+          ? `${(item as any)?.cashier?.user?.first_name ?? ""} ${
+              (item as any)?.cashier?.user?.last_name ?? ""
+            }`.trim()
+          : "-"}
+      </span>
+    ),
     dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
 
     action: (
@@ -438,7 +472,7 @@ const index = () => {
         search={search}
         setSearch={setSearch}
         showSearch={true}
-        placeHolderText="Search product, supplier, order"
+        placeHolderText="Search sales"
         handleOpenSideNavBar={() => {}}
         isOpenSideNavBar
       />
@@ -511,6 +545,8 @@ const index = () => {
           <SalesForm
             error={error}
             inventoryData={inventoryList || []}
+            discountData={discountData?.data || []}
+            isLoadingDiscount={isLoadingDiscount}
             btnText="Create Sale"
             formErrors={formErrors}
             formValues={formValues}
@@ -533,6 +569,8 @@ const index = () => {
         >
           <SalesForm
             inventoryData={inventoryList || []}
+            discountData={discountData?.data || []}
+            isLoadingDiscount={isLoadingDiscount}
             error={errorUpdate}
             setFormValues={setFormValues}
             btnText="Update Sale"

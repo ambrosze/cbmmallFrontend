@@ -18,7 +18,7 @@ export const discountAdminApi = api.injectEndpoints({
         sort?: string;
         include?: string;
         filter?: {
-          is_active?: string;
+          is_active?: number | string;
           // Add more filter fields as needed here
         };
       }
@@ -39,7 +39,7 @@ export const discountAdminApi = api.injectEndpoints({
         sort?: string;
         include?: string;
         filter?: {
-          is_active?: string;
+          is_active?: number | string;
           // Add more filter fields as needed here
         };
       }) => {

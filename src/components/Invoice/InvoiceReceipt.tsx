@@ -1,4 +1,4 @@
-import { SalesDatum } from "@/types/SalesTypes";
+import { SalesDatum, SingleSalesData } from "@/types/SalesTypes";
 import { formatCurrency } from "@/utils/fx";
 import { PrinterOutlined } from "@ant-design/icons";
 import { Card, Col, Divider, Row, Space, Typography } from "antd";
@@ -18,7 +18,7 @@ interface InvoiceItem {
 }
 
 interface InvoiceReceiptProps {
-  selectedItem: SalesDatum | null;
+  selectedItem: SalesDatum | SingleSalesData | null | undefined;
   storeInfo?: {
     name?: string;
     addressLines?: string[];
@@ -44,6 +44,17 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
   const taxAmount = selectedItem ? parseFloat(selectedItem.tax) : 0;
   const total = selectedItem ? parseFloat(selectedItem.total_price) : 0;
   const amountDue = total;
+
+  // Discount handling: support either explicit amount or percentage on metadata
+  const discountMeta: any = (selectedItem as any)?.metadata?.discount;
+  const discountPercentage = discountMeta?.percentage
+    ? parseFloat(discountMeta.percentage)
+    : 0;
+  const discountAmount = discountMeta?.amount
+    ? parseFloat(discountMeta.amount)
+    : discountPercentage > 0
+    ? (subtotal * discountPercentage) / 100
+    : 0;
 
   const createdAt = selectedItem
     ? new Date(selectedItem.created_at)
@@ -131,6 +142,9 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
         .no-print { display: none !important; visibility: hidden !important; }
         /* Space after phone for cleaner look */
         .phone-line { padding-bottom: 15px; }
+        /* Barcode centering for print */
+        .barcode-wrap { display: flex; align-items: center; justify-content: center; padding: 8px 0; text-align: center; }
+        .barcode-img { display: block; margin: 0 auto; height: 48px; max-width: 100%; object-fit: contain; }
       </style>
     `;
     const w = window.open("", "_blank", "width=420,height=800");
@@ -210,6 +224,21 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
         .receipt .cell-item {
           word-break: break-word;
           white-space: normal;
+        }
+        /* Screen: ensure barcode stays centered */
+        .barcode-wrap {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 0;
+          text-align: center;
+        }
+        .barcode-img {
+          display: block;
+          margin: 0 auto;
+          height: 48px;
+          max-width: 100%;
+          object-fit: contain;
         }
       `}</style>
 
@@ -324,22 +353,19 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal.toFixed(2))}</span>
             </div>
-            {(selectedItem as any)?.metadata?.discount?.amount ? (
+            {discountAmount > 0 ? (
               <div className="row">
                 <span>
                   Discount
-                  {(selectedItem as any)?.metadata?.discount?.code
-                    ? ` (${(selectedItem as any)?.metadata?.discount?.code})`
+                  {discountMeta?.code ? ` (${discountMeta.code}` : ""}
+                  {discountPercentage > 0
+                    ? `${
+                        discountMeta?.code ? ", " : " ("
+                      }${discountPercentage}%`
                     : ""}
+                  {discountMeta?.code || discountPercentage > 0 ? ")" : ""}
                 </span>
-                <span>
-                  -
-                  {formatCurrency(
-                    (
-                      (selectedItem as any)?.metadata?.discount?.amount || 0
-                    ).toFixed(2)
-                  )}
-                </span>
+                <span>-{formatCurrency(discountAmount.toFixed(2))}</span>
               </div>
             ) : null}
             <div className="row">
@@ -363,15 +389,13 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
           <Divider style={{ margin: "8px 0" }} />
 
           {barcodeValue ? (
-            <div className="flex flex-col items-center justify-center py-2">
+            <div className="barcode-wrap">
               {/* @ts-ignore */}
-              <Barcode
-                value={barcodeValue}
-                format="CODE128"
-                height={36}
-                displayValue={true}
-                fontSize={12}
-                background="#fff"
+              {/* barcode from base64 */}
+              <img
+                src={`${barcodeValue}`}
+                alt="Barcode"
+                className="barcode-img"
               />
             </div>
           ) : null}

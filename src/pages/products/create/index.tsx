@@ -14,7 +14,7 @@ import { useGetAllCategoryQuery } from "@/services/category";
 import { useCreateProductsMutation } from "@/services/products/product-list";
 import { compressImage, fileToBase64 } from "@/utils/compressImage";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Upload, message } from "antd";
+import { Breadcrumb, Upload, message } from "antd";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
@@ -517,6 +517,19 @@ const index = () => {
         onClick={() => {}}
       />
       <SharedLayout className="bg-white">
+        <Breadcrumb
+          className="mb-4"
+          items={[
+            { title: "Back", href: "/products" },
+            {
+              title: (
+                <span className="font-semibold">
+                  {formValues.name || "Create Product"}
+                </span>
+              ),
+            },
+          ]}
+        />
         <div>
           <form className="mt-5 flex flex-col gap-8">
             {/* Basic Info */}
@@ -697,7 +710,13 @@ const index = () => {
                       }))
                     }
                     notFoundContent={
-                      isLoadingAttributes ? <Spinner /> : <span className="text-gray-500">No attributes found </span>
+                      isLoadingAttributes ? (
+                        <Spinner />
+                      ) : (
+                        <span className="text-gray-500">
+                          No attributes found{" "}
+                        </span>
+                      )
                     }
                     value={formValues.attribute_value_ids}
                     placeholder={
