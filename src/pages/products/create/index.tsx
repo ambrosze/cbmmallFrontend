@@ -187,7 +187,6 @@ const index = () => {
       (categoriesResp?.data ?? []).map((c) => ({ label: c.name, value: c.id })),
     [categoriesResp]
   );
-
   const attributeValueOptions = useMemo(() => {
     const attrs = attributesResp?.data ?? [];
     const options: { label: string; value: string }[] = [];

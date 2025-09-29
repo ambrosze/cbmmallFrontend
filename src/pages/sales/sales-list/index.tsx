@@ -28,11 +28,12 @@ import { inventorySchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 import { useGetAllDiscountAdminQuery } from "@/services/admin/discount";
+import debounce from "@/utils/debounce";
 
 interface InventoryCategory {
   name?: string;
@@ -75,6 +76,9 @@ const index = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [inventorySearch, setInventorySearch] = useState<string>("");
+  const [discountSearch, setDiscountSearch] = useState<string>("");
+
   const [createSales, { isLoading: isLoadingCreate, error }] =
     useCreateSalesMutation();
   const [updateSales, { isLoading: isLoadingUpdate, error: errorUpdate }] =
@@ -91,21 +95,28 @@ const index = () => {
   const { data: inventoryData, refetch: refetchInventory } =
     useGetAllInventoryQuery({
       paginate: false,
-      per_page: 15,
+      per_page: 50,
       page: currentPage,
-      q: search,
+      q: inventorySearch,
     });
   const { data: discountData, refetch: refetchDiscount, isLoading: isLoadingDiscount } = useGetAllDiscountAdminQuery({
       paginate: true,
-      per_page: 15,
+      per_page: 50,
       page: currentPage,
-      q: search,
+      q: discountSearch,
       filter: {
         is_active: 1,
       },
     });
   console.log("🚀 ~ index ~ inventoryData:", inventoryData);
-
+  const debouncedInventorySearch = useMemo(
+    () => debounce((q: string) => setInventorySearch(q.trim()), 400),
+    []
+  );
+  const debouncedDiscountSearch = useMemo(
+    () => debounce((q: string) => setDiscountSearch(q.trim()), 400),
+    []
+  );
   const [deleteSales, { isLoading: isDeleteLoading }] =
     useDeleteSalesMutation();
   const [showInvoice, setShowInvoice] = useState(false);
@@ -544,6 +555,8 @@ const index = () => {
         >
           <SalesForm
             error={error}
+            debouncedInventorySearch={debouncedInventorySearch}
+            debouncedDiscountSearch={debouncedDiscountSearch}
             inventoryData={inventoryList || []}
             discountData={discountData?.data || []}
             isLoadingDiscount={isLoadingDiscount}
@@ -568,6 +581,8 @@ const index = () => {
           onCloseModal={() => setShowEditModal(false)}
         >
           <SalesForm
+            debouncedInventorySearch={debouncedInventorySearch}
+            debouncedDiscountSearch={debouncedDiscountSearch}
             inventoryData={inventoryList || []}
             discountData={discountData?.data || []}
             isLoadingDiscount={isLoadingDiscount}

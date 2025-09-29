@@ -18,6 +18,8 @@ interface IProps {
   btnText: string;
   roleData: any;
   storeData: any;
+  debouncedRolesSearch?: (q: string) => void;
+  debouncedStoreSearch?: (q: string) => void;
 }
 export const StaffForm = ({
   formErrors,
@@ -31,6 +33,8 @@ export const StaffForm = ({
   setIsOpenModal,
   roleData,
   storeData,
+  debouncedRolesSearch,
+  debouncedStoreSearch,
 }: IProps) => {
   const [getDialCode, setGetDialCode] = useState("");
 
@@ -136,6 +140,9 @@ export const StaffForm = ({
             onChange={(value) => {
               setFormValues({ ...formValues, role_id: value });
             }}
+            handleSearchSelect={(q: string) =>
+              debouncedRolesSearch && debouncedRolesSearch(q ?? "")
+            }
             value={formValues.role_id || undefined}
             placeholder={
               <span className="text-sm font-bold">Select staff role</span>
@@ -160,6 +167,9 @@ export const StaffForm = ({
             onChange={(value) => {
               setFormValues({ ...formValues, store_id: value });
             }}
+            handleSearchSelect={(q: string) =>
+              debouncedStoreSearch && debouncedStoreSearch(q ?? "")
+            }
             value={formValues.store_id || undefined}
             placeholder={
               <span className="text-sm font-bold">Select staff store</span>
@@ -199,6 +209,6 @@ export const StaffForm = ({
           </div>
         </div>
       </form>
-  </div>
+    </div>
   );
 };

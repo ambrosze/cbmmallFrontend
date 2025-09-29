@@ -1,12 +1,12 @@
 import { useGetAllCustomersQuery } from "@/services/customers";
 import { useGetAllEnumsQuery } from "@/services/global";
+import { AdminDiscountDatum } from "@/types/discountTypes";
 import { formatCurrency } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import SelectInput from "../Input/SelectInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
-import { AdminDiscountDatum } from "@/types/discountTypes";
 
 interface IProps {
   formErrors: any;
@@ -21,6 +21,8 @@ interface IProps {
   inventoryData: any;
   discountData: AdminDiscountDatum[]; // legacy; not used for this form currently
   isLoadingDiscount?: boolean; // legacy; not used for this form currently
+  debouncedInventorySearch: (q: string) => void;
+  debouncedDiscountSearch: (q: string) => void;
 }
 
 export const SalesForm = ({
@@ -36,8 +38,10 @@ export const SalesForm = ({
   inventoryData,
   discountData,
   isLoadingDiscount,
+  debouncedInventorySearch,
+  debouncedDiscountSearch,
 }: IProps) => {
-  console.log("🚀 ~ SalesForm ~ discountData:", discountData)
+  console.log("🚀 ~ SalesForm ~ discountData:", discountData);
   const { data, isLoading } = useGetAllEnumsQuery(
     {
       enum: "PaymentMethod",
@@ -205,6 +209,11 @@ export const SalesForm = ({
               placeholder={
                 <span className="text-sm font-bold">Select discount code</span>
               }
+              handleSearchSelect={(q: string) => {
+                // Call debounced search function
+                // to avoid excessive API calls
+                debouncedDiscountSearch(q ?? "");
+              }}
               className="py-[3px]"
               data={
                 discountData?.map((item) => ({
@@ -223,7 +232,6 @@ export const SalesForm = ({
               </p>
             ) : null}
           </div>
-        
         </div>
 
         <div className="mt-4">
@@ -274,6 +282,9 @@ export const SalesForm = ({
                       placeholder={
                         <span className="text-sm">Select inventory item</span>
                       }
+                      handleSearchSelect={(q: string) => {
+                        debouncedInventorySearch(q ?? "");
+                      }}
                       data={inventoryData || []}
                     />
                     <span className="text-[12px] italic text-error-50">
