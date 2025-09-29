@@ -1,29 +1,29 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
-
+import { StaffForm } from "@/components/Forms/StaffForm";
 import Header from "@/components/header";
-import { adminDiscountColumns } from "@/components/Items/itemsColumns";
+import { staffsColumns } from "@/components/Items/itemsColumns";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
-
-import { DiscountForm } from "@/components/Forms/DiscountForm";
+import { useGetAllRolesQuery } from "@/services/admin/role";
 import {
-  useCreateDiscountAdminMutation,
-  useDeleteDiscountAdminMutation,
-  useGetAllDiscountAdminQuery,
-  useUpdateDiscountAdminMutation,
-} from "@/services/admin/discount";
-import { useGetAllCategoryQuery } from "@/services/category";
-import { AdminDiscountDatum } from "@/types/discountTypes";
+  useCreateStaffMutation,
+  useDeleteStaffMutation,
+  useGetAllStaffQuery,
+  useUpdateStaffMutation,
+} from "@/services/admin/staff";
+import { useGetAllStoresQuery } from "@/services/admin/store";
+import { IStaffDatum } from "@/types/staffTypes";
 import {
   capitalizeOnlyFirstLetter,
+  formatPhoneNumber,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
-import { adminDiscountSchema } from "@/validation/authValidate";
+import { staffSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Tooltip } from "antd";
 import { useRouter } from "next/router";
@@ -36,50 +36,47 @@ const index = () => {
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const router = useRouter();
   const [formValues, setFormValues] = useState({
-    code: "",
-    description: "",
-    percentage: "",
-    expires_at: "",
-    is_active: "1", // Changed from number 1 to string '1'
+    first_name: "",
+    last_name: "",
+    middle_name: "",
+    email: "",
+    phone_number: "",
+    role_id: "",
+    store_id: "",
   });
-  const [selectedItem, setSelectedItem] = useState<AdminDiscountDatum | null>(
-    null
-  );
+  const [selectedItem, setSelectedItem] = useState<IStaffDatum | null>(null);
   console.log("🚀 ~ index ~ selectedItem:", selectedItem);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-  const [createDiscountAdmin, { isLoading: isLoadingCreate, error }] =
-    useCreateDiscountAdminMutation();
-  const [
-    updateDiscountAdmin,
-    { isLoading: isLoadingUpdate, error: errorUpdate },
-  ] = useUpdateDiscountAdminMutation();
-
-  const { data, refetch, isLoading } = useGetAllDiscountAdminQuery({
-    paginate: true,
-    per_page: 15,
+  const [createStaff, { isLoading: isLoadingCreate, error }] =
+    useCreateStaffMutation();
+  const [updateStaff, { isLoading: isLoadingUpdate, error: errorUpdate }] =
+    useUpdateStaffMutation();
+  const { data, refetch, isLoading } = useGetAllStaffQuery({
+    q: search,
     page: currentPage,
-    q: search,
-    // filter: {
-    //   is_active: "1",
-    // },
+    include: "user,store",
+    per_page: 15,
+    paginate: true,
   });
-
-  console.log("🚀 ~ index ~ data:", data);
-
-  const {
-    data: getAllCategory,
-    refetch: refetchCategory,
-    isLoading: isLoadingCategory,
-  } = useGetAllCategoryQuery({
+  const { data: storesData } = useGetAllStoresQuery({
     q: search,
+    page: currentPage,
+    // include: "manager",
+    per_page: 15,
     paginate: false,
   });
-  const [deleteDiscountAdmin, { isLoading: isDeleteLoading }] =
-    useDeleteDiscountAdminMutation();
+  const { data: rolesData } = useGetAllRolesQuery({
+    q: search,
+    page: currentPage,
+    per_page: 15,
+    paginate: false,
+  });
+  const [deleteStaff, { isLoading: isDeleteLoading }] =
+    useDeleteStaffMutation();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues((prev: any) => ({
@@ -87,41 +84,48 @@ const index = () => {
       [name]: value,
     }));
   };
-
+  useEffect(() => {
+    if (selectedItem && showEditModal) {
+      setFormValues({
+        first_name: selectedItem?.user?.first_name || "",
+        last_name: selectedItem?.user?.last_name || "",
+        middle_name: selectedItem?.user?.middle_name || "",
+        email: selectedItem?.user?.email || "",
+        phone_number: selectedItem?.user?.phone_number || "",
+        role_id: (selectedItem as any)?.role?.id || "",
+        store_id: selectedItem?.store?.id || "",
+      });
+    }
+  }, [selectedItem, showEditModal]);
   const transformedData = data?.data?.map((item) => ({
     key: item?.id,
-    code: <div className="flex items-center gap-2">{item?.code}</div>,
-    // Export-friendly version
-    code_text: item?.code,
-    description: (
+    name: (
       <div className="flex items-center gap-2">
-        {item?.description ?? "N/A"}
+        {item?.user?.first_name} {item?.user?.last_name}
       </div>
     ),
     // Export-friendly version
-    description_text: item?.description ?? "N/A",
-    percentage: (
-      <div className="flex items-center gap-2">{item?.percentage}</div>
+    name_text: `${item?.user?.first_name} ${item?.user?.last_name}`,
+    email: (
+      <div className="flex items-center gap-2">{item?.user?.email || "-"}</div>
     ),
     // Export-friendly version
-    percentage_text: item?.percentage,
-    expiry_date: (
-      <div className="flex items-center gap-2">{item?.expires_at ?? "N/A"}</div>
-    ),
-    // Export-friendly version
-    expiry_date_text: item?.expires_at ?? "N/A",
-    is_active: (
-      <div className="flex items-center font-[500] gap-2">
-        {item?.is_active === "1" ? (
-          <span className="text-green-500">Active</span>
-        ) : (
-          <span className="text-red-500">Inactive</span>
-        )}
+    email_text: item?.user?.email || "-",
+    phone_number: (
+      <div className="flex items-center gap-2">
+        {formatPhoneNumber(item?.user?.phone_number)}
       </div>
     ),
     // Export-friendly version
-    is_active_text: item?.is_active === "1" ? "Active" : "Inactive",
+    phone_number_text: item?.user?.phone_number || "-",
+    staff_no: <span className=" font-[500]">{item?.staff_no || "-"}</span>,
+    // Export-friendly version
+    staff_no_text: item?.staff_no || "-",
+    store_name: <span className=" font-[500]">{item?.store?.name || "-"}</span>,
+    // Export-friendly version
+    store_name_text: item?.store?.name || "-",
     dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
+
     action: (
       <div className="flex items-center space-x-2">
         <Tooltip title="Delete">
@@ -144,16 +148,7 @@ const index = () => {
         <Tooltip title="Edit">
           <span
             onClick={() => {
-              const itemToEdit = item; // Store the item in a local variable
-              setSelectedItem(itemToEdit);
-              // Directly set form values here to ensure correct data is used
-              setFormValues({
-                code: itemToEdit.code,
-                description: itemToEdit.description ?? "",
-                percentage: itemToEdit.percentage ?? "",
-                expires_at: itemToEdit.expires_at ?? "",
-                is_active: itemToEdit.is_active ?? "1",
-              });
+              setSelectedItem(item);
               setShowEditModal(true);
             }}
             className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-blue-500 underline py-2`}
@@ -173,55 +168,47 @@ const index = () => {
     setCurrentPage(page);
     refetch();
   };
-  const transformedCategoryData = getAllCategory?.data.map((item) => {
+  const storeList = storesData?.data.map((item) => {
     return {
       label: item.name,
       value: item.id,
     };
   });
-  useEffect(() => {
-    // This useEffect can be removed if the direct form update in the onClick handler is working
-    // Keeping it as a backup with a more specific check
-    if (selectedItem && showEditModal) {
-      // Use a timeout to ensure this runs after the state updates
-      setTimeout(() => {
-        setFormValues({
-          code: selectedItem.code,
-          description: selectedItem.description ?? "",
-          percentage: selectedItem.percentage ?? "",
-          expires_at: selectedItem.expires_at ?? "",
-          is_active: selectedItem.is_active,
-        });
-      }, 0);
-    }
-  }, [selectedItem, showEditModal]);
+  const roleList = rolesData?.data.map((item) => {
+    return {
+      label: item.name,
+      value: item.id,
+    };
+  });
   const handleSubmit = async () => {
     try {
       // Validate form values using yup
-      await adminDiscountSchema.validate(formValues, {
+      await staffSchema.validate(formValues, {
         abortEarly: false,
       });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       let payload = {
-        code: formValues.code,
-        description: formValues.description,
-        percentage: formValues.percentage,
-        expires_at: formValues.expires_at,
-        is_active: formValues.is_active,
+        first_name: formValues.first_name,
+        last_name: formValues.last_name,
+        email: formValues.email,
+        phone_number: formValues.phone_number,
+        store_id: formValues.store_id,
+        ...(formValues.middle_name && { middle_name: formValues.middle_name }),
+        ...(formValues.role_id && { role_id: formValues.role_id }),
       };
 
       // remove middle name if it is empty
 
       // Proceed with server-side submission
-      const response = await createDiscountAdmin(payload).unwrap();
+      const response = await createStaff(payload).unwrap();
       showPlannerToast({
         options: {
           customToast: (
             <CustomToast
               altText={"Success"}
-              title={"Discount Created Successfully"}
+              title={"Staff Created Successfully"}
               image={imgSuccess}
               textColor="green"
               message={"Thank you..."}
@@ -252,7 +239,7 @@ const index = () => {
             customToast: (
               <CustomToast
                 altText={"Error"}
-                title={"Daily Gold Price Creation Failed"}
+                title={"Staff Creation Failed"}
                 image={imgError}
                 textColor="red"
                 message={(err as any)?.data?.message || "Something went wrong"}
@@ -268,23 +255,25 @@ const index = () => {
   const handleUpdateSubmit = async () => {
     try {
       // Validate form values using yup
-      await adminDiscountSchema.validate(formValues, {
+      await staffSchema.validate(formValues, {
         abortEarly: false,
       });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       let payload = {
-        code: formValues.code,
-        description: formValues.description,
-        percentage: formValues.percentage,
-        expires_at: formValues.expires_at,
-        is_active: formValues.is_active,
+        first_name: formValues.first_name,
+        last_name: formValues.last_name,
+        email: formValues.email,
+        phone_number: formValues.phone_number,
+        store_id: formValues.store_id,
+        ...(formValues.middle_name && { middle_name: formValues.middle_name }),
+        ...(formValues.role_id && { role_id: formValues.role_id }),
       };
 
       // Proceed with server-side submission
-      const response = await updateDiscountAdmin({
-        discount_id: selectedItem?.id!,
+      const response = await updateStaff({
+        id: selectedItem?.id!,
         body: payload,
       }).unwrap();
       showPlannerToast({
@@ -295,9 +284,13 @@ const index = () => {
               title={
                 <>
                   <span className="font-bold">
-                    {capitalizeOnlyFirstLetter(selectedItem?.code!)} Discount
+                    {capitalizeOnlyFirstLetter(
+                      selectedItem?.user?.first_name!
+                    ) +
+                      " " +
+                      capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
                   </span>{" "}
-                  updated Successfully
+                  updateded Successfully
                 </>
               }
               image={imgSuccess}
@@ -333,7 +326,13 @@ const index = () => {
                 title={
                   <>
                     <span className="font-bold">
-                      {capitalizeOnlyFirstLetter(selectedItem?.code!)} Discount
+                      {capitalizeOnlyFirstLetter(
+                        selectedItem?.user?.first_name!
+                      ) +
+                        " " +
+                        capitalizeOnlyFirstLetter(
+                          selectedItem?.user?.last_name!
+                        )}
                     </span>{" "}
                     update Failed
                   </>
@@ -351,26 +350,26 @@ const index = () => {
     }
   };
   // Create export columns with text versions
-  const exportColumns = adminDiscountColumns
+  const exportColumns = staffsColumns
     .filter(
       (column: any) => column.key !== "action" && column.dataIndex !== "action"
     )
     .map((column: any) => {
       // Map complex fields to their text versions
-      if (column.dataIndex === "code") {
-        return { ...column, dataIndex: "code_text" };
+      if (column.dataIndex === "name") {
+        return { ...column, dataIndex: "name_text" };
       }
-      if (column.dataIndex === "description") {
-        return { ...column, dataIndex: "description_text" };
+      if (column.dataIndex === "email") {
+        return { ...column, dataIndex: "email_text" };
       }
-      if (column.dataIndex === "percentage") {
-        return { ...column, dataIndex: "percentage_text" };
+      if (column.dataIndex === "phone_number") {
+        return { ...column, dataIndex: "phone_number_text" };
       }
-      if (column.dataIndex === "expiry_date") {
-        return { ...column, dataIndex: "expiry_date_text" };
+      if (column.dataIndex === "staff_no") {
+        return { ...column, dataIndex: "staff_no_text" };
       }
-      if (column.dataIndex === "is_active") {
-        return { ...column, dataIndex: "is_active_text" };
+      if (column.dataIndex === "store_name") {
+        return { ...column, dataIndex: "store_name_text" };
       }
       return column;
     });
@@ -380,21 +379,23 @@ const index = () => {
         search={search}
         setSearch={setSearch}
         showSearch={true}
-        placeHolderText="Search for discounts"
+        placeHolderText="Search staff"
         handleOpenSideNavBar={() => {}}
         isOpenSideNavBar
       />
       <AttributeHeader
-        headerText="Discounts"
-        btnText="Create Discount"
+        headerText="All Staffs"
+        btnText="Create Staff"
         onClick={() => {
           setIsOpenModal(true);
           setFormValues({
-            code: "",
-            description: "",
-            percentage: "",
-            expires_at: "",
-            is_active: "1",
+            first_name: "",
+            last_name: "",
+            middle_name: "",
+            email: "",
+            phone_number: "",
+            role_id: "",
+            store_id: "",
           });
         }}
       />
@@ -405,12 +406,15 @@ const index = () => {
           <>
             <TableMainComponent
               DeleteModalText={
-                <>{capitalizeOnlyFirstLetter(selectedItem?.code!)}</>
+                <>
+                  {capitalizeOnlyFirstLetter(selectedItem?.user?.first_name!)}{" "}
+                  {capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
+                </>
               }
               data={selectedItem}
-              deleteCardApi={deleteDiscountAdmin}
+              deleteCardApi={deleteStaff}
               isDeleteLoading={isDeleteLoading}
-              printTitle="Discounts"
+              printTitle="Staff Members"
               showExportButton={true}
               showPrintButton={true}
               showDeleteModal={showDeleteModal}
@@ -418,12 +422,13 @@ const index = () => {
               formValues={formValues}
               setShowDeleteModal={setShowDeleteModal}
               isLoading={false}
-              columnsTable={adminDiscountColumns as any}
+              columnsTable={staffsColumns as any}
               exportColumns={exportColumns as any}
               transformedData={transformedData}
             />
           </>
         )}
+
         <div className="py-8 flex justify-end items-center  w-full">
           <div className="w-fit">
             {data?.meta?.total! > 0 && (
@@ -441,21 +446,48 @@ const index = () => {
             )}
           </div>
         </div>
+        {/* <EmptyState textHeader="This place is empty, Add a new item, to see all your products here">
+          <div className="flex justify-center items-center gap-3 mt-8">
+            <div className="">
+              <CustomButton
+                onClick={() => {
+                  router.push("/items/add-items");
+                }}
+                type="button"
+                className="border bg-primary-40 flex justify-center items-center gap-2 text-white"
+              >
+                <Icon icon="line-md:plus" width="20" height="20" />
+                New Item
+              </CustomButton>
+            </div>
+            <div>
+              {" "}
+              <CustomButton
+                onClick={() => {}}
+                type="button"
+                className="border border-black"
+              >
+                Import
+              </CustomButton>
+            </div>
+          </div>
+        </EmptyState> */}
       </SharedLayout>
       {isOpenModal && (
         <PlannerModal
           modalOpen={isOpenModal}
           setModalOpen={setIsOpenModal}
           className=""
-          width={500}
-          title="Create Discount"
+          width={600}
+          title="Create Staff"
           onCloseModal={() => setIsOpenModal(false)}
         >
-          <DiscountForm
+          <StaffForm
             error={error}
-            btnText="Create Discount"
+            roleData={roleList}
+            storeData={storeList}
+            btnText="Create staff"
             formErrors={formErrors}
-            transformedCategoryData={transformedCategoryData}
             formValues={formValues}
             setFormValues={setFormValues}
             handleInputChange={handleInputChange}
@@ -470,15 +502,16 @@ const index = () => {
           modalOpen={showEditModal}
           setModalOpen={setShowEditModal}
           className=""
-          width={500}
-          title="Edit Discount"
+          width={600}
+          title="Edit Staff"
           onCloseModal={() => setShowEditModal(false)}
         >
-          <DiscountForm
+          <StaffForm
+            roleData={roleList}
+            storeData={storeList}
             error={errorUpdate}
-            transformedCategoryData={transformedCategoryData}
             setFormValues={setFormValues}
-            btnText="Edit Discount"
+            btnText="Edit Staff"
             formErrors={formErrors}
             formValues={formValues}
             handleInputChange={handleInputChange}

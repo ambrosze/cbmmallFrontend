@@ -1,11 +1,12 @@
+import { useGetAllCustomersQuery } from "@/services/customers";
+import { useGetAllEnumsQuery } from "@/services/global";
+import { formatCurrency } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState } from "react";
-import { twMerge } from "tailwind-merge";
-import PhoneInputWithCountry from "../Input/PhoneInputWithCountry";
 import SelectInput from "../Input/SelectInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
+import { AdminDiscountDatum } from "@/types/discountTypes";
 
 interface IProps {
   formErrors: any;
@@ -17,8 +18,9 @@ interface IProps {
   isLoadingCreate: boolean;
   setIsOpenModal: any;
   btnText: string;
-  inventoryData?: any;
-  dailyGoldPrices?: any[];
+  inventoryData: any;
+  discountData: AdminDiscountDatum[]; // legacy; not used for this form currently
+  isLoadingDiscount?: boolean; // legacy; not used for this form currently
 }
 
 export const SalesForm = ({
@@ -32,18 +34,38 @@ export const SalesForm = ({
   isLoadingCreate,
   setIsOpenModal,
   inventoryData,
-  dailyGoldPrices,
+  discountData,
+  isLoadingDiscount,
 }: IProps) => {
-  const [getDialCode, setGetDialCode] = useState("");
+  console.log("🚀 ~ SalesForm ~ discountData:", discountData)
+  const { data, isLoading } = useGetAllEnumsQuery(
+    {
+      enum: "PaymentMethod",
+    },
+    { refetchOnMountOrArgChange: true }
+  );
+  const { data: customerData, isLoading: isLoadingCustomers } =
+    useGetAllCustomersQuery({}, { refetchOnMountOrArgChange: true });
 
-  const paymentMethodOptions = [
-    { label: "Cash", value: "Cash" },
-    { label: "ATM", value: "ATM" },
-    { label: "Cheque", value: "Cheque" },
-    { label: "Transfer", value: "Transfer" },
-    { label: "POS", value: "POS" },
-    { label: "Other", value: "Other" },
-  ];
+  // Helper to extract error messages for various possible key formats
+  const getFieldErrors = (fieldKey: string, altKeys: string[] = []): string => {
+    const serverErrors = (error as any)?.data?.errors || {};
+    const clientErrors = formErrors || {};
+    const keysToTry = [fieldKey, ...altKeys];
+
+    for (const key of keysToTry) {
+      const fromClient = clientErrors?.[key];
+      if (fromClient)
+        return Array.isArray(fromClient) ? fromClient.join(", ") : fromClient;
+
+      const fromServer = serverErrors?.[key];
+      if (fromServer)
+        return Array.isArray(fromServer)
+          ? fromServer.join(", ")
+          : String(fromServer);
+    }
+    return "";
+  };
 
   const handleItemChange = (index: number, field: string, value: any) => {
     const updatedItems = [...(formValues.sale_inventories || [])];
@@ -55,14 +77,16 @@ export const SalesForm = ({
     if (field === "inventory_id") {
       // set inventory_id
       updatedItems[index].inventory_id = value;
-      // find its category, then find today's gold price for that category
-      const inv = inventoryData.find((i: any) => i.value === value);
-      const catId = inv?.category_id;
-      const gp = dailyGoldPrices?.find(
-        (p) => p.category_id === catId
-      )?.price_per_gram;
-      if (gp !== undefined) {
-        updatedItems[index].price_per_gram = gp;
+
+      // find the selected inventory option
+      const inv = (inventoryData || []).find((i: any) => i.value === value);
+      // auto-fill available quantity (can be edited by user later)
+      if (inv && inv.quantity !== undefined) {
+        updatedItems[index].quantity = inv.quantity;
+      }
+      // auto-fill cost price (read-only field)
+      if (inv && inv.cost_price !== undefined) {
+        updatedItems[index].cost_price = inv.cost_price;
       }
     } else {
       updatedItems[index][field] = value;
@@ -79,7 +103,7 @@ export const SalesForm = ({
     items.push({
       inventory_id: "",
       quantity: "",
-      price_per_gram: "",
+      cost_price: "",
     });
 
     setFormValues({
@@ -103,75 +127,36 @@ export const SalesForm = ({
       <form className="mt-5 flex flex-col gap-3 w-full">
         <div className="flex lg:flex-row flex-col gap-5 w-full">
           <div className="w-full">
-            <TextInput
-              type="text"
-              name="customer_name"
-              errorMessage={
-                formErrors.customer_name ||
-                (error as any)?.data?.errors?.customer_name?.map(
-                  (err: any) => err
-                ) ||
-                ""
-              }
-              className="py-[13px]"
-              value={formValues.customer_name}
-              onChange={handleInputChange}
-              placeholder="Enter customer name"
-              title={<span className="font-[500]">Customer Name*</span>}
-              required={true}
-            />
-          </div>
-          <div className="w-full">
             <div className={`pb-1`}>
-              <label
-                className={twMerge(
-                  "text-sm font-[500] capitalize text-[#2C3137]"
-                )}
-              >
-                Customer Phone Number
+              <label className={"text-sm font-[500] capitalize text-[#2C3137]"}>
+                Customer name*
               </label>
             </div>
-            <PhoneInputWithCountry
-              disabled={false}
-              value={formValues.customer_phone_number}
-              className=""
+            <SelectInput
               onChange={(value) => {
-                setFormValues((prevValues: any) => ({
-                  ...prevValues,
-                  customer_phone_number: value,
-                }));
+                setFormValues({ ...formValues, customer_id: value });
               }}
-              placeholder="Enter customer phone number"
+              loading={isLoadingCustomers}
+              value={formValues.customer_id || undefined}
+              placeholder={
+                <span className="text-sm font-bold">Select customer</span>
+              }
+              className="py-[3px]"
+              data={
+                customerData?.data?.map((customer) => ({
+                  label: customer.name,
+                  value: customer.id,
+                })) || []
+              }
             />
-            <span className="relative -top-1 text-[12px] italic text-error-50">
-              {formErrors.customer_phone_number ||
-                (error as any)?.data?.errors?.customer_phone_number?.map(
-                  (err: any) => err
-                ) ||
-                ""}
-            </span>
+            {getFieldErrors("customer_id") || getFieldErrors("buyer_id") ? (
+              <p className="flex flex-col gap-1 text-xs italic text-red-600">
+                {getFieldErrors("customer_id") || getFieldErrors("buyer_id")}
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex lg:flex-row flex-col gap-5">
-          <div className="w-full">
-            <TextInput
-              type="email"
-              name="customer_email"
-              className="py-[13px]"
-              errorMessage={
-                formErrors.customer_email ||
-                (error as any)?.data?.errors?.customer_email?.map(
-                  (err: any) => err
-                ) ||
-                ""
-              }
-              value={formValues.customer_email}
-              onChange={handleInputChange}
-              placeholder="Enter customer email address"
-              title={<span className="font-[500]">Customer Email</span>}
-              required={false}
-            />
-          </div>
           <div className="w-full">
             <div className={`pb-1`}>
               <label className={"text-sm font-[500] capitalize text-[#2C3137]"}>
@@ -182,12 +167,18 @@ export const SalesForm = ({
               onChange={(value) => {
                 setFormValues({ ...formValues, payment_method: value });
               }}
+              loading={isLoading}
               value={formValues.payment_method || undefined}
               placeholder={
                 <span className="text-sm font-bold">Select payment method</span>
               }
               className="py-[3px]"
-              data={paymentMethodOptions}
+              data={
+                data?.values?.map((enumValue) => ({
+                  label: enumValue.name,
+                  value: enumValue.value,
+                })) || []
+              }
             />
             {formErrors.payment_method || error ? (
               <p className="flex flex-col gap-1 text-xs italic text-red-600">
@@ -200,24 +191,39 @@ export const SalesForm = ({
             ) : null}
           </div>
           <div className="w-full">
-            <TextInput
-              type="text"
-              name="discount_code"
-              className="py-[13px]"
-              errorMessage={
-                formErrors.discount_code ||
-                (error as any)?.data?.errors?.discount_code?.map(
-                  (err: any) => err
-                ) ||
-                ""
+            <div className={`pb-1`}>
+              <label className={"text-sm font-[500] capitalize text-[#2C3137]"}>
+                Discount Code
+              </label>
+            </div>
+            <SelectInput
+              onChange={(value) => {
+                setFormValues({ ...formValues, discount_code: value });
+              }}
+              loading={isLoadingDiscount}
+              value={formValues.discount_code || undefined}
+              placeholder={
+                <span className="text-sm font-bold">Select discount code</span>
               }
-              value={formValues.discount_code}
-              onChange={handleInputChange}
-              placeholder="Enter discount code"
-              title={<span className="font-[500]">Discount Code</span>}
-              required={false}
+              className="py-[3px]"
+              data={
+                discountData?.map((item) => ({
+                  label: item.code,
+                  value: item.code,
+                })) || []
+              }
             />
+            {formErrors.discount_code || error ? (
+              <p className="flex flex-col gap-1 text-xs italic text-red-600">
+                {formErrors.discount_code ||
+                  (error as any)?.data?.errors?.discount_code?.map(
+                    (err: any) => err
+                  ) ||
+                  ""}
+              </p>
+            ) : null}
           </div>
+        
         </div>
 
         <div className="mt-4">
@@ -242,6 +248,8 @@ export const SalesForm = ({
                   type="button"
                   onClick={() => removeItem(index)}
                   className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                  aria-label="Remove item"
+                  title="Remove item"
                 >
                   <Icon icon="line-md:close" width="20" height="20" />
                 </button>
@@ -269,11 +277,14 @@ export const SalesForm = ({
                       data={inventoryData || []}
                     />
                     <span className="text-[12px] italic text-error-50">
-                      {formErrors[`sale_inventories.${index}.inventory_id`] ||
-                        (error as any)?.data?.errors?.[
-                          `sale_inventories.${index}.inventory_id`
-                        ]?.map((err: any) => err) ||
-                        ""}
+                      {getFieldErrors(
+                        `sale_inventories.${index}.inventory_id`,
+                        [
+                          `sale_inventories[${index}].inventory_id`,
+                          `sale_inventories.${index}[inventory_id]`,
+                          `sale_inventories[${index}][inventory_id]`,
+                        ]
+                      )}
                     </span>
                   </div>
 
@@ -282,13 +293,14 @@ export const SalesForm = ({
                       type="number"
                       name={`sale_inventories[${index}][quantity]`}
                       className="py-[13px]"
-                      errorMessage={
-                        formErrors[`sale_inventories.${index}.quantity`] ||
-                        (error as any)?.data?.errors?.[
-                          `sale_inventories.${index}.quantity`
-                        ]?.map((err: any) => err) ||
-                        ""
-                      }
+                      errorMessage={getFieldErrors(
+                        `sale_inventories.${index}.quantity`,
+                        [
+                          `sale_inventories[${index}].quantity`,
+                          `sale_inventories.${index}[quantity]`,
+                          `sale_inventories[${index}][quantity]`,
+                        ]
+                      )}
                       value={item.quantity}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleItemChange(index, "quantity", e.target.value)
@@ -296,38 +308,49 @@ export const SalesForm = ({
                       placeholder="Enter quantity"
                       title={<span className="font-[500]">Quantity*</span>}
                       required={true}
+                      helperText={`Available: ${
+                        (inventoryData || []).find(
+                          (opt: any) => opt.value === item.inventory_id
+                        )?.quantity ?? "-"
+                      }`}
                     />
                   </div>
 
                   <div>
                     <TextInput
                       type="number"
-                      name={`sale_inventories[${index}][price_per_gram]`}
+                      name={`sale_inventories[${index}][cost_price]`}
                       className="py-[13px]"
+                      readOnly={true}
                       errorMessage={
-                        formErrors[
-                          `sale_inventories.${index}.price_per_gram`
-                        ] ||
+                        formErrors[`sale_inventories.${index}.cost_price`] ||
                         (error as any)?.data?.errors?.[
-                          `sale_inventories.${index}.price_per_gram`
+                          `sale_inventories.${index}.cost_price`
                         ]?.map((err: any) => err) ||
                         ""
                       }
-                      value={item.price_per_gram}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleItemChange(
-                          index,
-                          "price_per_gram",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Enter price per gram"
+                      value={item.cost_price}
+                      onChange={() => {}}
+                      placeholder="Auto cost price"
                       title={
-                        <span className="font-[500]">Price Per Gram*</span>
+                        <span className="font-[500]">
+                          Cost Price (readonly)
+                        </span>
                       }
-                      required={true}
+                      required={false}
                     />
                   </div>
+                </div>
+                {/* Per-item total */}
+                <div className="mt-3 text-sm text-gray-700 flex items-center justify-between">
+                  <span className="font-medium">Item total:</span>
+                  <span className="font-semibold">
+                    {(() => {
+                      const qty = Number(item.quantity) || 0;
+                      const price = Number(item.cost_price) || 0;
+                      return formatCurrency(qty * price);
+                    })()}
+                  </span>
                 </div>
               </div>
             )
@@ -341,7 +364,25 @@ export const SalesForm = ({
           )}
         </div>
 
-        <div className="flex justify-end border-t border-gray-300 pt-3 mt-4">
+        {/* Grand total */}
+        <div className="border-t border-gray-300 pt-3 mt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-medium">Grand total</span>
+            <span className="text-lg font-semibold">
+              {(() => {
+                const items = formValues.sale_inventories || [];
+                const total = items.reduce((sum: number, cur: any) => {
+                  const qty = Number(cur?.quantity) || 0;
+                  const price = Number(cur?.cost_price) || 0;
+                  return sum + qty * price;
+                }, 0);
+                return formatCurrency(total);
+              })()}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-3">
           <div className="w-fit flex gap-5">
             <CustomButton
               type="button"

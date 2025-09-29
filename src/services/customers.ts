@@ -1,14 +1,21 @@
-import { IRolesTopLevel, ISingleRolesTopLevel } from "@/types/roleTypes";
-import { api } from "..";
+import { ISingleStoreTopLevel, IStoreTopLevel } from "@/types/storeTypes";
+import { api } from ".";
 
-interface CreateRolesType {
+
+interface CreateCustomerType {
   name: string;
+  email: string;
+  phone_number: string;
+  country: string;
+  city: string;
+  address: string;
 }
-export const rolesApi = api.injectEndpoints({
+
+export const customerApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getAllRoles: builder.query<
-      IRolesTopLevel,
+    getAllCustomers: builder.query<
+      IStoreTopLevel,
       {
         sort?: string;
         q?: string;
@@ -32,84 +39,77 @@ export const rolesApi = api.injectEndpoints({
       }) => {
         const params: any = {};
         if (q) params.q = q;
-
         if (paginate !== undefined) params.paginate = paginate;
         if (per_page) params.per_page = per_page;
         if (page) params.page = page;
         if (sort) params.sort = sort;
 
         return {
-          url: "roles",
+          url: "customers",
           method: "GET",
           params,
-          providesTags: ["roles"],
+          providesTags: ["customers"],
         };
       },
     }),
-    getSingleRoles: builder.query<
-      ISingleRolesTopLevel,
+    getSingleCustomer: builder.query<
+      ISingleStoreTopLevel,
       {
         id: string;
-        include?: string;
       }
     >({
-      query: ({
-        id,
-        include,
-      }: {
-        id: string;
-        include?: string; //cryptoNetwork
-      }) => {
+      query: ({ id }: { id: string }) => {
         const params: any = {};
-
-        if (include) params.include = include;
         return {
-          url: `roles/${id}`,
+          url: `customers/${id}`,
           method: "GET",
 
-          providesTags: ["roles"],
+          providesTags: ["customers"],
         };
       },
     }),
-    createRoles: builder.mutation<any, CreateRolesType>({
+    createCustomer: builder.mutation<any, CreateCustomerType>({
       query: (body) => ({
-        url: "roles",
+        url: "customers",
         method: "POST",
         body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["roles"],
+        invalidatesTags: ["customers"],
       }),
     }),
-    updateRoles: builder.mutation<any, { id: string; body: CreateRolesType }>({
+    updateCustomer: builder.mutation<
+      any,
+      { id: string; body: CreateCustomerType }
+    >({
       query: ({ id, body }) => ({
-        url: `roles/${id}`,
+        url: `customers/${id}`,
         method: "PUT",
         body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["roles"],
+        invalidatesTags: ["customers"],
       }),
     }),
-    deleteRoles: builder.mutation<any, { id: string }>({
+    deleteCustomer: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `roles/${id}`,
+        url: `customers/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["roles"],
+        invalidatesTags: ["customers"],
       }),
     }),
   }),
 });
 
 export const {
-  useGetAllRolesQuery,
-  useGetSingleRolesQuery,
-  useCreateRolesMutation,
-  useUpdateRolesMutation,
-  useDeleteRolesMutation,
-} = rolesApi;
+  useGetAllCustomersQuery,
+  useGetSingleCustomerQuery,
+  useCreateCustomerMutation,
+  useUpdateCustomerMutation,
+  useDeleteCustomerMutation,
+} = customerApi;

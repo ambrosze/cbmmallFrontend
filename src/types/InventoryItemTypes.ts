@@ -22,7 +22,7 @@ export interface InventoryItemStore {
   id: string;
   name: string;
   address: string;
-  is_headquarters: number;
+  is_warehouse: number;
   manager_staff_id: string;
   created_at: string;
   updated_at: string;

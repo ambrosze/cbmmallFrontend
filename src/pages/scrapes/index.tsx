@@ -159,7 +159,9 @@ const index = () => {
   };
   // get the colour by id from the data
   const getColourById = (id: string) => {
-    const colour = transformedColoursData?.find((item: any) => item.value === id);
+    const colour = transformedColoursData?.find(
+      (item: any) => item.value === id
+    );
     return colour ? colour.label : "N/A";
   };
   const items: MenuProps["items"] = [
@@ -776,7 +778,7 @@ const index = () => {
                 <div className="space-y-1 md:space-y-2">
                   <div className="text-sm md:text-base">
                     <span className="font-medium">Is Headquarters:</span>{" "}
-                    {viewDetailsData?.inventory?.store?.is_headquarters === "1"
+                    {viewDetailsData?.inventory?.store?.is_warehouse === "1"
                       ? "Yes"
                       : "No"}
                   </div>

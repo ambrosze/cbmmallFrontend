@@ -47,13 +47,17 @@ const SelectInput = ({
       event.preventDefault();
       event.stopPropagation();
     };
+
+    // In tags mode, use the value as the display text if label is not available
+    const displayText = mode === "tags" ? label || value : label;
+
     return (
       <span
         className="ant-select-selection-item flex items-center gap-1"
-        title={String(label)}
+        title={String(displayText)}
       >
         <span className="ant-select-selection-item-content text-sm font-semibold">
-          {label}
+          {displayText}
         </span>
         {closable && (
           <span
@@ -108,16 +112,25 @@ const SelectInput = ({
         tagRender={mode ? tagRender || defaultTagRender : undefined}
         // Allow splitting tags by common separators when in tags mode
         tokenSeparators={mode === "tags" ? tokenSeparators ?? [","] : undefined}
-        optionLabelProp="label"
-        optionFilterProp="label"
+        optionLabelProp={mode === "tags" ? "value" : "label"}
+        labelRender={
+          mode === "tags"
+            ? undefined
+            : (option) =>
+                (
+                  <span className="text-sm font-[500]">{option.label}</span>
+                ) as unknown as ReactElement
+        }
+        optionFilterProp={mode === "tags" ? "value" : "label"}
         filterOption={
           handleSearchSelect
             ? false
             : (input, option) => {
-                const label = option?.label;
+                const searchText =
+                  mode === "tags" ? option?.value : option?.label;
                 return (
-                  typeof label === "string" &&
-                  label.toLowerCase().includes(input.toLowerCase())
+                  typeof searchText === "string" &&
+                  searchText.toLowerCase().includes(input.toLowerCase())
                 );
               }
         }

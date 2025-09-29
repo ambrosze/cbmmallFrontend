@@ -1,31 +1,32 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
-import { StaffForm } from "@/components/Forms/StaffForm";
+
+import { CustomerForm } from "@/components/Forms/CustomerForm";
 import Header from "@/components/header";
-import { staffsColumns } from "@/components/Items/itemsColumns";
+import {
+  customerColumns,
+  storesColumns,
+} from "@/components/Items/itemsColumns";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
-import { useGetAllRolesQuery } from "@/services/admin/role";
 import {
-  useCreateStaffMutation,
-  useDeleteStaffMutation,
-  useGetAllStaffQuery,
-  useUpdateStaffMutation,
-} from "@/services/admin/staff";
-import { useGetAllStoresQuery } from "@/services/admin/store";
-import { IStaffDatum } from "@/types/staffTypes";
+  useCreateCustomerMutation,
+  useDeleteCustomerMutation,
+  useGetAllCustomersQuery,
+  useUpdateCustomerMutation,
+} from "@/services/customers";
+import { IStoreDatum } from "@/types/storeTypes";
 import {
   capitalizeOnlyFirstLetter,
-  formatPhoneNumber,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
-import { staffSchema } from "@/validation/authValidate";
+import { customerSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Tooltip } from "antd";
+import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import * as yup from "yup";
@@ -36,47 +37,36 @@ const index = () => {
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const router = useRouter();
   const [formValues, setFormValues] = useState({
-    first_name: "",
-    last_name: "",
-    middle_name: "",
+    name: "",
     email: "",
     phone_number: "",
-    role_id: "",
-    store_id: "",
+    country: "",
+    city: "",
+    address: "",
   });
-  const [selectedItem, setSelectedItem] = useState<IStaffDatum | null>(null);
+  const [selectedItem, setSelectedItem] = useState<IStoreDatum | null>(null);
   console.log("🚀 ~ index ~ selectedItem:", selectedItem);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-  const [createStaff, { isLoading: isLoadingCreate, error }] =
-    useCreateStaffMutation();
-  const [updateStaff, { isLoading: isLoadingUpdate, error: errorUpdate }] =
-    useUpdateStaffMutation();
-  const { data, refetch, isLoading } = useGetAllStaffQuery({
+  const [createCustomer, { isLoading: isLoadingCreate, error }] =
+    useCreateCustomerMutation();
+  const [updateCustomer, { isLoading: isLoadingUpdate, error: errorUpdate }] =
+    useUpdateCustomerMutation();
+
+  const { data, refetch, isLoading } = useGetAllCustomersQuery({
     q: search,
     page: currentPage,
-    include: "user,managedStore,store",
     per_page: 15,
     paginate: true,
   });
-  const { data: storesData } = useGetAllStoresQuery({
-    q: search,
-    page: currentPage,
-    // include: "manager",
-    per_page: 15,
-    paginate: false,
-  });
-  const { data: rolesData } = useGetAllRolesQuery({
-    q: search,
-    page: currentPage,
-    per_page: 15,
-    paginate: false,
-  });
-  const [deleteStaff, { isLoading: isDeleteLoading }] =
-    useDeleteStaffMutation();
+  console.log("🚀 ~ index ~ data:", data);
+
+  const [deleteCustomer, { isLoading: isDeleteLoading }] =
+    useDeleteCustomerMutation();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues((prev: any) => ({
@@ -87,128 +77,205 @@ const index = () => {
   useEffect(() => {
     if (selectedItem && showEditModal) {
       setFormValues({
-        first_name: selectedItem?.user?.first_name || "",
-        last_name: selectedItem?.user?.last_name || "",
-        middle_name: selectedItem?.user?.middle_name || "",
-        email: selectedItem?.user?.email || "",
-        phone_number: selectedItem?.user?.phone_number || "",
-        role_id: (selectedItem as any)?.role?.id || "",
-        store_id: selectedItem?.store?.id || "",
+        name: selectedItem?.name || "",
+        address: selectedItem?.address || "",
+        email: selectedItem?.email || "",
+        phone_number: selectedItem?.phone_number || "",
+        country: selectedItem?.country || "",
+        city: selectedItem?.city || "",
       });
     }
   }, [selectedItem, showEditModal]);
+
+  useEffect(() => {
+    if (!showEditModal && !isOpenModal) {
+      setFormValues({
+        name: "",
+        address: "",
+        email: "",
+        phone_number: "",
+        country: "",
+        city: "",
+      });
+    }
+  }, [showEditModal, isOpenModal]);
   const transformedData = data?.data?.map((item) => ({
     key: item?.id,
     name: (
-      <div className="flex items-center gap-2">
-        {item?.user?.first_name} {item?.user?.last_name}
-      </div>
+      <div className="flex items-center gap-2 font-semibold">{item?.name}</div>
     ),
-    // Export-friendly version
-    name_text: `${item?.user?.first_name} ${item?.user?.last_name}`,
-    email: (
-      <div className="flex items-center gap-2">{item?.user?.email || "-"}</div>
-    ),
-    // Export-friendly version
-    email_text: item?.user?.email || "-",
+    email: <div className="flex items-center gap-2">{item?.email || "-"}</div>,
     phone_number: (
-      <div className="flex items-center gap-2">
-        {formatPhoneNumber(item?.user?.phone_number)}
-      </div>
+      <div className="flex items-center gap-2">{item?.phone_number || "-"}</div>
+    ),
+    phone_number_text: item?.phone_number || "-",
+    email_text: item?.email || "-",
+    country_text: item?.country || "-",
+    city_text: item?.city || "-",
+    country: (
+      <div className="flex items-center gap-2">{item?.country || "-"}</div>
+    ),
+    city: <div className="flex items-center gap-2">{item?.city || "-"}</div>,
+
+    // Export-friendly version
+    name_text: item?.name,
+    address: (
+      <div className="flex items-center gap-2">{item?.address || "-"}</div>
     ),
     // Export-friendly version
-    phone_number_text: item?.user?.phone_number || "-",
-    staff_no: <span className=" font-[500]">{item?.staff_no || "-"}</span>,
-    // Export-friendly version
-    staff_no_text: item?.staff_no || "-",
-    store_name: <span className=" font-[500]">{item?.store?.name || "-"}</span>,
-    // Export-friendly version
-    store_name_text: item?.store?.name || "-",
-    dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
+    address_text: item?.address || "-",
 
+    dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
     action: (
       <div className="flex items-center space-x-2">
-        <Tooltip title="Delete">
-          <span
-            onClick={() => {
-              setSelectedItem(item);
-              setShowDeleteModal(true);
-            }}
-            className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-red-500 underline py-2`}
-          >
-            <Icon
-              className="text-red-500 cursor-pointer"
-              icon="gg:trash"
-              width="30"
-              height="30"
-            />
-          </span>
-        </Tooltip>
-
-        <Tooltip title="Edit">
-          <span
-            onClick={() => {
-              setSelectedItem(item);
-              setShowEditModal(true);
-            }}
-            className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-blue-500 underline py-2`}
-          >
-            <Icon
-              className="text-primary-40 cursor-pointer"
-              icon="line-md:pencil"
-              width="30"
-              height="30"
-            />
-          </span>
-        </Tooltip>
+        {(() => {
+          const items: MenuProps["items"] = [
+            {
+              label: (
+                <button
+                  onClick={() => {
+                    setSelectedItem(item);
+                    setShowEditModal(true);
+                  }}
+                  className="flex w-full items-center gap-2"
+                  type="button"
+                >
+                  Edit
+                </button>
+              ),
+              key: "edit",
+            },
+            {
+              label: (
+                <button
+                  onClick={() => {
+                    setSelectedItem(item);
+                    setShowDeleteModal(true);
+                  }}
+                  className="flex w-full items-center text-red-500 gap-2"
+                  type="button"
+                >
+                  Delete
+                </button>
+              ),
+              key: "delete",
+            },
+          ];
+          return (
+            <Dropdown menu={{ items }} trigger={["click"]}>
+              <Icon
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+                icon="mdi:dots-vertical-circle-outline"
+                width="30"
+                height="30"
+                className="text-gray-600 cursor-pointer"
+              />
+            </Dropdown>
+          );
+        })()}
       </div>
     ),
+    // action: (
+    //   <div className="flex items-center space-x-2">
+    //     <Tooltip title="Delete">
+    //       <span
+    //         onClick={() => {
+    //           setSelectedItem(item);
+    //           setShowDeleteModal(true);
+    //         }}
+    //         className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-red-500 underline py-2`}
+    //       >
+    //         <Icon
+    //           className="text-red-500 cursor-pointer"
+    //           icon="gg:trash"
+    //           width="30"
+    //           height="30"
+    //         />
+    //       </span>
+    //     </Tooltip>
+
+    //     <Tooltip title="Edit">
+    //       <span
+    //         onClick={() => {
+    //           setSelectedItem(item!);
+    //           setShowEditModal(true);
+    //         }}
+    //         className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-blue-500 underline py-2`}
+    //       >
+    //         <Icon
+    //           className="text-primary-40 cursor-pointer"
+    //           icon="line-md:pencil"
+    //           width="30"
+    //           height="30"
+    //         />
+    //       </span>
+    //     </Tooltip>
+    //   </div>
+    // ),
   }));
+  // Create export columns with text versions
+  const exportColumns = storesColumns
+    .filter(
+      (column: any) => column.key !== "action" && column.dataIndex !== "action"
+    )
+    .map((column: any) => {
+      // Map complex fields to their text versions
+      if (column.dataIndex === "name") {
+        return { ...column, dataIndex: "name_text" };
+      }
+      if (column.dataIndex === "email") {
+        return { ...column, dataIndex: "email_text" };
+      }
+      if (column.dataIndex === "phone_number") {
+        return { ...column, dataIndex: "phone_number_text" };
+      }
+      if (column.dataIndex === "country") {
+        return { ...column, dataIndex: "country_text" };
+      }
+      if (column.dataIndex === "city") {
+        return { ...column, dataIndex: "city_text" };
+      }
+      if (column.dataIndex === "address") {
+        return { ...column, dataIndex: "address_text" };
+      }
+      if (column.dataIndex === "is_warehouse") {
+        return { ...column, dataIndex: "is_warehouse_text" };
+      }
+      return column;
+    });
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     refetch();
   };
-  const storeList = storesData?.data.map((item) => {
-    return {
-      label: item.name,
-      value: item.id,
-    };
-  });
-  const roleList = rolesData?.data.map((item) => {
-    return {
-      label: item.name,
-      value: item.id,
-    };
-  });
+
   const handleSubmit = async () => {
     try {
       // Validate form values using yup
-      await staffSchema.validate(formValues, {
+      await customerSchema.validate(formValues, {
         abortEarly: false,
       });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       let payload = {
-        first_name: formValues.first_name,
-        last_name: formValues.last_name,
+        name: formValues.name,
         email: formValues.email,
         phone_number: formValues.phone_number,
-        store_id: formValues.store_id,
-        ...(formValues.middle_name && { middle_name: formValues.middle_name }),
-        ...(formValues.role_id && { role_id: formValues.role_id }),
+        country: formValues.country,
+        city: formValues.city,
+        address: formValues.address,
       };
 
-      // remove middle name if it is empty
-
       // Proceed with server-side submission
-      const response = await createStaff(payload).unwrap();
+      const response = await createCustomer(payload).unwrap();
       showPlannerToast({
         options: {
           customToast: (
             <CustomToast
               altText={"Success"}
-              title={"Staff Created Successfully"}
+              title={"Customer Created Successfully"}
               image={imgSuccess}
               textColor="green"
               message={"Thank you..."}
@@ -239,7 +306,7 @@ const index = () => {
             customToast: (
               <CustomToast
                 altText={"Error"}
-                title={"Staff Creation Failed"}
+                title={"Customer Creation Failed"}
                 image={imgError}
                 textColor="red"
                 message={(err as any)?.data?.message || "Something went wrong"}
@@ -255,24 +322,23 @@ const index = () => {
   const handleUpdateSubmit = async () => {
     try {
       // Validate form values using yup
-      await staffSchema.validate(formValues, {
+      await customerSchema.validate(formValues, {
         abortEarly: false,
       });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       let payload = {
-        first_name: formValues.first_name,
-        last_name: formValues.last_name,
+        name: formValues.name,
         email: formValues.email,
         phone_number: formValues.phone_number,
-        store_id: formValues.store_id,
-        ...(formValues.middle_name && { middle_name: formValues.middle_name }),
-        ...(formValues.role_id && { role_id: formValues.role_id }),
+        country: formValues.country,
+        city: formValues.city,
+        address: formValues.address,
       };
 
       // Proceed with server-side submission
-      const response = await updateStaff({
+      const response = await updateCustomer({
         id: selectedItem?.id!,
         body: payload,
       }).unwrap();
@@ -284,13 +350,9 @@ const index = () => {
               title={
                 <>
                   <span className="font-bold">
-                    {capitalizeOnlyFirstLetter(
-                      selectedItem?.user?.first_name!
-                    ) +
-                      " " +
-                      capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
+                    {capitalizeOnlyFirstLetter(selectedItem?.name!)}
                   </span>{" "}
-                  updateded Successfully
+                  updated Successfully
                 </>
               }
               image={imgSuccess}
@@ -304,6 +366,8 @@ const index = () => {
       });
       refetch();
       setIsOpenModal(false);
+      setShowEditModal(false);
+      setSelectedItem(null);
     } catch (err: any) {
       if (err.name === "ValidationError") {
         // Handle client-side validation errors
@@ -326,13 +390,7 @@ const index = () => {
                 title={
                   <>
                     <span className="font-bold">
-                      {capitalizeOnlyFirstLetter(
-                        selectedItem?.user?.first_name!
-                      ) +
-                        " " +
-                        capitalizeOnlyFirstLetter(
-                          selectedItem?.user?.last_name!
-                        )}
+                      {capitalizeOnlyFirstLetter(selectedItem?.name!)}
                     </span>{" "}
                     update Failed
                   </>
@@ -349,53 +407,28 @@ const index = () => {
       }
     }
   };
-  // Create export columns with text versions
-  const exportColumns = staffsColumns
-    .filter(
-      (column: any) => column.key !== "action" && column.dataIndex !== "action"
-    )
-    .map((column: any) => {
-      // Map complex fields to their text versions
-      if (column.dataIndex === "name") {
-        return { ...column, dataIndex: "name_text" };
-      }
-      if (column.dataIndex === "email") {
-        return { ...column, dataIndex: "email_text" };
-      }
-      if (column.dataIndex === "phone_number") {
-        return { ...column, dataIndex: "phone_number_text" };
-      }
-      if (column.dataIndex === "staff_no") {
-        return { ...column, dataIndex: "staff_no_text" };
-      }
-      if (column.dataIndex === "store_name") {
-        return { ...column, dataIndex: "store_name_text" };
-      }
-      return column;
-    });
   return (
     <div className={``}>
       <Header
         search={search}
         setSearch={setSearch}
         showSearch={true}
-        placeHolderText="Search staff"
+        placeHolderText="Search customers"
         handleOpenSideNavBar={() => {}}
         isOpenSideNavBar
       />
       <AttributeHeader
-        headerText="All Staffs"
-        btnText="Create Staff"
+        headerText="All Customers"
+        btnText="Create Customer"
         onClick={() => {
           setIsOpenModal(true);
           setFormValues({
-            first_name: "",
-            last_name: "",
-            middle_name: "",
+            name: "",
+            address: "",
             email: "",
             phone_number: "",
-            role_id: "",
-            store_id: "",
+            country: "",
+            city: "",
           });
         }}
       />
@@ -406,15 +439,12 @@ const index = () => {
           <>
             <TableMainComponent
               DeleteModalText={
-                <>
-                  {capitalizeOnlyFirstLetter(selectedItem?.user?.first_name!)}{" "}
-                  {capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
-                </>
+                <>{capitalizeOnlyFirstLetter(selectedItem?.name!)}</>
               }
               data={selectedItem}
-              deleteCardApi={deleteStaff}
+              deleteCardApi={deleteCustomer}
               isDeleteLoading={isDeleteLoading}
-              printTitle="Staff Members"
+              printTitle="Customers"
               showExportButton={true}
               showPrintButton={true}
               showDeleteModal={showDeleteModal}
@@ -422,13 +452,12 @@ const index = () => {
               formValues={formValues}
               setShowDeleteModal={setShowDeleteModal}
               isLoading={false}
-              columnsTable={staffsColumns as any}
+              columnsTable={customerColumns as any}
               exportColumns={exportColumns as any}
               transformedData={transformedData}
             />
           </>
         )}
-
         <div className="py-8 flex justify-end items-center  w-full">
           <div className="w-fit">
             {data?.meta?.total! > 0 && (
@@ -446,32 +475,6 @@ const index = () => {
             )}
           </div>
         </div>
-        {/* <EmptyState textHeader="This place is empty, Add a new item, to see all your products here">
-          <div className="flex justify-center items-center gap-3 mt-8">
-            <div className="">
-              <CustomButton
-                onClick={() => {
-                  router.push("/items/add-items");
-                }}
-                type="button"
-                className="border bg-primary-40 flex justify-center items-center gap-2 text-white"
-              >
-                <Icon icon="line-md:plus" width="20" height="20" />
-                New Item
-              </CustomButton>
-            </div>
-            <div>
-              {" "}
-              <CustomButton
-                onClick={() => {}}
-                type="button"
-                className="border border-black"
-              >
-                Import
-              </CustomButton>
-            </div>
-          </div>
-        </EmptyState> */}
       </SharedLayout>
       {isOpenModal && (
         <PlannerModal
@@ -479,14 +482,12 @@ const index = () => {
           setModalOpen={setIsOpenModal}
           className=""
           width={600}
-          title="Create Staff"
+          title="Create Customer"
           onCloseModal={() => setIsOpenModal(false)}
         >
-          <StaffForm
+          <CustomerForm
             error={error}
-            roleData={roleList}
-            storeData={storeList}
-            btnText="Create staff"
+            btnText="Create Customer"
             formErrors={formErrors}
             formValues={formValues}
             setFormValues={setFormValues}
@@ -503,15 +504,16 @@ const index = () => {
           setModalOpen={setShowEditModal}
           className=""
           width={600}
-          title="Edit Staff"
-          onCloseModal={() => setShowEditModal(false)}
+          title="Edit Customer"
+          onCloseModal={() => {
+            setShowEditModal(false);
+            setSelectedItem(null);
+          }}
         >
-          <StaffForm
-            roleData={roleList}
-            storeData={storeList}
+          <CustomerForm
             error={errorUpdate}
             setFormValues={setFormValues}
-            btnText="Edit Staff"
+            btnText="Edit Customer"
             formErrors={formErrors}
             formValues={formValues}
             handleInputChange={handleInputChange}

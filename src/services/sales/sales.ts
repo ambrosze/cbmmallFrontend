@@ -3,14 +3,12 @@ import { api } from "..";
 import { PosTopLevel } from "@/types/PosTypes";
 
 interface CreateSalesType {
-  customer_name: string;
-  customer_phone_number: string;
+  customer_id: string;
+  discount_code?: string;
   payment_method: string; // ATM,Cheque,Cash,Transfer,POS,Other
-  customer_email: string;
   sale_inventories: {
     inventory_id: string; // nullable|string|max:191|exists:inventory,id
     quantity: number;
-    price_per_gram: number;
   }[];
 }
 interface AddItemToSalesType {
@@ -127,6 +125,7 @@ export const salesApi = api.injectEndpoints({
         return {
           url: `sales/${id}`,
           method: "GET",
+          params,
           providesTags: ["sales"],
         };
       },

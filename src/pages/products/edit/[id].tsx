@@ -46,7 +46,7 @@ import {
 } from "@/services/products/variant/variant-product-list";
 import { compressImage, fileToBase64 } from "@/utils/compressImage";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Upload, message } from "antd";
+import { Breadcrumb, Upload, message } from "antd";
 import { useRouter } from "next/router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
@@ -1307,6 +1307,17 @@ const index = () => {
         onClick={() => {}}
       />
       <SharedLayout className="bg-white">
+        <Breadcrumb
+          className="mb-4"
+          items={[
+            { title: "Products", href: "/products" },
+            {
+              title: (
+                <span className="font-semibold">{data?.data?.name|| "Edit"}</span>
+              ),
+            },
+          ]}
+        />
         {isLoading ? (
           <div className="pb-20">
             <SkeletonLoaderForPage />

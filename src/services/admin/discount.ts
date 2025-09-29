@@ -18,7 +18,7 @@ export const discountAdminApi = api.injectEndpoints({
         sort?: string;
         include?: string;
         filter?: {
-          is_active?: string;
+          is_active?: number | string;
           // Add more filter fields as needed here
         };
       }
@@ -39,7 +39,7 @@ export const discountAdminApi = api.injectEndpoints({
         sort?: string;
         include?: string;
         filter?: {
-          is_active?: string;
+          is_active?: number | string;
           // Add more filter fields as needed here
         };
       }) => {
@@ -60,7 +60,7 @@ export const discountAdminApi = api.injectEndpoints({
         }
 
         return {
-          url: "admin/discounts",
+          url: "discounts",
           method: "GET",
           params,
           providesTags: ["discountAdmin"],
@@ -85,7 +85,7 @@ export const discountAdminApi = api.injectEndpoints({
 
         if (include) params.include = include;
         return {
-          url: `admin/discounts/${id}`,
+          url: `discounts/${id}`,
           method: "GET",
           providesTags: ["discountAdmin"],
         };
@@ -93,7 +93,7 @@ export const discountAdminApi = api.injectEndpoints({
     }),
     createDiscountAdmin: builder.mutation<any, CreateDiscountAdminType>({
       query: (body) => ({
-        url: "admin/discounts",
+        url: "discounts",
         method: "POST",
         body: body,
         headers: {
@@ -107,7 +107,7 @@ export const discountAdminApi = api.injectEndpoints({
       { discount_id: string; body: CreateDiscountAdminType }
     >({
       query: ({ discount_id, body }) => ({
-        url: `admin/discounts/${discount_id}`,
+        url: `discounts/${discount_id}`,
         method: "PUT",
         body: body,
         headers: {
@@ -118,7 +118,7 @@ export const discountAdminApi = api.injectEndpoints({
     }),
     deleteDiscountAdmin: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `admin/discounts/${id}`,
+        url: `discounts/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

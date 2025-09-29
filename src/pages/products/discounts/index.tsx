@@ -1,31 +1,29 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
 
-import { StoreForm } from "@/components/Forms/StoreForm";
 import Header from "@/components/header";
-import { storesColumns } from "@/components/Items/itemsColumns";
+import { adminDiscountColumns } from "@/components/Items/itemsColumns";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
+
+import { DiscountForm } from "@/components/Forms/DiscountForm";
 import {
-  useDeleteStaffMutation,
-  useGetAllStaffQuery,
-} from "@/services/admin/staff";
-import {
-  useCreateStoreMutation,
-  useDeleteStoreMutation,
-  useGetAllStoresQuery,
-  useUpdateStoreMutation,
-} from "@/services/admin/store";
-import { IStoreDatum } from "@/types/storeTypes";
+  useCreateDiscountAdminMutation,
+  useDeleteDiscountAdminMutation,
+  useGetAllDiscountAdminQuery,
+  useUpdateDiscountAdminMutation,
+} from "@/services/admin/discount";
+import { useGetAllCategoryQuery } from "@/services/category";
+import { AdminDiscountDatum } from "@/types/discountTypes";
 import {
   capitalizeOnlyFirstLetter,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
-import { storeSchema } from "@/validation/authValidate";
+import { adminDiscountSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Tooltip } from "antd";
 import { useRouter } from "next/router";
@@ -38,38 +36,50 @@ const index = () => {
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const router = useRouter();
   const [formValues, setFormValues] = useState({
-    name: "",
-    email: "",
-    phone_number: "",
-    country: "",
-    city: "",
-    address: "",
-    is_warehouse: 0,
+    code: "",
+    description: "",
+    percentage: "",
+    expires_at: "",
+    is_active: 1, // Changed from number 1 to string '1'
   });
-  const [selectedItem, setSelectedItem] = useState<IStoreDatum | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AdminDiscountDatum | null>(
+    null
+  );
   console.log("🚀 ~ index ~ selectedItem:", selectedItem);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-  const [createStore, { isLoading: isLoadingCreate, error }] =
-    useCreateStoreMutation();
-  const [updateStore, { isLoading: isLoadingUpdate, error: errorUpdate }] =
-    useUpdateStoreMutation();
-  const [checked, setChecked] = useState(false);
-  console.log("🚀 ~ index ~ checked:", checked);
+  const [createDiscountAdmin, { isLoading: isLoadingCreate, error }] =
+    useCreateDiscountAdminMutation();
+  const [
+    updateDiscountAdmin,
+    { isLoading: isLoadingUpdate, error: errorUpdate },
+  ] = useUpdateDiscountAdminMutation();
 
-  const { data, refetch, isLoading } = useGetAllStoresQuery({
-    q: search,
-    page: currentPage,
-    per_page: 15,
+  const { data, refetch, isLoading } = useGetAllDiscountAdminQuery({
     paginate: true,
+    per_page: 15,
+    page: currentPage,
+    q: search,
+    // filter: {
+    //   is_active: "1",
+    // },
   });
+
   console.log("🚀 ~ index ~ data:", data);
-  
-  const [deleteStore, { isLoading: isDeleteLoading }] =
-    useDeleteStoreMutation();
+
+  const {
+    data: getAllCategory,
+    refetch: refetchCategory,
+    isLoading: isLoadingCategory,
+  } = useGetAllCategoryQuery({
+    q: search,
+    paginate: false,
+  });
+  const [deleteDiscountAdmin, { isLoading: isDeleteLoading }] =
+    useDeleteDiscountAdminMutation();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues((prev: any) => ({
@@ -77,85 +87,41 @@ const index = () => {
       [name]: value,
     }));
   };
-  useEffect(() => {
-    if (selectedItem && showEditModal) {
-      setFormValues({
-        name: selectedItem?.name || "",
-        address: selectedItem?.address || "",
-        email: selectedItem?.email || "",
-        phone_number: selectedItem?.phone_number || "",
-        country: selectedItem?.country || "",
-        city: selectedItem?.city || "",
-        is_warehouse: selectedItem?.is_warehouse || 0,
-      });
-      setChecked(
-        (selectedItem as any)?.is_warehouse === "1" ||
-          (selectedItem as any)?.is_warehouse === 1
-      );
-    }
-  }, [selectedItem, showEditModal]);
 
-  useEffect(() => {
-    if (!showEditModal && !isOpenModal) {
-      setChecked(false);
-      setFormValues({
-        name: "",
-        address: "",
-        email: "",
-        phone_number: "",
-        country: "",
-        city: "",
-        is_warehouse: 0,
-      });
-    }
-  }, [showEditModal, isOpenModal]);
   const transformedData = data?.data?.map((item) => ({
     key: item?.id,
-    name: <div className="flex items-center gap-2 font-semibold">{item?.name}</div>,
-    email: <div className="flex items-center gap-2">{item?.email || "-"}</div>,
-    phone_number: (
-      <div className="flex items-center gap-2">{item?.phone_number || "-"}</div>
-    ),
-    phone_number_text: item?.phone_number || "-",
-    email_text: item?.email || "-",
-    country_text: item?.country || "-",
-    city_text: item?.city || "-",
-    country: (
-      <div className="flex items-center gap-2">{item?.country || "-"}</div>
-    ),
-    city: <div className="flex items-center gap-2">{item?.city || "-"}</div>,
-
+    code: <div className="flex items-center gap-2">{item?.code}</div>,
     // Export-friendly version
-    name_text: item?.name,
-    address: (
-      <div className="flex items-center gap-2">{item?.address || "-"}</div>
-    ),
-    // Export-friendly version
-    address_text: item?.address || "-",
-    is_warehouse: (
+    code_text: item?.code,
+    description: (
       <div className="flex items-center gap-2">
-        {(item as any)?.is_warehouse === "1" ||
-        (item as any)?.is_warehouse === 1 ? (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-primary-40 text-white shadow-md">
-              <Icon icon="mdi:crown" className="mr-1" width="14" height="14" />
-              Warehouse
-            </span>
-          </div>
+        {item?.description ?? "N/A"}
+      </div>
+    ),
+    // Export-friendly version
+    description_text: item?.description ?? "N/A",
+    percentage: (
+      <div className="flex items-center gap-2">{item?.percentage}</div>
+    ),
+    // Export-friendly version
+    percentage_text: item?.percentage,
+    expiry_date: (
+      <div className="flex items-center gap-2">{item?.expires_at ?? "N/A"}</div>
+    ),
+    // Export-friendly version
+    expiry_date_text: item?.expires_at ?? "N/A",
+    is_active: (
+      <div className="flex items-center font-[500] gap-2">
+        {item?.is_active === 1 ? (
+          <span className="text-green-500">Active</span>
         ) : (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-            Branch
-          </span>
+          <span className="text-red-500">Inactive</span>
         )}
       </div>
     ),
     // Export-friendly version
-    is_warehouse_text:
-      (item as any)?.is_warehouse === "1" || (item as any)?.is_warehouse === 1
-        ? "Warehouse"
-        : "Branch",
+    is_active_text: item?.is_active === 1 ? "Active" : "Inactive",
     dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
-
     action: (
       <div className="flex items-center space-x-2">
         <Tooltip title="Delete">
@@ -178,7 +144,16 @@ const index = () => {
         <Tooltip title="Edit">
           <span
             onClick={() => {
-              setSelectedItem(item!);
+              const itemToEdit = item; // Store the item in a local variable
+              setSelectedItem(itemToEdit);
+              // Directly set form values here to ensure correct data is used
+              setFormValues({
+                code: itemToEdit.code,
+                description: itemToEdit.description ?? "",
+                percentage: itemToEdit.percentage ?? "",
+                expires_at: itemToEdit.expires_at ?? "",
+                is_active: itemToEdit.is_active ?? 1,
+              });
               setShowEditModal(true);
             }}
             className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-blue-500 underline py-2`}
@@ -194,72 +169,59 @@ const index = () => {
       </div>
     ),
   }));
-  // Create export columns with text versions
-  const exportColumns = storesColumns
-    .filter(
-      (column: any) => column.key !== "action" && column.dataIndex !== "action"
-    )
-    .map((column: any) => {
-      // Map complex fields to their text versions
-      if (column.dataIndex === "name") {
-        return { ...column, dataIndex: "name_text" };
-      }
-      if (column.dataIndex === "email") {
-        return { ...column, dataIndex: "email_text" };
-      }
-      if (column.dataIndex === "phone_number") {
-        return { ...column, dataIndex: "phone_number_text" };
-      }
-      if (column.dataIndex === "country") {
-        return { ...column, dataIndex: "country_text" };
-      }
-      if (column.dataIndex === "city") {
-        return { ...column, dataIndex: "city_text" };
-      }
-      if (column.dataIndex === "address") {
-        return { ...column, dataIndex: "address_text" };
-      }
-      if (column.dataIndex === "is_warehouse") {
-        return { ...column, dataIndex: "is_warehouse_text" };
-      }
-      return column;
-    });
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     refetch();
   };
-
+  const transformedCategoryData = getAllCategory?.data.map((item) => {
+    return {
+      label: item.name,
+      value: item.id,
+    };
+  });
+  useEffect(() => {
+    // This useEffect can be removed if the direct form update in the onClick handler is working
+    // Keeping it as a backup with a more specific check
+    if (selectedItem && showEditModal) {
+      // Use a timeout to ensure this runs after the state updates
+      setTimeout(() => {
+        setFormValues({
+          code: selectedItem.code,
+          description: selectedItem.description ?? "",
+          percentage: selectedItem.percentage ?? "",
+          expires_at: selectedItem.expires_at ?? "",
+          is_active: selectedItem.is_active,
+        });
+      }, 0);
+    }
+  }, [selectedItem, showEditModal]);
   const handleSubmit = async () => {
     try {
       // Validate form values using yup
-      await storeSchema.validate(formValues, {
+      await adminDiscountSchema.validate(formValues, {
         abortEarly: false,
       });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       let payload = {
-        name: formValues.name,
-        ...(formValues.email && { email: formValues.email }),
-        ...(formValues.phone_number && {
-          phone_number: formValues.phone_number,
-        }),
-        ...(formValues.country && { country: formValues.country }),
-        ...(formValues.city && { city: formValues.city }),
-        ...(formValues.address && { address: formValues.address }),
-        is_warehouse: checked ? 1 : 0,
+        code: formValues.code,
+        description: formValues.description,
+        percentage: formValues.percentage,
+        expires_at: formValues.expires_at,
+        is_active: formValues.is_active,
       };
 
       // remove middle name if it is empty
 
       // Proceed with server-side submission
-      const response = await createStore(payload).unwrap();
+      const response = await createDiscountAdmin(payload).unwrap();
       showPlannerToast({
         options: {
           customToast: (
             <CustomToast
               altText={"Success"}
-              title={"Store Created Successfully"}
+              title={"Discount Created Successfully"}
               image={imgSuccess}
               textColor="green"
               message={"Thank you..."}
@@ -290,7 +252,7 @@ const index = () => {
             customToast: (
               <CustomToast
                 altText={"Error"}
-                title={"Store Creation Failed"}
+                title={"Daily Gold Price Creation Failed"}
                 image={imgError}
                 textColor="red"
                 message={(err as any)?.data?.message || "Something went wrong"}
@@ -306,27 +268,23 @@ const index = () => {
   const handleUpdateSubmit = async () => {
     try {
       // Validate form values using yup
-      await storeSchema.validate(formValues, {
+      await adminDiscountSchema.validate(formValues, {
         abortEarly: false,
       });
 
       // Clear previous form errors if validation is successful
       setFormErrors({});
       let payload = {
-        name: formValues.name,
-        ...(formValues.email && { email: formValues.email }),
-        ...(formValues.phone_number && {
-          phone_number: formValues.phone_number,
-        }),
-        ...(formValues.country && { country: formValues.country }),
-        ...(formValues.city && { city: formValues.city }),
-        ...(formValues.address && { address: formValues.address }),
-        is_warehouse: checked ? 1 : 0,
+        code: formValues.code,
+        description: formValues.description,
+        percentage: formValues.percentage,
+        expires_at: formValues.expires_at,
+        is_active: formValues.is_active,
       };
 
       // Proceed with server-side submission
-      const response = await updateStore({
-        id: selectedItem?.id!,
+      const response = await updateDiscountAdmin({
+        discount_id: selectedItem?.id!,
         body: payload,
       }).unwrap();
       showPlannerToast({
@@ -337,9 +295,9 @@ const index = () => {
               title={
                 <>
                   <span className="font-bold">
-                    {capitalizeOnlyFirstLetter(selectedItem?.name!)}
+                    {capitalizeOnlyFirstLetter(selectedItem?.code!)} Discount
                   </span>{" "}
-                  updateded Successfully
+                  updated Successfully
                 </>
               }
               image={imgSuccess}
@@ -354,7 +312,6 @@ const index = () => {
       refetch();
       setIsOpenModal(false);
       setShowEditModal(false);
-      setSelectedItem(null);
     } catch (err: any) {
       if (err.name === "ValidationError") {
         // Handle client-side validation errors
@@ -377,7 +334,7 @@ const index = () => {
                 title={
                   <>
                     <span className="font-bold">
-                      {capitalizeOnlyFirstLetter(selectedItem?.name!)}
+                      {capitalizeOnlyFirstLetter(selectedItem?.code!)} Discount
                     </span>{" "}
                     update Failed
                   </>
@@ -394,30 +351,51 @@ const index = () => {
       }
     }
   };
+  // Create export columns with text versions
+  const exportColumns = adminDiscountColumns
+    .filter(
+      (column: any) => column.key !== "action" && column.dataIndex !== "action"
+    )
+    .map((column: any) => {
+      // Map complex fields to their text versions
+      if (column.dataIndex === "code") {
+        return { ...column, dataIndex: "code_text" };
+      }
+      if (column.dataIndex === "description") {
+        return { ...column, dataIndex: "description_text" };
+      }
+      if (column.dataIndex === "percentage") {
+        return { ...column, dataIndex: "percentage_text" };
+      }
+      if (column.dataIndex === "expiry_date") {
+        return { ...column, dataIndex: "expiry_date_text" };
+      }
+      if (column.dataIndex === "is_active") {
+        return { ...column, dataIndex: "is_active_text" };
+      }
+      return column;
+    });
   return (
     <div className={``}>
       <Header
         search={search}
         setSearch={setSearch}
         showSearch={true}
-        placeHolderText="Search stores"
+        placeHolderText="Search for discounts"
         handleOpenSideNavBar={() => {}}
         isOpenSideNavBar
       />
       <AttributeHeader
-        headerText="All Stores"
-        btnText="Create Store"
+        headerText="Discounts"
+        btnText="Create Discount"
         onClick={() => {
           setIsOpenModal(true);
-          setChecked(false);
           setFormValues({
-            name: "",
-            address: "",
-            email: "",
-            phone_number: "",
-            country: "",
-            city: "",
-            is_warehouse: 0,
+            code: "",
+            description: "",
+            percentage: "",
+            expires_at: "",
+            is_active: 1,
           });
         }}
       />
@@ -428,12 +406,12 @@ const index = () => {
           <>
             <TableMainComponent
               DeleteModalText={
-                <>{capitalizeOnlyFirstLetter(selectedItem?.name!)}</>
+                <>{capitalizeOnlyFirstLetter(selectedItem?.code!)}</>
               }
               data={selectedItem}
-              deleteCardApi={deleteStore}
+              deleteCardApi={deleteDiscountAdmin}
               isDeleteLoading={isDeleteLoading}
-              printTitle="Stores"
+              printTitle="Discounts"
               showExportButton={true}
               showPrintButton={true}
               showDeleteModal={showDeleteModal}
@@ -441,7 +419,7 @@ const index = () => {
               formValues={formValues}
               setShowDeleteModal={setShowDeleteModal}
               isLoading={false}
-              columnsTable={storesColumns as any}
+              columnsTable={adminDiscountColumns as any}
               exportColumns={exportColumns as any}
               transformedData={transformedData}
             />
@@ -464,48 +442,21 @@ const index = () => {
             )}
           </div>
         </div>
-        {/* <EmptyState textHeader="This place is empty, Add a new item, to see all your products here">
-          <div className="flex justify-center items-center gap-3 mt-8">
-            <div className="">
-              <CustomButton
-                onClick={() => {
-                  router.push("/items/add-items");
-                }}
-                type="button"
-                className="border bg-primary-40 flex justify-center items-center gap-2 text-white"
-              >
-                <Icon icon="line-md:plus" width="20" height="20" />
-                New Item
-              </CustomButton>
-            </div>
-            <div>
-              {" "}
-              <CustomButton
-                onClick={() => {}}
-                type="button"
-                className="border border-black"
-              >
-                Import
-              </CustomButton>
-            </div>
-          </div>
-        </EmptyState> */}
       </SharedLayout>
       {isOpenModal && (
         <PlannerModal
           modalOpen={isOpenModal}
           setModalOpen={setIsOpenModal}
           className=""
-          width={600}
-          title="Create Store"
+          width={500}
+          title="Create Discount"
           onCloseModal={() => setIsOpenModal(false)}
         >
-          <StoreForm
+          <DiscountForm
             error={error}
-            setChecked={setChecked}
-            checked={checked}
-            btnText="Create Store"
+            btnText="Create Discount"
             formErrors={formErrors}
+            transformedCategoryData={transformedCategoryData}
             formValues={formValues}
             setFormValues={setFormValues}
             handleInputChange={handleInputChange}
@@ -520,20 +471,15 @@ const index = () => {
           modalOpen={showEditModal}
           setModalOpen={setShowEditModal}
           className=""
-          width={600}
-          title="Edit Store"
-          onCloseModal={() => {
-            setShowEditModal(false);
-            setChecked(false);
-            setSelectedItem(null);
-          }}
+          width={500}
+          title="Edit Discount"
+          onCloseModal={() => setShowEditModal(false)}
         >
-          <StoreForm
-            setChecked={setChecked}
-            checked={checked}
+          <DiscountForm
             error={errorUpdate}
+            transformedCategoryData={transformedCategoryData}
             setFormValues={setFormValues}
-            btnText="Edit Store"
+            btnText="Edit Discount"
             formErrors={formErrors}
             formValues={formValues}
             handleInputChange={handleInputChange}

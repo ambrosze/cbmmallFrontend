@@ -143,14 +143,14 @@ const TextInput = forwardRef<HTMLInputElement, IProps>(function TextInput(
           <Spinner className="border-primary-40" />
         </div>
       )}
+      <p className="flex flex-col gap-1 text-xs italic text-red-600">
+        {errorMessage}
+      </p>
       {helperText && (
         <p className="flex flex-col text-xs font-normal text-[#9B9B9B]">
           {helperText}
         </p>
       )}
-      <p className="flex flex-col gap-1 text-xs italic text-red-600">
-        {errorMessage}
-      </p>
     </div>
   );
 });

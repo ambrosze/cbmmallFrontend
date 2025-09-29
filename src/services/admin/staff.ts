@@ -54,7 +54,7 @@ export const staffApi = api.injectEndpoints({
           params["filter[is_store_manager]"] = filter.is_store_manager;
         }
         return {
-          url: "admin/staff",
+          url: "staff",
           method: "GET",
           params,
           providesTags: ["staff"],
@@ -79,7 +79,7 @@ export const staffApi = api.injectEndpoints({
 
         if (include) params.include = include;
         return {
-          url: `/admin/staff/${id}`,
+          url: `staff/${id}`,
           method: "GET",
 
           providesTags: ["staff"],
@@ -88,7 +88,7 @@ export const staffApi = api.injectEndpoints({
     }),
     createStaff: builder.mutation<any, CreateStaffType>({
       query: (body) => ({
-        url: "admin/staff",
+        url: "staff",
         method: "POST",
         body: body,
         headers: {
@@ -99,7 +99,7 @@ export const staffApi = api.injectEndpoints({
     }),
     updateStaff: builder.mutation<any, { id: string; body: CreateStaffType }>({
       query: ({ id, body }) => ({
-        url: `admin/staff/${id}`,
+        url: `staff/${id}`,
         method: "PUT",
         body: body,
         headers: {
@@ -110,7 +110,7 @@ export const staffApi = api.injectEndpoints({
     }),
     deleteStaff: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `admin/staff/${id}`,
+        url: `staff/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
