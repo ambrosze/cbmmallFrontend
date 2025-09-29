@@ -123,6 +123,67 @@ const Header = ({
     }
   }, [storeData, selectedStoreId]);
 
+  // Auto-select store from profile if available and no selection has been made yet
+  useEffect(() => {
+    // Ensure we have profile data
+    if (!profile) return;
+
+    // Prefer the explicit profile.store.id, fallback to staff.store_id
+    const profileStoreId: string | null =
+      (profile as any)?.store?.id || (profile as any)?.staff?.store_id || null;
+
+    if (!profileStoreId) return;
+
+    // If user already chose a store previously, don't override their choice
+    const storedStoreId = localStorage.getItem("selectedStoreId");
+    if (storedStoreId) return;
+
+    // If component already has the same selected store, do nothing
+    if (selectedStoreId === profileStoreId) return;
+
+    // Persist default selection
+    localStorage.setItem("selectedStoreId", profileStoreId);
+    setSelectedStoreId(profileStoreId);
+
+    // Try to set a richer currentStore object
+    let selectedStoreObj: any = (profile as any)?.store || null;
+    if (storeData?.data) {
+      const fromList = storeData.data.find((s: any) => s.id === profileStoreId);
+      if (fromList) selectedStoreObj = fromList;
+    }
+    if (selectedStoreObj) setCurrentStore(selectedStoreObj);
+
+    // Update authLoginResponse.selectedStore if present in storage
+    const loginResponseStr = localStorage.getItem("authLoginResponse");
+    if (loginResponseStr) {
+      try {
+        const lr = JSON.parse(loginResponseStr);
+        const updated = {
+          ...lr,
+          selectedStore: selectedStoreObj
+            ? {
+                id: selectedStoreObj.id,
+                name: selectedStoreObj.name,
+                address: selectedStoreObj.address,
+                is_warehouse: selectedStoreObj.is_warehouse,
+              }
+            : {
+                id: profileStoreId,
+                name: (profile as any)?.store?.name ?? "",
+                address: (profile as any)?.store?.address ?? "",
+                is_warehouse: (profile as any)?.store?.is_warehouse ?? 0,
+              },
+        };
+        localStorage.setItem("authLoginResponse", JSON.stringify(updated));
+
+        // Reset RTK Query cache to refetch with store context
+        dispatch(api.util.resetApiState());
+      } catch (e) {
+        console.error("Error updating default selected store:", e);
+      }
+    }
+  }, [profile, storeData, selectedStoreId, dispatch]);
+
   const handleStoreSelect = (store: any) => {
     // Save selected store ID to localStorage
     localStorage.setItem("selectedStoreId", store.id);
@@ -200,35 +261,6 @@ const Header = ({
         >
           Log Out
         </button>
-      ),
-      key: "0",
-    },
-  ];
-  const userDetails = [
-    {
-      label: (
-        <div
-          role="button"
-          className="flex cursor-pointer flex-col gap-1 justify-between"
-        >
-          <p className="text-[#2C3137] capitalize font-bold text-[16px]">
-            {/* {data?.data?.first_name ?? "Not"}{" "}
-            {data?.data?.last_name ?? "Available"} */}
-          </p>
-          <p className="text-[#586283] font-medium text-[14px]">
-            {/* {data?.data?.email} */}
-          </p>
-          <div className=" w-full mt-3 ">
-            <button
-              onClick={() => {
-                // handleLogout();
-              }}
-              className="bg-red-400 text-white px-5 py-3 rounded-[8px] w-full"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
       ),
       key: "0",
     },
