@@ -13,6 +13,7 @@ import { useGetAllAttributesQuery } from "@/services/attributes-values/attribute
 import { useGetAllCategoryQuery } from "@/services/category";
 import { useCreateProductsMutation } from "@/services/products/product-list";
 import { compressImage, fileToBase64 } from "@/utils/compressImage";
+import debounce from "@/utils/debounce";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Breadcrumb, Upload, message } from "antd";
 import React, { useCallback, useMemo, useRef, useState } from "react";
@@ -144,10 +145,20 @@ const index = () => {
   const uploadRef = useRef(null);
 
   // Queries
-  const [categorySearch] = useState<string>("");
+  const [categorySearch, setCategorySearch] = useState<string>("");
   const [categoryPage] = useState<number>(1);
-  const [attrSearch] = useState<string>("");
+  const [attrSearch, setAttrSearch] = useState<string>("");
   const [attrPage] = useState<number>(1);
+
+  // Debounced server search handlers to avoid excessive requests
+  const debouncedCategorySearch = useMemo(
+    () => debounce((q: string) => setCategorySearch(q.trim()), 400),
+    []
+  );
+  const debouncedAttrSearch = useMemo(
+    () => debounce((q: string) => setAttrSearch(q.trim()), 400),
+    []
+  );
 
   const { data: categoriesResp, isLoading: isLoadingCategories } =
     useGetAllCategoryQuery({
@@ -678,6 +689,19 @@ const index = () => {
                     onChange={(values) =>
                       setFormValues((p) => ({ ...p, category_ids: values }))
                     }
+                    handleSearchSelect={(q: string) =>
+                      debouncedCategorySearch(q ?? "")
+                    }
+                    loading={isLoadingCategories}
+                    notFoundContent={
+                      isLoadingCategories ? (
+                        <Spinner />
+                      ) : (
+                        <span className="text-gray-500">
+                          No categories found
+                        </span>
+                      )
+                    }
                     value={formValues.category_ids}
                     placeholder={
                       <span className="text-sm font-bold">Select</span>
@@ -718,6 +742,10 @@ const index = () => {
                         </span>
                       )
                     }
+                    handleSearchSelect={(q: string) =>
+                      debouncedAttrSearch(q ?? "")
+                    }
+                    loading={isLoadingAttributes}
                     value={formValues.attribute_value_ids}
                     placeholder={
                       <span className="text-sm font-bold">Select</span>
@@ -1049,6 +1077,19 @@ const index = () => {
                                 i,
                                 "attribute_value_ids",
                                 values
+                              )
+                            }
+                            handleSearchSelect={(q: string) =>
+                              debouncedAttrSearch(q ?? "")
+                            }
+                            loading={isLoadingAttributes}
+                            notFoundContent={
+                              isLoadingAttributes ? (
+                                <Spinner />
+                              ) : (
+                                <span className="text-gray-500">
+                                  No attributes found{" "}
+                                </span>
                               )
                             }
                             value={v.attribute_value_ids}

@@ -76,6 +76,7 @@ const Sidebar = ({
     if (path.includes("/stores")) return ["31", "sub3"];
     // people
     if (path.includes("/people/customers")) return ["40", "sub5"];
+    if (path.includes("/people/staffs")) return ["43", "sub5"];
     if (path.includes("/people/suppliers")) return ["41", "sub5"];
     if (path.includes("/people/users")) return ["42", "sub5"];
 
@@ -238,6 +239,14 @@ const Sidebar = ({
           },
         },
         {
+          key: "43",
+          icon: <Icon icon="mynaui:users" width="20" height="20" />,
+          label: <span className="">Staffs</span>,
+          onClick: () => {
+            router.push("/people/staffs");
+          },
+        },
+        {
           key: "41",
           icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
           label: "Suppliers",
@@ -280,14 +289,6 @@ const Sidebar = ({
                 label: <span className="">Stocks</span>,
                 onClick: () => {
                   router.push("/admin/stocks");
-                },
-              },
-              {
-                key: "50",
-                icon: <Icon icon="mynaui:users" width="20" height="20" />,
-                label: <span className="">Staffs</span>,
-                onClick: () => {
-                  router.push("/admin/staffs");
                 },
               },
 

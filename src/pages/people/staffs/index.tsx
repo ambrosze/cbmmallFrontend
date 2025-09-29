@@ -58,7 +58,7 @@ const index = () => {
   const { data, refetch, isLoading } = useGetAllStaffQuery({
     q: search,
     page: currentPage,
-    include: "user,managedStore,store",
+    include: "user,store",
     per_page: 15,
     paginate: true,
   });
