@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { Select } from "antd";
 import type { CustomTagProps } from "rc-select/lib/BaseSelect";
 import type { ReactElement } from "react";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 interface IProps {
@@ -30,6 +30,9 @@ interface IProps {
   // Behavior toggles
   preserveSelectedLabels?: boolean; // default: true
   resetSearchOnClose?: boolean; // default: true
+  // Search UX
+  minSearchChars?: number; // If set, don't trigger server search or show options until length met
+  hideSelectedWhileSearching?: boolean; // default: true - do not show cached/selected options in menu during active search
 }
 
 const SelectInput = ({
@@ -53,9 +56,13 @@ const SelectInput = ({
   onLoadMore,
   preserveSelectedLabels = true,
   resetSearchOnClose = true,
+  minSearchChars = 0,
+  hideSelectedWhileSearching = true,
 }: IProps) => {
   // Cache seen options so selected values retain labels across server searches
   const optionsCacheRef = useRef<Map<string, any>>(new Map());
+  // Track current search text to control menu rendering
+  const [searchText, setSearchText] = useState<string>("");
 
   // Keep cache updated with latest incoming options
   useEffect(() => {
@@ -69,38 +76,78 @@ const SelectInput = ({
     }
   }, [data]);
 
-  // Ensure selected values exist in options via cache; if missing, create fallback option
-  const mergedOptions = useMemo(() => {
-    if (!preserveSelectedLabels) return data;
-    const resultMap = new Map<string, any>();
-    // Start with cached options
-    optionsCacheRef.current.forEach((v, k) => resultMap.set(k, v));
-    // Overlay current data (so latest labels win)
-    if (Array.isArray(data)) {
-      data.forEach((opt) => {
-        const key = String(opt?.value ?? opt?.key);
-        if (key !== "undefined") resultMap.set(key, opt);
-      });
+  // Helper: normalize selected values to an array
+  const selectedValuesArray = useMemo(() => {
+    if (mode === "multiple" || mode === "tags") {
+      return Array.isArray(value) ? value : value ? [value] : [];
     }
-    // Add fallbacks for selected values not seen yet
-    const valuesArray =
-      mode === "multiple" || mode === "tags"
-        ? Array.isArray(value)
-          ? value
-          : value
-          ? [value]
-          : []
-        : value !== undefined && value !== null
-        ? [value]
-        : [];
-    valuesArray.forEach((val: any) => {
-      const k = String(val?.value ?? val);
-      if (!resultMap.has(k)) {
-        resultMap.set(k, { label: String(val?.label ?? val), value: val });
+    return value !== undefined && value !== null ? [value] : [];
+  }, [mode, value]);
+
+  // Build fallback options only for selected values to preserve visible labels in the control
+  const selectedFallbackOptions = useMemo(() => {
+    if (!preserveSelectedLabels) return [] as any[];
+    const result: any[] = [];
+    const seen = new Set<string>();
+    selectedValuesArray.forEach((val: any) => {
+      const key = String(val?.value ?? val);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const cached = optionsCacheRef.current.get(key);
+      if (cached) {
+        result.push(cached);
+      } else {
+        result.push({ label: String(val?.label ?? val), value: val });
       }
     });
-    return Array.from(resultMap.values());
-  }, [data, mode, preserveSelectedLabels, value]);
+    return result;
+  }, [preserveSelectedLabels, selectedValuesArray]);
+
+  // Options shown in the dropdown menu
+  const displayOptions = useMemo(() => {
+    const base = Array.isArray(data) ? data : [];
+
+    // If using server search and min length is not met, show nothing (but keep tags in input)
+    const isServerSearch = typeof handleSearchSelect === "function";
+    const isActiveSearch = searchText.length > 0;
+    if (
+      isServerSearch &&
+      isActiveSearch &&
+      minSearchChars > 0 &&
+      searchText.length < minSearchChars
+    ) {
+      return [] as any[];
+    }
+
+    // While actively searching with server-side filtering, avoid showing cached/selected options
+    if (isServerSearch && isActiveSearch && hideSelectedWhileSearching) {
+      return base;
+    }
+
+    // When not actively searching, we can include fallbacks for selected values (so they appear in menu too)
+    if (!isActiveSearch && preserveSelectedLabels) {
+      const map = new Map<string, any>();
+      base.forEach((opt) => {
+        const k = String(opt?.value ?? opt?.key);
+        if (k !== "undefined") map.set(k, opt);
+      });
+      selectedFallbackOptions.forEach((opt) => {
+        const k = String(opt?.value ?? opt?.key);
+        if (k !== "undefined" && !map.has(k)) map.set(k, opt);
+      });
+      return Array.from(map.values());
+    }
+
+    return base;
+  }, [
+    data,
+    handleSearchSelect,
+    hideSelectedWhileSearching,
+    minSearchChars,
+    preserveSelectedLabels,
+    searchText,
+    selectedFallbackOptions,
+  ]);
 
   // Reset server search when dropdown closes, so next open shows broad results
   const prevOpenRef = useRef<boolean>(false);
@@ -109,6 +156,8 @@ const SelectInput = ({
       if (resetSearchOnClose && typeof handleSearchSelect === "function") {
         handleSearchSelect("");
       }
+      // Clear local search for next open
+      setSearchText("");
     }
     prevOpenRef.current = open;
   };
@@ -177,6 +226,38 @@ const SelectInput = ({
 
   // Avoid re-invoking onChange when the controlled value prop updates to prevent loops
 
+  // Intercept search events: enforce minSearchChars before delegating to parent
+  const handleSearch = (term: string) => {
+    setSearchText(term);
+    if (typeof handleSearchSelect === "function") {
+      if (
+        !minSearchChars ||
+        term.length >= minSearchChars ||
+        term.length === 0
+      ) {
+        handleSearchSelect(term);
+      }
+    }
+  };
+
+  const computedNotFoundContent = useMemo(() => {
+    const isServerSearch = typeof handleSearchSelect === "function";
+    if (
+      isServerSearch &&
+      searchText.length > 0 &&
+      minSearchChars > 0 &&
+      searchText.length < minSearchChars
+    ) {
+      return (
+        <span className="text-xs text-gray-500">
+          Type at least {minSearchChars} character
+          {minSearchChars > 1 ? "s" : ""} to search
+        </span>
+      );
+    }
+    return notFoundContent;
+  }, [handleSearchSelect, minSearchChars, notFoundContent, searchText]);
+
   return (
     <div
       className={twMerge(
@@ -184,6 +265,8 @@ const SelectInput = ({
         className
       )}
     >
+      {/* Compute whether to show load more in the dropdown */}
+      {(() => null)()}
       <Select
         showSearch
         mode={mode}
@@ -198,9 +281,9 @@ const SelectInput = ({
         disabled={disabled || loading}
         onChange={handleChange}
         onDeselect={onDeselect}
-        options={mergedOptions}
-        notFoundContent={notFoundContent}
-        onSearch={handleSearchSelect}
+        options={displayOptions}
+        notFoundContent={computedNotFoundContent}
+        onSearch={handleSearch}
         tagRender={mode ? tagRender || defaultTagRender : undefined}
         // Allow splitting tags by common separators when in tags mode
         tokenSeparators={mode === "tags" ? tokenSeparators ?? [","] : undefined}
@@ -228,28 +311,37 @@ const SelectInput = ({
         }
         onPopupScroll={handlePopupScroll}
         onOpenChange={handleDropdownVisibleChange}
-        popupRender={(menu) => (
-          <div>
-            {menu}
-            {hasMore ? (
-              <div className="py-2 px-3 border-t border-gray-100 flex items-center justify-center">
-                {loadingMore ? (
-                  <span className="text-xs text-gray-500 flex items-center gap-2">
-                    <LoadingOutlined spin /> Loading more...
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="text-xs text-primary-40 hover:underline"
-                    onClick={() => onLoadMore && onLoadMore()}
-                  >
-                    Load more
-                  </button>
-                )}
-              </div>
-            ) : null}
-          </div>
-        )}
+        popupRender={(menu) => {
+          const isServerSearch = typeof handleSearchSelect === "function";
+          const blockFooter =
+            isServerSearch &&
+            searchText.length > 0 &&
+            minSearchChars > 0 &&
+            searchText.length < minSearchChars;
+          const showFooter = hasMore && !blockFooter;
+          return (
+            <div>
+              {menu}
+              {showFooter ? (
+                <div className="py-2 px-3 border-t border-gray-100 flex items-center justify-center">
+                  {loadingMore ? (
+                    <span className="text-xs text-gray-500 flex items-center gap-2">
+                      <LoadingOutlined spin /> Loading more...
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-xs text-primary-40 hover:underline"
+                      onClick={() => onLoadMore && onLoadMore()}
+                    >
+                      Load more
+                    </button>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          );
+        }}
       />
     </div>
   );
