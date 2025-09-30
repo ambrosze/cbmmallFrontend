@@ -76,9 +76,31 @@ export const staffSchema = yup.object().shape({
 });
 export const storeSchema = yup.object().shape({
   name: yup.string().required("First Name is required"),
-  is_headquarters: yup.number().required("Last Name is required"),
+  email: yup
+    .string()
+    .email("Invalid email address"),
+  is_warehouse: yup.number().required("Last Name is required"),
 });
-
+export const customerSchema = yup.object().shape({
+  name: yup.string().required("First Name is required"),
+});
+export const inventorySchema = yup.object().shape({
+  customer_id: yup.string().required("Customer is required"),
+  payment_method: yup.string().required("Payment method is required"),
+  sale_inventories: yup
+    .array()
+    .of(
+      yup.object().shape({
+        inventory_id: yup.string().required("Inventory item is required"),
+        quantity: yup
+          .number()
+          .typeError("Quantity must be a number")
+          .positive("Quantity must be greater than zero")
+          .required("Quantity is required"),
+      })
+    )
+    .min(1, "At least one inventory item is required"),
+});
 export const adminItemsSchema = yup.object().shape({
   material: yup
     .string()

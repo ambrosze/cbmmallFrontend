@@ -1,3 +1,4 @@
+import { useGetAllEnumsQuery } from "@/services/global";
 import SelectInput from "../Input/SelectInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
@@ -27,6 +28,12 @@ export const AttributeForm = ({
   isLoadingCreate,
   setIsOpenModal,
 }: IProps) => {
+  const { data, isLoading } = useGetAllEnumsQuery(
+    {
+      enum: "AttributeType",
+    },
+    { refetchOnMountOrArgChange: true }
+  );
   return (
     <div>
       <form className="mt-5 flex flex-col gap-5">
@@ -54,15 +61,24 @@ export const AttributeForm = ({
             onChange={(value) => {
               setFormValues({ ...formValues, type: value });
             }}
+            loading={isLoading}
             value={formValues.type || undefined}
             placeholder={<span className="text-sm font-bold">Select type</span>}
-            data={[
-              { label: "Text", value: "text" },
-              { label: "Color", value: "color" },
-              { label: "Number", value: "number" },
-              { label: "Date", value: "date" },
-              { label: "Image", value: "image" },
-            ]}
+            // data={[
+            //   { label: "Text", value: "text" },
+            //   { label: "Color", value: "color" },
+            //   { label: "Number", value: "number" },
+            //   { label: "Date", value: "date" },
+            //   { label: "Image", value: "image" },
+            // ]}
+            data={
+              isLoading
+                ? []
+                : data?.values?.map((enumValue) => ({
+                    label: enumValue.name,
+                    value: enumValue.value,
+                  })) || []
+            }
           />
           {formErrors.type || error ? (
             <p className="flex flex-col gap-1 text-xs italic text-red-600">

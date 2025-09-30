@@ -27,10 +27,11 @@ import { staffSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Tooltip } from "antd";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+import debounce from "@/utils/debounce";
 const index = () => {
   const [search, setSearch] = useState("");
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
@@ -55,25 +56,28 @@ const index = () => {
     useCreateStaffMutation();
   const [updateStaff, { isLoading: isLoadingUpdate, error: errorUpdate }] =
     useUpdateStaffMutation();
+    const [storeSearch, setStoreSearch] = useState<string>("");
+  const [rolesSearch, setRolesSearch] = useState<string>("");
+
   const { data, refetch, isLoading } = useGetAllStaffQuery({
     q: search,
     page: currentPage,
-    include: "user,managedStore,store",
+    include: "user,store",
     per_page: 15,
     paginate: true,
   });
   const { data: storesData } = useGetAllStoresQuery({
-    q: search,
+    q: storeSearch,
     page: currentPage,
     // include: "manager",
-    per_page: 15,
-    paginate: false,
+    per_page: 50,
+    paginate: true,
   });
   const { data: rolesData } = useGetAllRolesQuery({
-    q: search,
+    q: rolesSearch,
     page: currentPage,
-    per_page: 15,
-    paginate: false,
+    per_page: 50,
+    paginate: true,
   });
   const [deleteStaff, { isLoading: isDeleteLoading }] =
     useDeleteStaffMutation();
@@ -84,6 +88,14 @@ const index = () => {
       [name]: value,
     }));
   };
+   const debouncedStoreSearch = useMemo(
+     () => debounce((q: string) => setStoreSearch(q.trim()), 400),
+     []
+   );
+  const debouncedRolesSearch = useMemo(
+    () => debounce((q: string) => setRolesSearch(q.trim()), 400),
+    []
+  );
   useEffect(() => {
     if (selectedItem && showEditModal) {
       setFormValues({
@@ -485,6 +497,8 @@ const index = () => {
           <StaffForm
             error={error}
             roleData={roleList}
+            debouncedRolesSearch={debouncedRolesSearch}
+            debouncedStoreSearch={debouncedStoreSearch}
             storeData={storeList}
             btnText="Create staff"
             formErrors={formErrors}
@@ -508,6 +522,8 @@ const index = () => {
         >
           <StaffForm
             roleData={roleList}
+            debouncedRolesSearch={debouncedRolesSearch}
+            debouncedStoreSearch={debouncedStoreSearch}
             storeData={storeList}
             error={errorUpdate}
             setFormValues={setFormValues}

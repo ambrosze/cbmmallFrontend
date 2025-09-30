@@ -122,14 +122,14 @@ export const DiscountForm = ({
             </label>
           </div>
           <Switch
-            checked={formValues.is_active === "1"}
+            checked={formValues.is_active === 1}
             onChange={(checked) =>
-              setFormValues({ ...formValues, is_active: checked ? "1" : "0" })
+              setFormValues({ ...formValues, is_active: checked ? 1 : 0 })
             }
             className="bg-gray-300"
           />
           <span className="ml-2">
-            {formValues.is_active === "1" ? "Active" : "Inactive"}
+            {formValues.is_active === 1 ? "Active" : "Inactive"}
           </span>
         </div>
 

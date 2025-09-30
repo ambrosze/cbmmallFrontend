@@ -10,23 +10,16 @@ export interface IStoreDatum {
   id: string;
   name: string;
   address: string;
-  is_headquarters: number;
-  manager_staff_id: string;
+  is_warehouse: number;
+  email: string;
+  country: string;
+  city: string;
+  phone_number: string;
   created_at: string;
   updated_at: string;
   deleted_at: null;
-  manager: IStoreManager;
 }
 
-export interface IStoreManager {
-  id: string;
-  user_id: string;
-  staff_no: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: null;
-  store_id: string;
-}
 
 export interface IStoreLinks {
   first: string;
@@ -62,36 +55,12 @@ export interface ISingleStoreData {
   id: string;
   name: string;
   address: string;
-  is_headquarters: number;
-  manager_staff_id: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: null;
-  manager: ISingleStoreManager;
-}
-
-export interface ISingleStoreManager {
-  id: string;
-  user_id: string;
-  staff_no: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: null;
-  user: ISingleStoreUser;
-}
-
-export interface ISingleStoreUser {
-  id: string;
-  first_name: string;
-  middle_name: null;
-  last_name: string;
-  phone_number: string;
-  phone_number_verified_at: string;
+  is_warehouse: number;
   email: string;
-  email_verified_at: string;
-  deactivated_at: null;
+  country: string;
+  city: string;
+  phone_number: string;
   created_at: string;
   updated_at: string;
   deleted_at: null;
-  profile_photo_url: string;
 }

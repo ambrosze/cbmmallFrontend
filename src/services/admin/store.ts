@@ -5,7 +5,7 @@ interface CreateStoreType {
   name: string;
   address?: string;
   manager_staff_id?: string;
-  is_headquarters: number;
+  is_warehouse: number;
 }
 export const storeApi = api.injectEndpoints({
   overrideExisting: true,

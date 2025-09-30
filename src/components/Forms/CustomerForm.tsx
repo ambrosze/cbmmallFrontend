@@ -16,10 +16,9 @@ interface IProps {
   isLoadingCreate: boolean;
   setIsOpenModal: any;
   btnText: string;
-  setChecked: any;
-  checked: any;
+
 }
-export const StoreForm = ({
+export const CustomerForm = ({
   formErrors,
   error,
   formValues,
@@ -29,15 +28,8 @@ export const StoreForm = ({
   handleSubmit,
   isLoadingCreate,
   setIsOpenModal,
-  setChecked,
-  checked,
 }: IProps) => {
-  const [getDialCode, setGetDialCode] = useState("");
-
-  const handleCheckboxChange = (e: CheckboxChangeEvent) => {
-    setChecked(e.target.checked);
-  };
-
+ 
   return (
     <div>
       <form className="mt-5 flex flex-col gap-3 w-full">
@@ -65,11 +57,10 @@ export const StoreForm = ({
           <div className="space-y-1.5 w-full">
             <label className="text-sm font-medium">Phone Number</label>
             <PhoneInputWithCountry
-            
               disabled={false}
               value={formValues.phone_number}
               onChange={(e) =>
-                setFormValues((p:any) => ({
+                setFormValues((p: any) => ({
                   ...p,
                   phone_number: e,
                 }))
@@ -152,38 +143,7 @@ export const StoreForm = ({
             required={false}
           />
         </div>
-        {/* <div className="">
-          <div className={`pb-1`}>
-            <label className={"text-sm capitalize text-[#2C3137]"}>
-              Manager Name
-            </label>
-          </div>
-          <SelectInput
-            onChange={(value) => {
-              setFormValues({ ...formValues, manager_staff_id: value });
-            }}
-            value={formValues.manager_staff_id || undefined}
-            placeholder={<span className="text-sm font-bold">Select Name</span>}
-            data={staffList}
-          />
-          {formErrors.manager_staff_id || error ? (
-            <p className="flex flex-col gap-1 text-xs italic text-red-600">
-              {formErrors.manager_staff_id ||
-                (error as any)?.data?.errors?.manager_staff_id?.map(
-                  (err: any) => err
-                ) ||
-                ""}
-            </p>
-          ) : null}
-        </div> */}
-
-        <div className="">
-          {/* checkbox for active status   */}
-          <Checkbox checked={checked} onChange={(e) => handleCheckboxChange(e)}>
-            <span className="text-[#2C3137]">Is Warehouse</span>
-          </Checkbox>
-        </div>
-
+       
         <div className="flex justify-end border-t border-gray-300 pt-3">
           <div className="w-fit flex gap-5">
             <CustomButton

@@ -371,17 +371,11 @@ h6 {
 
 .pretty-sidebar .pretty-menu .ant-menu-item .ant-menu-item-icon,
 .pretty-sidebar .pretty-menu .ant-menu-submenu-title .ant-menu-item-icon {
-  width: 28px;
-  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(
-    135deg,
-    rgba(51, 53, 125, 0.08) 0%,
-    rgba(51, 53, 125, 0.02) 100%
-  );
+
   margin-right: 10px;
 }
 
