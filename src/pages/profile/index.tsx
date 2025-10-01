@@ -43,7 +43,9 @@ const ProfilePage = () => {
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { data, isLoading, isError, refetch } = useGetAllProfileQuery({});
+  const { data, isLoading, isError, refetch } = useGetAllProfileQuery({
+    include: "staff.store",
+  });
   const [createProfile, { isLoading: isCreating }] = useCreateProfileMutation();
 
   const profile = (data as any)?.data; // Aligning with provided sample response
@@ -87,6 +89,30 @@ const ProfilePage = () => {
           ? "mdi:check-decagram"
           : "mdi:alert-decagram",
         highlight: !!profile?.phone_number_verified_at,
+      },
+      {
+        label: "Store",
+        value: profile?.staff?.store?.name || "—",
+        icon: "mdi:store-outline",
+      },
+      {
+        label: "Store Address",
+        value: profile?.staff?.store?.address || "—",
+        icon: "mdi:map-marker-outline",
+      },
+      {
+        label: "Headquarters",
+        value: profile?.staff?.store?.is_headquarters === "1" ? "Yes" : "No",
+        icon:
+          profile?.staff?.store?.is_headquarters === "1"
+            ? "mdi:office-building"
+            : "mdi:office-building-outline",
+        highlight: profile?.staff?.store?.is_headquarters === "1",
+      },
+      {
+        label: "Primary Role",
+        value: profile?.roles?.[0]?.name || "—",
+        icon: "mdi:account-tie",
       },
       {
         label: "Created At",
@@ -328,6 +354,148 @@ const ProfilePage = () => {
                 >
                   <ProfileInfoGrid items={infoItems} />
                 </ProfileSection>
+
+                {/* Staff Information Section */}
+                {profile.staff && (
+                  <ProfileSection
+                    title="Staff Information"
+                    description="Details about staff assignment and store information."
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon
+                            icon="mdi:badge-account-outline"
+                            className="text-blue-600"
+                            width={20}
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Staff Number
+                          </span>
+                        </div>
+                        <p className="text-base font-semibold text-gray-900">
+                          {profile.staff.staff_no}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon
+                            icon="mdi:store"
+                            className="text-green-600"
+                            width={20}
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Store
+                          </span>
+                        </div>
+                        <p className="text-base font-semibold text-gray-900">
+                          {profile.staff.store.name}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {profile.staff.store.address}
+                        </p>
+                        {profile.staff.store.is_headquarters === "1" && (
+                          <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            Headquarters
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon
+                            icon="mdi:calendar-account"
+                            className="text-purple-600"
+                            width={20}
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Staff Since
+                          </span>
+                        </div>
+                        <p className="text-base font-semibold text-gray-900">
+                          {new Date(
+                            profile.staff.created_at
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </ProfileSection>
+                )}
+
+                {/* Roles and Permissions Section */}
+                {(profile.roles?.length > 0 ||
+                  profile.all_permissions?.length > 0) && (
+                  <ProfileSection
+                    title="Roles & Permissions"
+                    description="User roles and associated permissions within the system."
+                  >
+                    <div className="space-y-6">
+                      {/* User Roles */}
+                      {profile.roles?.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <Icon
+                              icon="mdi:account-group"
+                              className="text-indigo-600"
+                              width={18}
+                            />
+                            Assigned Roles
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.roles.map((role) => (
+                              <span
+                                key={role.id}
+                                className="inline-block px-3 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full capitalize"
+                              >
+                                {role.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* User Permissions */}
+                      {profile.all_permissions?.length > 0 && (
+                        <div className="hidden">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <Icon
+                              icon="mdi:shield-check"
+                              className="text-green-600"
+                              width={18}
+                            />
+                            Permissions ({profile.all_permissions.length})
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {profile.all_permissions.map((permission) => (
+                              <div
+                                key={permission.id}
+                                className="flex items-center gap-2 p-2 rounded border border-gray-200 bg-white"
+                              >
+                                <Icon
+                                  icon={
+                                    permission.name.includes("view")
+                                      ? "mdi:eye"
+                                      : permission.name.includes("create")
+                                      ? "mdi:plus"
+                                      : permission.name.includes("update")
+                                      ? "mdi:pencil"
+                                      : permission.name.includes("delete")
+                                      ? "mdi:delete"
+                                      : "mdi:shield-check"
+                                  }
+                                  className="text-gray-500"
+                                  width={16}
+                                />
+                                <span className="text-sm text-gray-700">
+                                  {permission.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </ProfileSection>
+                )}
               </div>
             )}
           </>

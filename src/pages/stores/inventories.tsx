@@ -79,6 +79,7 @@ const index = () => {
             <div className="flex items-center gap-3 min-w-[260px]">
               <div className="h-10 w-10 flex-shrink-0">
                 <ImageComponent
+                  key={inv.id}
                   isLoadingImage={isLoadingImage}
                   setIsLoadingImage={setIsLoadingImage}
                   aspectRatio="1/1"
