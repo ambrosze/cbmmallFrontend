@@ -27,16 +27,26 @@ import {
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-
+import { useGetAllInventoryQuery } from "@/services/inventories";
+import debounce from "@/utils/debounce";
+import { InventoryDatum } from "@/types/inventoryListType";
+interface InventoryListItem {
+  label: string;
+  value: string | number;
+  price?: number | string;
+  quantity?: number; // available quantity from inventory
+  cost_price?: string; // cost price from product variant
+}
 const index = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+      const [inventorySearch, setInventorySearch] = useState<string>("");
   const [filters, setFilters] = useState<{
     store_id?: string;
     item_id?: string;
@@ -47,13 +57,13 @@ const index = () => {
   }>({});
   const [showViewDetailsModal, setShowViewDetailsModal] = useState(false);
   const [viewDetailsData, setViewDetailsData] = useState<any>(null);
-  const { data: inventoryData } = useGetAllInventoryItemsQuery({
-    paginate: false,
-    per_page: 15,
-    include: "store,item.category",
-    page: currentPage,
-    q: search,
-  });
+  const { data: inventoryData, refetch: refetchInventory } =
+    useGetAllInventoryQuery({
+      paginate: false,
+      per_page: 50,
+      page: currentPage,
+      q: inventorySearch,
+    });
   const router = useRouter();
   const { data, isLoading, refetch } = useGetAllInventoryScrapeItemsQuery({
     paginate: true,
@@ -132,20 +142,16 @@ const index = () => {
       value: item.id,
     };
   });
-  const inventoryList = inventoryData?.data.map((item) => {
-    return {
-      label:
-        item?.item?.material +
-        "-" +
-        `${item?.item?.weight}g` +
-        ((item as any)?.item?.category?.name
-          ? "-" + (item as any)?.item?.category?.name
-          : ""),
-      value: item.id,
-      price: item?.item?.price,
-      category_id: item?.item?.category_id,
-    };
-  });
+    const inventoryList: InventoryListItem[] | undefined =
+      inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
+        return {
+          label: item?.product_variant?.name,
+          value: item.id,
+          price: item?.product_variant?.price,
+          quantity: item?.quantity,
+          cost_price: item?.product_variant?.cost_price,
+        };
+      });
 
   // get the category by  id from the data
   const getCategoryById = (id: string) => {
@@ -197,6 +203,10 @@ const index = () => {
       key: "1",
     },
   ];
+    const debouncedInventorySearch = useMemo(
+      () => debounce((q: string) => setInventorySearch(q.trim()), 400),
+      []
+    );
   const transformedData = data?.data.map((item: any) => ({
     key: item?.id,
     item: (
@@ -592,6 +602,7 @@ const index = () => {
             transformedTypesData={transformedTypesData}
             transformedCategoryData={transformedCategoryData}
             btnText="Create Scrape Item"
+            debouncedInventorySearch={debouncedInventorySearch}
             inventoryList={inventoryList || []}
             isEditing={false}
             formErrors={formErrors}
@@ -614,6 +625,8 @@ const index = () => {
           onCloseModal={handleCloseEditModal}
         >
           <ScrapeITemsForm
+            debouncedInventorySearch={debouncedInventorySearch}
+            inventoryList={inventoryList || []}
             transformedColoursData={transformedColoursData}
             transformedTypesData={transformedTypesData}
             transformedCategoryData={transformedCategoryData}

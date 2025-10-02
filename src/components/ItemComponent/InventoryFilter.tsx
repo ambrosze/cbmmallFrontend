@@ -166,7 +166,7 @@ const InventoryFilter: React.FC<InventoryFilterProps> = ({
             </div>
 
             {/* Product Variant */}
-            <div className="flex flex-col gap-2 min-w-[240px]">
+            <div className="flex flex-col gap-2 min-w-[240px] hidden">
               <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                 <Icon icon="mdi:shape" className="w-3 h-3" /> Product Variant
               </label>

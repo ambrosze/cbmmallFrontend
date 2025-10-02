@@ -38,11 +38,21 @@ import {
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocalStorage } from "react-use";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+import { useGetAllInventoryQuery } from "@/services/inventories";
+import debounce from "@/utils/debounce";
+import { InventoryDatum } from "@/types/inventoryListType";
+interface InventoryListItem {
+  label: string;
+  value: string | number;
+  price?: number | string;
+  quantity?: number; // available quantity from inventory
+  cost_price?: string; // cost price from product variant
+}
 const index = () => {
   const [search, setSearch] = useState("");
   console.log("🚀 ~ index ~ search:", search);
@@ -73,6 +83,8 @@ const index = () => {
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+    const [inventorySearch, setInventorySearch] = useState<string>("");
+
   const [createStockTransfer, { isLoading: isLoadingCreate, error }] =
     useCreateStockTransferMutation();
   const [loginResponse] = useLocalStorage<UserResponseTopLevel | null>(
@@ -127,13 +139,13 @@ const index = () => {
       skip: !selectedItem?.id, // Only run query when selectedItem.id exists
     }
   );
-  const { data: inventoryData } = useGetAllInventoryItemsQuery({
-    paginate: false,
-    per_page: 15,
-    include: "store,item.category",
-    page: currentPage,
-    q: search,
-  });
+  const { data: inventoryData, refetch: refetchInventory } =
+    useGetAllInventoryQuery({
+      paginate: false,
+      per_page: 50,
+      page: currentPage,
+      q: inventorySearch,
+    });
   console.log("🚀 ~ index ~ inventoryData:", inventoryData);
   const { data: dailyColdPriceData } = useGetAllDailyGoldPricesQuery({
     paginate: false,
@@ -191,7 +203,10 @@ const index = () => {
       [name]: value,
     }));
   };
-
+  const debouncedInventorySearch = useMemo(
+    () => debounce((q: string) => setInventorySearch(q.trim()), 400),
+    []
+  );
   // Single useEffect to handle selectedItem changes and form population
   useEffect(() => {
     if (selectedItem?.id && showEditModal) {
@@ -498,20 +513,16 @@ const index = () => {
     setCurrentPage(page);
     refetch();
   };
-  const inventoryList = inventoryData?.data.map((item) => {
-    return {
-      label:
-        item?.item?.material +
-        "-" +
-        `${item?.item?.weight}g` +
-        ((item as any)?.item?.category?.name
-          ? "-" + (item as any)?.item?.category?.name
-          : ""),
-      value: item.id,
-      price: item?.item?.price,
-      category_id: item?.item?.category_id,
-    };
-  });
+    const inventoryList: InventoryListItem[] | undefined =
+      inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
+        return {
+          label: item?.product_variant?.name,
+          value: item.id,
+          price: item?.product_variant?.price,
+          quantity: item?.quantity,
+          cost_price: item?.product_variant?.cost_price,
+        };
+      });
   const { data: storeData } = useGetAllStoresQuery({
     q: "",
     page: 1,
@@ -960,6 +971,7 @@ const index = () => {
           <StockTransferForm
             error={error}
             inventoryData={inventoryList || []}
+            debouncedInventorySearch={debouncedInventorySearch}
             dailyGoldPrices={dailyColdPriceData?.data || []}
             storeData={storeList || []}
             btnText="Create Stock Transfer"
@@ -990,6 +1002,7 @@ const index = () => {
           ) : (
             <StockTransferForm
               key={selectedItem?.id} // Add key to force re-render
+              debouncedInventorySearch={debouncedInventorySearch}
               inventoryData={inventoryList || []}
               dailyGoldPrices={dailyColdPriceData?.data || []}
               storeData={storeList || []}
