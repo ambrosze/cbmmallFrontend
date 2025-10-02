@@ -441,7 +441,7 @@ const ProfilePage = () => {
                             Assigned Roles
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {profile.roles.map((role) => (
+                            {profile.roles.map((role: any) => (
                               <span
                                 key={role.id}
                                 className="inline-block px-3 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full capitalize"
@@ -465,7 +465,7 @@ const ProfilePage = () => {
                             Permissions ({profile.all_permissions.length})
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {profile.all_permissions.map((permission) => (
+                            {profile.all_permissions.map((permission: any) => (
                               <div
                                 key={permission.id}
                                 className="flex items-center gap-2 p-2 rounded border border-gray-200 bg-white"
