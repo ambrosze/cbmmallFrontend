@@ -24,6 +24,7 @@ interface IProps {
   isEditing: boolean;
   selectedItem?: any;
   inventoryList?: any; // Add this prop
+  debouncedInventorySearch?: (q: string) => void;
 }
 
 export const ScrapeITemsForm = ({
@@ -40,6 +41,7 @@ export const ScrapeITemsForm = ({
   transformedTypesData,
   transformedCategoryData,
   isEditing,
+  debouncedInventorySearch,
   selectedItem,
   inventoryList, // Add this prop
 }: IProps) => {
@@ -211,6 +213,9 @@ export const ScrapeITemsForm = ({
                     setFormValues({ ...formValues, inventory_id: value });
                   }}
                   value={formValues.inventory_id || undefined}
+                  handleSearchSelect={(q: string) =>
+                    debouncedInventorySearch && debouncedInventorySearch(q ?? "")
+                  }
                   placeholder={
                     <span className="text-sm font-bold">
                       Select inventory item
@@ -251,7 +256,7 @@ export const ScrapeITemsForm = ({
               placeholder="Enter quantity"
               title={
                 <Tooltip title="This is the number of items that will be removed from the scrape and added to the inventory. Ensure the quantity matches the actual count of items being processed.">
-                  <span className="font-[500] flex items-center gap-1">
+                  <span className="font-[500] flex items-center gap-1 py-0.5">
                     Quantity
                     <Icon icon="material-symbols:info-outline" /> *
                   </span>
