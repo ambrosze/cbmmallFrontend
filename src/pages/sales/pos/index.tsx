@@ -26,9 +26,11 @@ import { PosCartItem } from "@/types/PosTypes";
 import { formatCurrency } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+import { useGetAllCustomersQuery } from "@/services/customers";
+import debounce from "@/utils/debounce";
 
 interface AddItemFormState {
   sku: string;
@@ -36,9 +38,7 @@ interface AddItemFormState {
 }
 
 interface CustomerFormState {
-  customer_name: string;
-  customer_phone_number: string;
-  customer_email: string;
+  customer_id: string;
   payment_method: string;
   discount_code: string;
 }
@@ -86,7 +86,13 @@ const index = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteClearAllModal, setShowDeleteClearAllModal] = useState(false);
   const [isLoadingImage, setIsLoadingImage] = useState(true);
+  const [customerSearch, setCustomerSearch] = useState<string>("");
 
+  const { data: customerData, isLoading: isLoadingCustomers } =
+    useGetAllCustomersQuery({
+      q: customerSearch,
+      per_page: 50,
+    }, { refetchOnMountOrArgChange: true });
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
@@ -95,7 +101,10 @@ const index = () => {
     quantity: "1",
   });
   const skuInputRef = useRef<HTMLInputElement | null>(null);
-
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setCustomerSearch(q.trim()), 400),
+    []
+  );
   // helper to focus & select SKU input
   const focusSku = useCallback(() => {
     if (skuInputRef.current) {
@@ -165,12 +174,11 @@ const index = () => {
   ]);
 
   const [customerForm, setCustomerForm] = useState<CustomerFormState>({
-    customer_name: "Walk-in Customer",
-    customer_phone_number: "",
-    customer_email: "",
+    customer_id: "",
     payment_method: "POS",
     discount_code: "",
   });
+  console.log("🚀 ~ index ~ customerForm:", customerForm)
 
   // POS cart hooks
   const {
@@ -342,13 +350,11 @@ const index = () => {
 
   const handleCheckout = async () => {
     if (!posCartData?.data?.length) return;
-    if (!customerForm.customer_name || !customerForm.payment_method) return;
+    if (!customerForm.customer_id || !customerForm.payment_method) return;
     try {
       await checkoutCart({
-        customer_name: customerForm.customer_name,
-        customer_phone_number: customerForm.customer_phone_number,
+        customer_id: customerForm.customer_id,
         payment_method: customerForm.payment_method,
-        customer_email: customerForm.customer_email,
         discount_code: customerForm.discount_code || undefined,
       }).unwrap();
       showPlannerToast({
@@ -367,9 +373,7 @@ const index = () => {
         message: "Checkout done",
       });
       setCustomerForm({
-        customer_name: "",
-        customer_phone_number: "",
-        customer_email: "",
+        customer_id: "",
         payment_method: "",
         discount_code: "",
       });
@@ -877,54 +881,42 @@ const index = () => {
             </div>
 
             <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Customer Name *</label>
-                <TextInput
-                  name="customer_name"
-                  type="text"
-                  value={customerForm.customer_name}
-                  onChange={(e) =>
-                    setCustomerForm((p) => ({
-                      ...p,
-                      customer_name: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter customer name"
-                  className="w-full border rounded px-3 py-3 text-sm"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Phone Number</label>
-                <PhoneInputWithCountry
-                  disabled={false}
-                  value={customerForm.customer_phone_number}
-                  onChange={(e) =>
-                    setCustomerForm((p) => ({
-                      ...p,
-                      phone_number: e,
-                    }))
-                  }
-                  placeholder="Enter phone number"
-                  className="w-full border rounded  text-sm"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <TextInput
-                  name="customer_email"
-                  type="email"
-                  value={customerForm.customer_email}
-                  onChange={(e) =>
-                    setCustomerForm((p) => ({
-                      ...p,
-                      customer_email: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter email address"
-                  className="w-full border rounded px-3 py-3 text-sm"
-                />
+              <div className="flex lg:flex-row flex-col gap-5 w-full">
+                <div className="w-full">
+                  <div className={`pb-1`}>
+                    <label
+                      className={"text-sm font-[500] capitalize text-[#2C3137]"}
+                    >
+                      Customer name*
+                    </label>
+                  </div>
+                  <SelectInput
+                    onChange={(value) => {
+                      setCustomerForm((p) => ({
+                        ...p,
+                        customer_id:
+                          customerData?.data?.find(
+                            (customer) => customer.id === value
+                          )?.id || "",
+                      }));
+                    }}
+                    handleSearchSelect={(q: string) =>
+                      debouncedSearch(q ?? "")
+                    }
+                    loading={isLoadingCustomers}
+                    value={customerForm.customer_id || undefined}
+                    placeholder={
+                      <span className="text-sm font-bold">Select customer</span>
+                    }
+                    className="py-[3px]"
+                    data={
+                      customerData?.data?.map((customer) => ({
+                        label: customer.name,
+                        value: customer.id,
+                      })) || []
+                    }
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -980,7 +972,7 @@ const index = () => {
                 disabled={
                   isCheckingOut ||
                   !posCartData?.data?.length ||
-                  !customerForm.customer_name ||
+                  !customerForm.customer_id ||
                   !customerForm.payment_method
                 }
                 onClick={handleCheckout}

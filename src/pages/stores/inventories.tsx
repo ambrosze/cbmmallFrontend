@@ -1,5 +1,6 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
+import { InventoryQuantityForm } from "@/components/Forms/InventoryQuantityForm";
 import Header from "@/components/header";
 import InventoryFilter, {
   InventoryFilterState,
@@ -8,28 +9,39 @@ import ImageComponent from "@/components/sharedUI/ImageComponent";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
+import CustomToast from "@/components/sharedUI/Toast/CustomToast";
+import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import { useGetAllStoresQuery } from "@/services/admin/store";
-import { useGetAllInventoryQuery } from "@/services/inventories";
+import {
+  useGetAllInventoryQuery,
+  useUpdateInventoryQuantityMutation,
+} from "@/services/inventories";
 import {
   useDeleteProductsMutation,
   useGetAllProductsQuery,
 } from "@/services/products/product-list";
 import { useGetAllProductVariantsQuery } from "@/services/products/variant/variant-product-list";
 import { InventoryDatum } from "@/types/inventoryListType";
-import { newUserTimeZoneFormatDate } from "@/utils/fx";
+import {
+  capitalizeOnlyFirstLetter,
+  newUserTimeZoneFormatDate,
+} from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import * as yup from "yup";
+import imgError from "/public/states/notificationToasts/error.svg";
+import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 
 import { Dropdown, MenuProps } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const index = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isViewProductListModal, setIsViewProductListModal] = useState(false);
   const [filters, setFilters] = useState<InventoryFilterState>({});
-
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
   const { data, isLoading, refetch } = useGetAllInventoryQuery({
     paginate: true,
@@ -43,21 +55,45 @@ const index = () => {
   });
   const [deleteProducts, { isLoading: isDeleteLoading }] =
     useDeleteProductsMutation();
+  const [
+    updateInventoryQuantity,
+    { isLoading: isLoadingUpdate, error: errorUpdate },
+  ] = useUpdateInventoryQuantityMutation();
   // Products for product filter
   const { data: productsData } = useGetAllProductsQuery({
     paginate: false,
     include: undefined,
   });
 
-  const [formValues, setFormValues] = useState({});
+  const [formValues, setFormValues] = useState({
+    quantity: 1,
+    serial_number: "",
+    batch_number: "",
+  });
   const [selectedItem, setSelectedItem] = useState<InventoryDatum | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     refetch();
   };
   const [isLoadingImage, setIsLoadingImage] = useState(true);
-
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormValues((prev: any) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  useEffect(() => {
+    if (selectedItem && showEditModal) {
+      setFormValues({
+        quantity: selectedItem.quantity,
+        serial_number: selectedItem.serial_number || "",
+        batch_number: selectedItem.batch_number || "",
+      });
+    }
+  }, [selectedItem, showEditModal]);
   // Build transformed data for inventory items
   const transformedData = useMemo(
     () =>
@@ -158,12 +194,28 @@ const index = () => {
                     ),
                     key: "view",
                   },
+                  {
+                    label: (
+                      <button
+                        onClick={() => {
+                          setSelectedItem(inv);
+                          setShowEditModal(true);
+                        }}
+                        className="flex w-full items-center gap-2"
+                        type="button"
+                      >
+                        Edit quantity
+                      </button>
+                    ),
+                    key: "edit",
+                  },
                 ];
                 return (
                   <Dropdown menu={{ items }} trigger={["click"]}>
                     <Icon
                       onClick={(e) => {
                         e.preventDefault();
+                        setFormErrors({});
                       }}
                       icon="mdi:dots-vertical-circle-outline"
                       width="30"
@@ -283,7 +335,144 @@ const index = () => {
     ],
     []
   );
+  const handleUpdateSubmit = async () => {
+    try {
+      // Validate form values using yup
+      {
+        // Ensure selectedItem exists
+        const isSerialized = selectedItem?.product_variant?.is_serialized === 1;
 
+        const schema = yup.object().shape({
+          quantity: yup
+            .number()
+            .required("Quantity is required")
+            .test(
+              "serialized-unchanged",
+              "Quantity cannot be changed for serialized product",
+              function (value) {
+                if (!isSerialized) {
+                  return (value ?? 0) >= 1;
+                }
+                // For serialized products quantity must remain unchanged
+                return Number(value) === Number(selectedItem?.quantity);
+              }
+            )
+            .when("$isSerialized", {
+              is: false,
+              then: (sch) => sch.min(1, "Quantity must be at least 1"),
+            }),
+          serial_number: isSerialized
+            ? yup
+                .string()
+                .required("Serial number is required for serialized products")
+                .test(
+                  "unique-serial",
+                  "Serial number must be unique",
+                  function (value) {
+                    if (!value) return false;
+                    // Check against other inventories to ensure uniqueness
+                    const existing = data?.data?.some(
+                      (inv: any) =>
+                        inv.serial_number &&
+                        inv.serial_number === value &&
+                        inv.id !== selectedItem?.id
+                    );
+                    return !existing;
+                  }
+                )
+            : yup.string().notRequired(),
+          batch_number: isSerialized
+            ? yup.string().notRequired()
+            : yup.string().notRequired(),
+        });
+
+        await schema.validate(formValues, {
+          abortEarly: false,
+          context: { isSerialized },
+        });
+      }
+
+      // Clear previous form errors if validation is successful
+      setFormErrors({});
+      let payload = {
+        quantity: Number(formValues.quantity),
+        serial_number: formValues.serial_number || "",
+        batch_number: formValues.batch_number || "",
+      };
+
+      // Proceed with server-side submission
+      const response = await updateInventoryQuantity({
+        id: selectedItem?.id!,
+        body: payload,
+      }).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={
+                <>
+                  <span className="font-bold">
+                    {capitalizeOnlyFirstLetter(
+                      selectedItem?.product_variant?.name!
+                    )}
+                  </span>{" "}
+                  updated Successfully
+                </>
+              }
+              image={imgSuccess}
+              textColor="green"
+              message={"Thank you..."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Please check your email for verification.",
+      });
+      refetch();
+      setShowEditModal(false);
+      setSelectedItem(null);
+    } catch (err: any) {
+      if (err.name === "ValidationError") {
+        // Handle client-side validation errors
+        const errors: { [key: string]: string } = {};
+        err.inner.forEach((validationError: yup.ValidationError) => {
+          if (validationError.path) {
+            errors[validationError.path] = validationError.message;
+          }
+        });
+        setFormErrors(errors);
+      } else {
+        // Handle server-side errors
+        console.log("🚀 ~ handleSubmit ~ err:", err);
+        refetch();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={
+                  <>
+                    <span className="font-bold">
+                      {capitalizeOnlyFirstLetter(
+                        selectedItem?.product_variant?.name!
+                      )}
+                    </span>{" "}
+                    update Failed
+                  </>
+                }
+                image={imgError}
+                textColor="red"
+                message={(err as any)?.data?.message || "Something went wrong"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Invalid Credentials",
+        });
+      }
+    }
+  };
   return (
     <div className={``}>
       <Header
@@ -672,6 +861,28 @@ const index = () => {
               </div>
             ) : null}
           </div>
+        </PlannerModal>
+      )}
+      {showEditModal && selectedItem && (
+        <PlannerModal
+          modalOpen={showEditModal}
+          setModalOpen={setShowEditModal}
+          className=""
+          width={500}
+          title="Edit inventory quantity"
+          onCloseModal={() => setShowEditModal(false)}
+        >
+          <InventoryQuantityForm
+            formErrors={formErrors}
+            error={errorUpdate}
+            formValues={formValues}
+            handleInputChange={handleInputChange}
+            setFormValues={setFormValues}
+            handleSubmit={handleUpdateSubmit}
+            isLoadingCreate={isLoadingUpdate}
+            setIsOpenModal={setShowEditModal}
+            btnText="Update Quantity"
+          />
         </PlannerModal>
       )}
     </div>

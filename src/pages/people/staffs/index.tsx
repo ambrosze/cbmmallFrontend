@@ -18,6 +18,7 @@ import {
 } from "@/services/admin/staff";
 import { useGetAllStoresQuery } from "@/services/admin/store";
 import { IStaffDatum } from "@/types/staffTypes";
+import debounce from "@/utils/debounce";
 import {
   capitalizeOnlyFirstLetter,
   formatPhoneNumber,
@@ -31,7 +32,6 @@ import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import debounce from "@/utils/debounce";
 const index = () => {
   const [search, setSearch] = useState("");
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
@@ -56,7 +56,7 @@ const index = () => {
     useCreateStaffMutation();
   const [updateStaff, { isLoading: isLoadingUpdate, error: errorUpdate }] =
     useUpdateStaffMutation();
-    const [storeSearch, setStoreSearch] = useState<string>("");
+  const [storeSearch, setStoreSearch] = useState<string>("");
   const [rolesSearch, setRolesSearch] = useState<string>("");
 
   const { data, refetch, isLoading } = useGetAllStaffQuery({
@@ -88,10 +88,10 @@ const index = () => {
       [name]: value,
     }));
   };
-   const debouncedStoreSearch = useMemo(
-     () => debounce((q: string) => setStoreSearch(q.trim()), 400),
-     []
-   );
+  const debouncedStoreSearch = useMemo(
+    () => debounce((q: string) => setStoreSearch(q.trim()), 400),
+    []
+  );
   const debouncedRolesSearch = useMemo(
     () => debounce((q: string) => setRolesSearch(q.trim()), 400),
     []
@@ -302,7 +302,7 @@ const index = () => {
                       " " +
                       capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
                   </span>{" "}
-                  updateded Successfully
+                  updated Successfully
                 </>
               }
               image={imgSuccess}

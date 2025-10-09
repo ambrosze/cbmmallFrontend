@@ -109,13 +109,13 @@ const index = () => {
       value: item.id,
     };
   });
-  const transformedTypesData = getAllTypesData?.data.map((item:any) => {
+  const transformedTypesData = getAllTypesData?.data.map((item: any) => {
     return {
       label: item.name,
       value: item.id,
     };
   });
-  const transformedColoursData = getAllColoursData?.data.map((item:any) => {
+  const transformedColoursData = getAllColoursData?.data.map((item: any) => {
     return {
       label: item.name,
       value: item.id,
@@ -133,7 +133,9 @@ const index = () => {
   };
   // get the colour by id from the data
   const getColourById = (id: string) => {
-    const colour = transformedColoursData?.find((item: any) => item.value === id);
+    const colour = transformedColoursData?.find(
+      (item: any) => item.value === id
+    );
     return colour ? colour.label : "N/A";
   };
   const handleCloseEditModal = () => {
@@ -506,7 +508,7 @@ const index = () => {
                   <span className="font-bold">
                     {capitalizeOnlyFirstLetter(selectedItem?.material!)}
                   </span>{" "}
-                  updateded Successfully
+                  updated Successfully
                 </>
               }
               image={imgSuccess}
