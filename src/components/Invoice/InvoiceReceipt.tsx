@@ -165,7 +165,7 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
 
   return (
     <Card
-      className="invoice-receipt"
+      className="invoice-receipt flex justify-center items-center"
       style={{ maxWidth: 420, margin: "0 auto", boxShadow: "none" }}
       variant="borderless"
     >

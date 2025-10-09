@@ -292,16 +292,16 @@ const Sidebar = ({
                 },
               },
 
-              {
-                key: "55",
-                icon: (
-                  <Icon icon="hugeicons:task-daily-01" width="20" height="20" />
-                ),
-                label: <span className="">Daily Gold Price</span>,
-                onClick: () => {
-                  router.push("/admin/daily-gold-price");
-                },
-              },
+              // {
+              //   key: "55",
+              //   icon: (
+              //     <Icon icon="hugeicons:task-daily-01" width="20" height="20" />
+              //   ),
+              //   label: <span className="">Daily Gold Price</span>,
+              //   onClick: () => {
+              //     router.push("/admin/daily-gold-price");
+              //   },
+              // },
 
               {
                 key: "52",
