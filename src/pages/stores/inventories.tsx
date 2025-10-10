@@ -875,6 +875,7 @@ const index = () => {
           <InventoryQuantityForm
             formErrors={formErrors}
             error={errorUpdate}
+            isSerialized={selectedItem?.product_variant?.is_serialized === 1}
             formValues={formValues}
             handleInputChange={handleInputChange}
             setFormValues={setFormValues}

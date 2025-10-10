@@ -75,14 +75,14 @@ export const staffSchema = yup.object().shape({
   store_id: yup.string().required("Store ID is required"),
 });
 export const storeSchema = yup.object().shape({
-  name: yup.string().required("First Name is required"),
+  name: yup.string().required("Name is required"),
   email: yup
     .string()
     .email("Invalid email address"),
-  is_warehouse: yup.number().required("Last Name is required"),
+  is_warehouse: yup.number().required("Is Warehouse is required"),
 });
 export const customerSchema = yup.object().shape({
-  name: yup.string().required("First Name is required"),
+  name: yup.string().required("Name is required"),
 });
 export const inventorySchema = yup.object().shape({
   customer_id: yup.string().required("Customer is required"),

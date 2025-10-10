@@ -1,6 +1,6 @@
 import { setCredentials } from "@/redux-store/apiSlice/authSlice";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { parseCookies } from "nookies";
+import { destroyCookie, parseCookies } from "nookies";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.baseUrl,
@@ -53,16 +53,33 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithInterceptor = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
   if (result?.error?.status === 401) {
+    // Clear localStorage
     if (typeof window !== "undefined") {
       localStorage.removeItem("authUser");
       localStorage.removeItem("authToken");
+      localStorage.removeItem("authLoginResponse");
+      localStorage.removeItem("selectedStoreId");
+      localStorage.removeItem("cart_token");
+      localStorage.removeItem("cartToken");
     }
+
+    // Clear cookies
+    destroyCookie(null, "token", { path: "/" });
+    destroyCookie(null, "cart_token", { path: "/" });
+    destroyCookie(null, "cartToken", { path: "/" });
+
+    // Clear Redux state
     api.dispatch(
       setCredentials({
         token: null,
         user: null,
       })
     );
+
+    // Redirect to login page
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login";
+    }
   }
   return result;
 };
