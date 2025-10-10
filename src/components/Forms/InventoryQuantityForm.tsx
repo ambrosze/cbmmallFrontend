@@ -1,3 +1,5 @@
+
+import { Tooltip } from "antd";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
@@ -12,6 +14,7 @@ interface IProps {
   isLoadingCreate: boolean;
   setIsOpenModal: any;
   btnText: string;
+  isSerialized?: boolean;
 }
 export const InventoryQuantityForm = ({
   formErrors,
@@ -23,6 +26,7 @@ export const InventoryQuantityForm = ({
   handleSubmit,
   isLoadingCreate,
   setIsOpenModal,
+  isSerialized = false,
 }: IProps) => {
   return (
     <div>
@@ -33,6 +37,7 @@ export const InventoryQuantityForm = ({
               type="number"
               id="quantity"
               name="quantity"
+              readOnly={isSerialized}
               errorMessage={
                 formErrors.quantity ||
                 (error as any)?.data?.errors?.quantity?.map(
@@ -44,7 +49,20 @@ export const InventoryQuantityForm = ({
               value={formValues.quantity}
               onChange={handleInputChange}
               placeholder="Enter a quantity"
-              title={<span className="font-[500]">Quantity*</span>}
+              title={
+                <Tooltip
+                  title={
+                    isSerialized
+                      ? "Serialized product quantity can not be change"
+                      : "Enter the quantity of the inventory item"
+                  }
+                >
+                  <span className="font-[500]">
+                    Quantity({isSerialized ? "Serialized" : "Non-Serialized"})
+                    {!isSerialized ? "*" : ""}
+                  </span>
+                </Tooltip>
+              }
               required={false}
             />
           </div>
