@@ -110,7 +110,6 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
       "",
   } as Required<NonNullable<InvoiceReceiptProps["storeInfo"]>>;
 
-  const Barcode = dynamic(() => import("react-barcode"), { ssr: false }) as any;
 
   // Print by opening a lightweight new window with only the receipt markup
   const handlePrint = () => {
