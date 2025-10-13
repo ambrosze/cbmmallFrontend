@@ -91,7 +91,7 @@ export const SalesForm = ({
       const inv = (inventoryData || []).find((i: any) => i.value === value);
       // auto-fill available quantity (can be edited by user later)
       if (inv && inv.quantity !== undefined) {
-        updatedItems[index].quantity = inv.quantity;
+        updatedItems[index].quantity = inv.quantity > 0 ? 1 : 0; // default to 1 if available, else 0
       }
       // auto-fill cost price (read-only field)
       if (inv && inv.cost_price !== undefined) {
@@ -339,7 +339,7 @@ export const SalesForm = ({
                       helperText={`Available: ${
                         (inventoryData || []).find(
                           (opt: any) => opt.value === item.inventory_id
-                        )?.quantity ?? "-"
+                        )?.quantity - item.quantity || "-"
                       }`}
                     />
                   </div>
