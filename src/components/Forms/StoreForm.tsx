@@ -1,10 +1,9 @@
 import { Checkbox, CheckboxChangeEvent } from "antd";
 import { useState } from "react";
-import SelectInput from "../Input/SelectInput";
+import PhoneInputWithCountry from "../Input/PhoneInputWithCountry";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
-import PhoneInputWithCountry from "../Input/PhoneInputWithCountry";
 
 interface IProps {
   formErrors: any;
@@ -65,11 +64,10 @@ export const StoreForm = ({
           <div className="space-y-1.5 w-full">
             <label className="text-sm font-medium">Phone Number</label>
             <PhoneInputWithCountry
-            
               disabled={false}
               value={formValues.phone_number}
               onChange={(e) =>
-                setFormValues((p:any) => ({
+                setFormValues((p: any) => ({
                   ...p,
                   phone_number: e,
                 }))

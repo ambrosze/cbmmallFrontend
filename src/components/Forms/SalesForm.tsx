@@ -1,26 +1,31 @@
-import { useGetAllCustomersQuery } from "@/services/customers";
 import { useGetAllEnumsQuery } from "@/services/global";
+import { AdminDiscountDatum } from "@/types/discountTypes";
 import { formatCurrency } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import SelectInput from "../Input/SelectInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
-import { AdminDiscountDatum } from "@/types/discountTypes";
 
 interface IProps {
   formErrors: any;
   error: any;
   formValues: any;
-  handleInputChange: any;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   setFormValues: any;
   handleSubmit: any;
   isLoadingCreate: boolean;
-  setIsOpenModal: any;
+  setIsOpenModal: React.Dispatch<React.SetStateAction<boolean>>;
   btnText: string;
   inventoryData: any;
   discountData: AdminDiscountDatum[]; // legacy; not used for this form currently
   isLoadingDiscount?: boolean; // legacy; not used for this form currently
+  debouncedInventorySearch: (q: string) => void;
+  debouncedDiscountSearch: (q: string) => void;
+  debouncedCustomerSearch: (q: string) => void;
+  customerData: any;
+  isLoadingCustomers: boolean;
+  setIsOpenCustomerModal: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const SalesForm = ({
@@ -36,16 +41,20 @@ export const SalesForm = ({
   inventoryData,
   discountData,
   isLoadingDiscount,
+  debouncedInventorySearch,
+  debouncedDiscountSearch,
+  debouncedCustomerSearch,
+  customerData,
+  isLoadingCustomers,
+  setIsOpenCustomerModal,
 }: IProps) => {
-  console.log("🚀 ~ SalesForm ~ discountData:", discountData)
+  console.log("🚀 ~ SalesForm ~ discountData:", discountData);
   const { data, isLoading } = useGetAllEnumsQuery(
     {
       enum: "PaymentMethod",
     },
     { refetchOnMountOrArgChange: true }
   );
-  const { data: customerData, isLoading: isLoadingCustomers } =
-    useGetAllCustomersQuery({}, { refetchOnMountOrArgChange: true });
 
   // Helper to extract error messages for various possible key formats
   const getFieldErrors = (fieldKey: string, altKeys: string[] = []): string => {
@@ -127,23 +136,35 @@ export const SalesForm = ({
       <form className="mt-5 flex flex-col gap-3 w-full">
         <div className="flex lg:flex-row flex-col gap-5 w-full">
           <div className="w-full">
-            <div className={`pb-1`}>
+            <div className={`pb-1 flex justify-between gap-5`}>
               <label className={"text-sm font-[500] capitalize text-[#2C3137]"}>
                 Customer name*
               </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpenCustomerModal(true);
+                }}
+                className="text-sm underline font-bold capitalize text-blue-600"
+              >
+                Create new customer
+              </button>
             </div>
             <SelectInput
               onChange={(value) => {
                 setFormValues({ ...formValues, customer_id: value });
               }}
               loading={isLoadingCustomers}
+              handleSearchSelect={(q: string) => {
+                debouncedCustomerSearch(q ?? "");
+              }}
               value={formValues.customer_id || undefined}
               placeholder={
                 <span className="text-sm font-bold">Select customer</span>
               }
               className="py-[3px]"
               data={
-                customerData?.data?.map((customer) => ({
+                customerData?.data?.map((customer: { name: any; id: any }) => ({
                   label: customer.name,
                   value: customer.id,
                 })) || []
@@ -205,6 +226,11 @@ export const SalesForm = ({
               placeholder={
                 <span className="text-sm font-bold">Select discount code</span>
               }
+              handleSearchSelect={(q: string) => {
+                // Call debounced search function
+                // to avoid excessive API calls
+                debouncedDiscountSearch(q ?? "");
+              }}
               className="py-[3px]"
               data={
                 discountData?.map((item) => ({
@@ -223,7 +249,6 @@ export const SalesForm = ({
               </p>
             ) : null}
           </div>
-        
         </div>
 
         <div className="mt-4">
@@ -254,9 +279,9 @@ export const SalesForm = ({
                   <Icon icon="line-md:close" width="20" height="20" />
                 </button>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                  <div>
-                    <div className={`pb-1`}>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                  <div className="col-span-2">
+                    <div className={`pb-1 `}>
                       <label
                         className={
                           "text-sm font-[500] capitalize text-[#2C3137]"
@@ -274,6 +299,9 @@ export const SalesForm = ({
                       placeholder={
                         <span className="text-sm">Select inventory item</span>
                       }
+                      handleSearchSelect={(q: string) => {
+                        debouncedInventorySearch(q ?? "");
+                      }}
                       data={inventoryData || []}
                     />
                     <span className="text-[12px] italic text-error-50">

@@ -39,7 +39,7 @@ export const rolesApi = api.injectEndpoints({
         if (sort) params.sort = sort;
 
         return {
-          url: "admin/roles",
+          url: "roles",
           method: "GET",
           params,
           providesTags: ["roles"],
@@ -64,7 +64,7 @@ export const rolesApi = api.injectEndpoints({
 
         if (include) params.include = include;
         return {
-          url: `/admin/roles/${id}`,
+          url: `roles/${id}`,
           method: "GET",
 
           providesTags: ["roles"],
@@ -73,7 +73,7 @@ export const rolesApi = api.injectEndpoints({
     }),
     createRoles: builder.mutation<any, CreateRolesType>({
       query: (body) => ({
-        url: "admin/roles",
+        url: "roles",
         method: "POST",
         body: body,
         headers: {
@@ -84,7 +84,7 @@ export const rolesApi = api.injectEndpoints({
     }),
     updateRoles: builder.mutation<any, { id: string; body: CreateRolesType }>({
       query: ({ id, body }) => ({
-        url: `admin/roles/${id}`,
+        url: `roles/${id}`,
         method: "PUT",
         body: body,
         headers: {
@@ -95,7 +95,7 @@ export const rolesApi = api.injectEndpoints({
     }),
     deleteRoles: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `admin/roles/${id}`,
+        url: `roles/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

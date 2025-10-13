@@ -268,7 +268,7 @@ const index = () => {
                   <span className="font-bold">
                     {capitalizeOnlyFirstLetter(selectedItem?.value!)}
                   </span>{" "}
-                  updateded Successfully
+                  updated Successfully
                 </>
               }
               image={imgSuccess}

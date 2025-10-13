@@ -1,6 +1,5 @@
-import { InventoryItemTopLevel } from "@/types/InventoryItemTypes";
-import { api } from ".";
 import { InventoryTopLevel } from "@/types/inventoryListType";
+import { api } from ".";
 
 export const inventoryApi = api.injectEndpoints({
   overrideExisting: true,
@@ -90,7 +89,32 @@ export const inventoryApi = api.injectEndpoints({
         };
       },
     }),
+    updateInventoryQuantity: builder.mutation<
+      any,
+      {
+        id: string;
+        body: {
+          quantity?: number;
+          serial_number?: string;
+          batch_number?: string;
+        };
+      }
+    >({
+      query: ({ id, body }) => ({
+        url: `inventories/${id}`,
+        method: "PUT",
+        body: body,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        invalidatesTags: ["inventories"],
+      }),
+    }),
   }),
 });
 
-export const { useGetAllInventoryQuery, useGetSingleInventoryQuery } = inventoryApi;
+export const {
+  useGetAllInventoryQuery,
+  useGetSingleInventoryQuery,
+  useUpdateInventoryQuantityMutation,
+} = inventoryApi;

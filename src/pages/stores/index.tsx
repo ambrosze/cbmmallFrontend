@@ -11,10 +11,6 @@ import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import {
-  useDeleteStaffMutation,
-  useGetAllStaffQuery,
-} from "@/services/admin/staff";
-import {
   useCreateStoreMutation,
   useDeleteStoreMutation,
   useGetAllStoresQuery,
@@ -67,7 +63,7 @@ const index = () => {
     paginate: true,
   });
   console.log("🚀 ~ index ~ data:", data);
-  
+
   const [deleteStore, { isLoading: isDeleteLoading }] =
     useDeleteStoreMutation();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +107,9 @@ const index = () => {
   }, [showEditModal, isOpenModal]);
   const transformedData = data?.data?.map((item) => ({
     key: item?.id,
-    name: <div className="flex items-center gap-2 font-semibold">{item?.name}</div>,
+    name: (
+      <div className="flex items-center gap-2 font-semibold">{item?.name}</div>
+    ),
     email: <div className="flex items-center gap-2">{item?.email || "-"}</div>,
     phone_number: (
       <div className="flex items-center gap-2">{item?.phone_number || "-"}</div>
@@ -339,7 +337,7 @@ const index = () => {
                   <span className="font-bold">
                     {capitalizeOnlyFirstLetter(selectedItem?.name!)}
                   </span>{" "}
-                  updateded Successfully
+                  updated Successfully
                 </>
               }
               image={imgSuccess}

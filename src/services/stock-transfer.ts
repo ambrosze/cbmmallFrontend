@@ -100,6 +100,7 @@ export const stockTransferApi = api.injectEndpoints({
         return {
           url: `stock-transfers/${id}`,
           method: "GET",
+          params,
           providesTags: ["stockTransfer"],
         };
       },

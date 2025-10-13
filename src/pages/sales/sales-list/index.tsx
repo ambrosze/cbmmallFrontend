@@ -1,5 +1,6 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
+import { CustomerForm } from "@/components/Forms/CustomerForm";
 import { SalesForm } from "@/components/Forms/SalesForm";
 import Header from "@/components/header";
 import InvoiceReceipt from "@/components/Invoice/InvoiceReceipt";
@@ -10,6 +11,7 @@ import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
+import { useGetAllDiscountAdminQuery } from "@/services/admin/discount";
 import { useGetAllInventoryQuery } from "@/services/inventories";
 import {
   useCreateSalesMutation,
@@ -19,20 +21,21 @@ import {
 } from "@/services/sales/sales";
 import { InventoryDatum } from "@/types/inventoryListType";
 import { SalesDatum } from "@/types/SalesTypes";
+import debounce from "@/utils/debounce";
 import {
   capitalizeOnlyFirstLetter,
   formatCurrency,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
-import { inventorySchema } from "@/validation/authValidate";
+import { customerSchema, inventorySchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import { useGetAllDiscountAdminQuery } from "@/services/admin/discount";
+import { useCreateCustomerMutation, useGetAllCustomersQuery } from "@/services/customers";
 
 interface InventoryCategory {
   name?: string;
@@ -75,11 +78,35 @@ const index = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [inventorySearch, setInventorySearch] = useState<string>("");
+  const [customerSearch, setCustomerSearch] = useState<string>("");
+  const [discountSearch, setDiscountSearch] = useState<string>("");
+  const [isOpenCustomerModal, setIsOpenCustomerModal] = useState(false);
+  const [formCustomerValues, setFormCustomerValues] = useState({
+    name: "",
+    email: "",
+    phone_number: "",
+    country: "",
+    city: "",
+    address: "",
+  });
+  const [formCustomerErrors, setFormCustomerErrors] = useState<{
+    [key: string]: string;
+  }>({});
+
   const [createSales, { isLoading: isLoadingCreate, error }] =
     useCreateSalesMutation();
   const [updateSales, { isLoading: isLoadingUpdate, error: errorUpdate }] =
     useUpdateSalesMutation();
-
+  const [createCustomer, { isLoading: isLoadingCustomerCreate, error: errorCustomerCreate }] =
+    useCreateCustomerMutation();
+    const { data: customerData, isLoading: isLoadingCustomers,refetch: refetchCustomers } =
+      useGetAllCustomersQuery({
+        paginate: true,
+        per_page: 50,
+        page: 1,
+        q: customerSearch,
+      }, { refetchOnMountOrArgChange: true });
   const { data, refetch, isLoading } = useGetAllSalesQuery({
     q: search,
     page: currentPage,
@@ -91,20 +118,36 @@ const index = () => {
   const { data: inventoryData, refetch: refetchInventory } =
     useGetAllInventoryQuery({
       paginate: false,
-      per_page: 15,
+      per_page: 50,
       page: currentPage,
-      q: search,
+      q: inventorySearch,
     });
-  const { data: discountData, refetch: refetchDiscount, isLoading: isLoadingDiscount } = useGetAllDiscountAdminQuery({
-      paginate: true,
-      per_page: 15,
-      page: currentPage,
-      q: search,
-      filter: {
-        is_active: 1,
-      },
-    });
+  const {
+    data: discountData,
+    refetch: refetchDiscount,
+    isLoading: isLoadingDiscount,
+  } = useGetAllDiscountAdminQuery({
+    paginate: true,
+    per_page: 50,
+    page: currentPage,
+    q: discountSearch,
+    filter: {
+      is_active: 1,
+    },
+  });
   console.log("🚀 ~ index ~ inventoryData:", inventoryData);
+  const debouncedInventorySearch = useMemo(
+    () => debounce((q: string) => setInventorySearch(q.trim()), 400),
+    []
+  );
+  const debouncedDiscountSearch = useMemo(
+    () => debounce((q: string) => setDiscountSearch(q.trim()), 400),
+    []
+  );
+  const debouncedCustomerSearch = useMemo(
+    () => debounce((q: string) => setCustomerSearch(q.trim()), 400),
+    []
+  );
 
   const [deleteSales, { isLoading: isDeleteLoading }] =
     useDeleteSalesMutation();
@@ -112,6 +155,13 @@ const index = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues((prev: any) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const handleCustomerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormCustomerValues((prev: any) => ({
       ...prev,
       [name]: value,
     }));
@@ -206,7 +256,9 @@ const index = () => {
       <span className="font-[500]">{item?.invoice_number || "-"}</span>
     ),
     customer_name: (
-      <div className="flex items-center gap-2">{(item as any)?.buyerable?.name}</div>
+      <div className="flex items-center gap-2">
+        {(item as any)?.buyerable?.name}
+      </div>
     ),
     items_count: (
       <span className="font-[500] text-center">
@@ -295,8 +347,12 @@ const index = () => {
 
   const inventoryList: InventoryListItem[] | undefined =
     inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
+      const qty = 1;
+      const price = Number(item?.product_variant?.cost_price) || 0;
       return {
-        label: item?.product_variant?.name,
+        label: `${item?.product_variant?.name} - ${formatCurrency(
+          qty * price
+        )}`,
         value: item.id,
         price: item?.product_variant?.price,
         quantity: item?.quantity,
@@ -372,6 +428,75 @@ const index = () => {
             ),
           },
           message: "Failed to create sale",
+        });
+      }
+    }
+  };
+  const handleCustomerSubmit = async () => {
+    try {
+      // Validate form values using yup
+      await customerSchema.validate(formCustomerValues, {
+        abortEarly: false,
+      });
+
+      // Clear previous form errors if validation is successful
+      setFormCustomerErrors({});
+      let payload = {
+        name: formCustomerValues.name,
+        email: formCustomerValues.email,
+        phone_number: formCustomerValues.phone_number,
+        country: formCustomerValues.country,
+        city: formCustomerValues.city,
+        address: formCustomerValues.address,
+      };
+
+      // Proceed with server-side submission
+      const response = await createCustomer(payload).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Customer Created Successfully"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Thank you..."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Please check your email for verification.",
+      });
+      refetchCustomers();
+      setIsOpenCustomerModal(false);
+    } catch (err: any) {
+      if (err.name === "ValidationError") {
+        // Handle client-side validation errors
+        const errors: { [key: string]: string } = {};
+        err.inner.forEach((validationError: yup.ValidationError) => {
+          if (validationError.path) {
+            errors[validationError.path] = validationError.message;
+          }
+        });
+        setFormCustomerErrors(errors);
+      } else {
+        // Handle server-side errors
+        console.log("🚀 ~ handleSubmit ~ err:", err);
+        refetch();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={"Customer Creation Failed"}
+                image={imgError}
+                textColor="red"
+                message={(err as any)?.data?.message || "Something went wrong"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Invalid Credentials",
         });
       }
     }
@@ -544,6 +669,12 @@ const index = () => {
         >
           <SalesForm
             error={error}
+            isLoadingCustomers={isLoadingCustomers}
+            customerData={customerData}
+            setIsOpenCustomerModal={setIsOpenCustomerModal}
+            debouncedInventorySearch={debouncedInventorySearch}
+            debouncedDiscountSearch={debouncedDiscountSearch}
+            debouncedCustomerSearch={debouncedCustomerSearch}
             inventoryData={inventoryList || []}
             discountData={discountData?.data || []}
             isLoadingDiscount={isLoadingDiscount}
@@ -568,6 +699,12 @@ const index = () => {
           onCloseModal={() => setShowEditModal(false)}
         >
           <SalesForm
+            customerData={customerData}
+            setIsOpenCustomerModal={setIsOpenCustomerModal}
+            isLoadingCustomers={isLoadingCustomers}
+            debouncedCustomerSearch={debouncedCustomerSearch}
+            debouncedInventorySearch={debouncedInventorySearch}
+            debouncedDiscountSearch={debouncedDiscountSearch}
             inventoryData={inventoryList || []}
             discountData={discountData?.data || []}
             isLoadingDiscount={isLoadingDiscount}
@@ -593,6 +730,28 @@ const index = () => {
           onCloseModal={() => setShowInvoice(false)}
         >
           <InvoiceReceipt selectedItem={selectedItem} />
+        </PlannerModal>
+      )}
+      {isOpenCustomerModal && (
+        <PlannerModal
+          modalOpen={isOpenCustomerModal}
+          setModalOpen={setIsOpenCustomerModal}
+          className=""
+          width={600}
+          title="Create Customer"
+          onCloseModal={() => setIsOpenCustomerModal(false)}
+        >
+          <CustomerForm
+            error={errorCustomerCreate}
+            btnText="Create Customer"
+            formErrors={formCustomerErrors}
+            formValues={formCustomerValues}
+            setFormValues={setFormCustomerValues}
+            handleInputChange={handleCustomerInputChange}
+            handleSubmit={handleCustomerSubmit}
+            isLoadingCreate={isLoadingCustomerCreate}
+            setIsOpenModal={setIsOpenCustomerModal}
+          />
         </PlannerModal>
       )}
     </div>

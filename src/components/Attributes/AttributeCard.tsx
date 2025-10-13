@@ -305,7 +305,7 @@ const AttributeCard = ({
               altText={"Success"}
               title={
                 <>
-                  <span className="font-bold">{data?.name}</span> updateded
+                  <span className="font-bold">{data?.name}</span> updated
                   Successfully
                 </>
               }
