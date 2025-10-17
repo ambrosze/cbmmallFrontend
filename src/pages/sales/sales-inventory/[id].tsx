@@ -5,6 +5,7 @@ import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import { useGetSingleSalesQuery } from "@/services/sales/sales";
 import { formatCurrency, newUserTimeZoneFormatDate } from "@/utils/fx";
+import { skipToken } from "@reduxjs/toolkit/query";
 import { Breadcrumb } from "antd";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -14,11 +15,18 @@ const SalesDetail = () => {
   const [showInvoice, setShowInvoice] = useState(false);
   const router = useRouter();
 
-  const { data, isLoading, error } = useGetSingleSalesQuery({
-    id: router.query.id as string,
-    include:
-      "saleInventories.inventory.productVariant.product,saleInventories.inventory.store,discount,cashier.user,buyerable",
-  });
+  const saleId =
+    typeof router.query.id === "string" ? router.query.id : undefined;
+
+  const { data, isLoading, error } = useGetSingleSalesQuery(
+    saleId
+      ? {
+          id: saleId,
+          include:
+            "saleInventories.inventory.productVariant.product,saleInventories.inventory.store,discount,cashier.user,buyerable",
+        }
+      : skipToken
+  );
 
   const saleData = data?.data as any; // Using any to handle extended API response
 
