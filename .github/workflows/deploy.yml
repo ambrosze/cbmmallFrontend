@@ -42,7 +42,7 @@ jobs:
 
             echo "🔄 Restarting PM2 app..."
             pm2 start ecosystem.config.js
-            #pm2 restart cbm-mall-shop-staging
+            #pm2 restart cbm-mall-store-staging
           
             echo "✅ Staging Deployment Complete"
           EOF
@@ -80,7 +80,7 @@ jobs:
 
             echo "🔄 Restarting PM2 app..."
             pm2 start ecosystem.config.js
-            #pm2 restart cbm-mall-shop
+            #pm2 restart cbm-mall-store
           
             echo "✅ Production Deployment Complete"
           EOF

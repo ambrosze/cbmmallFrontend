@@ -1,21 +1,21 @@
 module.exports = {
     apps: [
         {
-            name: "cbm-mall-shop",
+            name: "cbm-mall-store",
             script: "npm",
             args: "run start",
             env: {
                 NODE_ENV: "production",
-                PORT: 3002,
+                PORT: 3000,
             },
         },
         {
-            name: "cbm-mall-shop-staging",
+            name: "cbm-mall-store-staging",
             script: "npm",
             args: "run start",
             env: {
                 NODE_ENV: "production",
-                PORT: 3003,
+                PORT: 3001,
             },
         },
     ],
