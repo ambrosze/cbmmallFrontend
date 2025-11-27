@@ -66,6 +66,7 @@ const Sidebar = ({
     )
       return ["20", "sub2"];
     if (path.includes("/sales/pos")) return ["22", "sub2"];
+    if (path.includes("/sales/orders")) return ["23", "sub2"];
     if (path.includes("/attributes/category")) return ["30", "sub3"];
     if (path.includes("/attributes/types")) return ["31", "sub3"];
     if (path.includes("/attributes/colours")) return ["32", "sub3"];
@@ -117,14 +118,14 @@ const Sidebar = ({
             router.push("/products");
           },
         },
-        {
-          key: "3",
-          label: "Scrapes",
-          icon: <Icon icon="simple-icons:scrapy" width="20" height="20" />,
-          onClick: () => {
-            router.push("/scrapes");
-          },
-        },
+        // {
+        //   key: "3",
+        //   label: "Scrapes",
+        //   icon: <Icon icon="simple-icons:scrapy" width="20" height="20" />,
+        //   onClick: () => {
+        //     router.push("/scrapes");
+        //   },
+        // },
         {
           key: "4",
           label: "Stock transfer",
@@ -221,6 +222,14 @@ const Sidebar = ({
             router.push("/sales/pos");
           },
         },
+        {
+          key: "23",
+          label: <span className="">Orders</span>,
+          icon: <Icon icon="lets-icons:order" width="20" height="20" />,
+          onClick: () => {
+            router.push("/sales/orders");
+          },
+        },
         // { key: "23", label: "Return Item" },
       ],
     },
@@ -281,16 +290,16 @@ const Sidebar = ({
               <Icon icon="eos-icons:admin-outlined" width="28" height="28" />
             ),
             children: [
-              {
-                key: "53",
-                icon: (
-                  <Icon icon="hugeicons:group-items" width="20" height="20" />
-                ),
-                label: <span className="">Stocks</span>,
-                onClick: () => {
-                  router.push("/admin/stocks");
-                },
-              },
+              // {
+              //   key: "53",
+              //   icon: (
+              //     <Icon icon="hugeicons:group-items" width="20" height="20" />
+              //   ),
+              //   label: <span className="">Stocks</span>,
+              //   onClick: () => {
+              //     router.push("/admin/stocks");
+              //   },
+              // },
 
               // {
               //   key: "55",
@@ -390,7 +399,7 @@ const Sidebar = ({
 
       {/* Scrollable Content Area */}
       <div className="mt-[100px] pb-[70px]">
-        <div className="h-[calc(100vh-170px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent px-4 pb-10 pt-2 touch-auto pretty-sidebar">
+        <div className="h-[calc(100vh-170px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent px-4 lg:px-2 pb-10 pt-2 touch-auto pretty-sidebar">
           <div className="bg-white/80 backdrop-blur rounded-xl border border-gray-100 shadow-f1 p-1">
             <Menu
               className="pretty-menu"

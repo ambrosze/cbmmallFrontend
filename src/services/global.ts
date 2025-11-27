@@ -46,7 +46,8 @@ export const authApi = api.injectEndpoints({
           | "ScrapeType"
           | "ConditionStatus"
           | "Status"
-          | "InventoryStatus";
+          | "InventoryStatus"
+          | "OrderStatus";
       }
     >({
       query: ({ enum: enumValue }: { enum?: string }) => {

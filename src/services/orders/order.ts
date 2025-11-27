@@ -1,26 +1,23 @@
-import {
-  CategoryTopLevel,
-  ISingleCategoryTopLevel,
-} from "@/types/categoryTypes";
-import { api } from ".";
+import { IOrdersResponse, ISingleOrderResponse } from "@/types/orderTypes";
+import { api } from "..";
 
-interface CreateCategoryType {
+interface CreateColourType {
   name: string;
-  parent_category_id?: null | string;
-  image?: null | string;
+  hex: string;
 }
-export const categoryApi = api.injectEndpoints({
+export const ordersApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getAllCategory: builder.query<
-      CategoryTopLevel,
+    getAllOrders: builder.query<
+      IOrdersResponse,
       {
         sort?: string;
         q?: string;
         paginate?: boolean;
         per_page?: number;
         page?: number;
-        include?: string; //parentCategory,subCategories
+        include?: string;
+        filter?: { [key: string]: any };
       }
     >({
       query: ({
@@ -30,6 +27,7 @@ export const categoryApi = api.injectEndpoints({
         per_page,
         page,
         include,
+        filter,
       }: {
         sort?: string;
         q?: string;
@@ -37,6 +35,7 @@ export const categoryApi = api.injectEndpoints({
         per_page?: number;
         page?: number;
         include?: string;
+        filter?: { [key: string]: any };
       }) => {
         const params: any = {};
         if (q) params.q = q;
@@ -46,17 +45,28 @@ export const categoryApi = api.injectEndpoints({
         if (per_page) params.per_page = per_page;
         if (page) params.page = page;
         if (sort) params.sort = sort;
+        if (filter) {
+          Object.keys(filter).forEach((key) => {
+            if (
+              filter[key] !== undefined &&
+              filter[key] !== null &&
+              filter[key] !== ""
+            ) {
+              params[`filter[${key}]`] = filter[key];
+            }
+          });
+        }
 
         return {
-          url: "categories",
+          url: "orders",
           method: "GET",
           params,
-          providesTags: ["category"],
+          providesTags: ["orders"],
         };
       },
     }),
-    getSingleCategory: builder.query<
-      ISingleCategoryTopLevel,
+    getSingleOrders: builder.query<
+      ISingleOrderResponse,
       {
         id: string;
         include?: string;
@@ -66,61 +76,55 @@ export const categoryApi = api.injectEndpoints({
         id,
         include,
       }: {
-        id: string; //category_id
-        include?: string; //parentCategory,subCategories
+        id: string;
+        include?: string; //cryptoNetwork
       }) => {
         const params: any = {};
-
         if (include) params.include = include;
         return {
-          url: `categories/${id}`,
+          url: `orders/${id}`,
           method: "GET",
-          providesTags: ["category"],
+          params,
+          providesTags: ["orders"],
         };
       },
     }),
-    createCategory: builder.mutation<any, CreateCategoryType>({
-      query: (body) => ({
-        url: "categories",
-        method: "POST",
-        body: body,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        invalidatesTags: ["category"],
-      }),
-    }),
-    updateCategory: builder.mutation<
+    // update order mutation
+    updateOrderStatus: builder.mutation<
       any,
-      { id: string; body: CreateCategoryType }
+      {
+        id: string;
+        body: {
+          status: string;
+        };
+      }
     >({
       query: ({ id, body }) => ({
-        url: `categories/${id}`,
+        url: `orders/${id}`,
         method: "PUT",
-        body: body,
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["category"],
+        body: body,
+        invalidatesTags: ["orders"],
       }),
     }),
-    deleteCategory: builder.mutation<any, { id: string }>({
+    deleteOrder: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
-        url: `categories/${id}`,
+        url: `orders/${id}`,
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        invalidatesTags: ["category"],
+        invalidatesTags: ["orders"],
       }),
     }),
   }),
 });
 
 export const {
-  useGetAllCategoryQuery,
-  useGetSingleCategoryQuery,
-  useCreateCategoryMutation,
-  useUpdateCategoryMutation,
-  useDeleteCategoryMutation,
-} = categoryApi;
+  useGetAllOrdersQuery,
+  useGetSingleOrdersQuery,
+  useDeleteOrderMutation,
+  useUpdateOrderStatusMutation,
+} = ordersApi;
