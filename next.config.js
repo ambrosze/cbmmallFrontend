@@ -49,13 +49,13 @@ const nextConfig = {
   images: {
     domains: [
       "api.cbm-mall.com/storage",
-      "https://api-staging.cbm-mall.com/storage",
+      `${process.env.NEXT_PUBLIC_BASEURL}/storage`,
       "api-staging.cbm-mall.com",
       "api.cbm-mall.com",
       "ui-avatars.com",
       "https://placehold.co",
       "placehold.co",
-      "http://api.cbm-mall.com/storage",
+      `${process.env.NEXT_PUBLIC_BASEURL}/storage`,
     ],
   },
 
