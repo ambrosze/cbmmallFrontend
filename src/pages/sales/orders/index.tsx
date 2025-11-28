@@ -3,7 +3,7 @@ import TableMainComponent from "@/components/Attributes/TableMainComponent";
 import Header from "@/components/header";
 import SelectInput from "@/components/Input/SelectInput";
 import OrderSkeletonLoader from "@/components/Order/OrderSkeletonLoader";
-import { orderTableColumns } from "@/components/Order/orderTableColumns";
+
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
@@ -31,6 +31,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { orderTableColumns } from "@/components/Order/OrderTableColumns";
 
 interface AddItemFormState {
   sku: string;
@@ -451,7 +452,6 @@ const index = () => {
                   firstRowClassName="bg-white"
                   secondRowClassName="bg-white"
                   bordered={true}
-                  deleteRowApi={() => Promise.resolve()}
                   setShowDeleteModal={() => {}}
                   showDeleteModal={false}
                   isDeleteLoading={false}
