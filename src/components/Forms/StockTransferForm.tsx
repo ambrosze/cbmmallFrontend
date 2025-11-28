@@ -1,5 +1,5 @@
+import { formatCurrency } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState } from "react";
 import { twMerge } from "tailwind-merge";
 import PhoneInputWithCountry from "../Input/PhoneInputWithCountry";
 import SelectInput from "../Input/SelectInput";
@@ -21,6 +21,7 @@ interface IProps {
   inventoryData?: any;
   dailyGoldPrices?: any[];
   storeData?: any[];
+  debouncedInventorySearch?: (q: string) => void;
 }
 
 export const StockTransferForm = ({
@@ -36,8 +37,27 @@ export const StockTransferForm = ({
   inventoryData,
   dailyGoldPrices,
   storeData,
+  debouncedInventorySearch,
 }: IProps) => {
-  const [getDialCode, setGetDialCode] = useState("");
+  // Helper to extract error messages for various possible key formats
+  const getFieldErrors = (fieldKey: string, altKeys: string[] = []): string => {
+    const serverErrors = (error as any)?.data?.errors || {};
+    const clientErrors = formErrors || {};
+    const keysToTry = [fieldKey, ...altKeys];
+
+    for (const key of keysToTry) {
+      const fromClient = clientErrors?.[key];
+      if (fromClient)
+        return Array.isArray(fromClient) ? fromClient.join(", ") : fromClient;
+
+      const fromServer = serverErrors?.[key];
+      if (fromServer)
+        return Array.isArray(fromServer)
+          ? fromServer.join(", ")
+          : String(fromServer);
+    }
+    return "";
+  };
 
   const handleItemChange = (index: number, field: string, value: any) => {
     const updatedItems = [...(formValues.stock_transfer_inventories || [])];
@@ -49,14 +69,16 @@ export const StockTransferForm = ({
     if (field === "inventory_id") {
       // set inventory_id
       updatedItems[index].inventory_id = value;
-      // find its category, then find today's gold price for that category
-      const inv = inventoryData.find((i: any) => i.value === value);
-      const catId = inv?.category_id;
-      const gp = dailyGoldPrices?.find(
-        (p) => p.category_id === catId
-      )?.price_per_gram;
-      if (gp !== undefined) {
-        updatedItems[index].price_per_gram = gp;
+
+      // find the selected inventory option
+      const inv = (inventoryData || []).find((i: any) => i.value === value);
+      // auto-fill available quantity (can be edited by user later)
+      if (inv && inv.quantity !== undefined) {
+        updatedItems[index].quantity = inv.quantity;
+      }
+      // auto-fill cost price (read-only field)
+      if (inv && inv.cost_price !== undefined) {
+        updatedItems[index].cost_price = inv.cost_price;
       }
     } else {
       updatedItems[index][field] = value;
@@ -73,7 +95,7 @@ export const StockTransferForm = ({
     items.push({
       inventory_id: "",
       quantity: "",
-      price_per_gram: "",
+      cost_price: "",
     });
 
     setFormValues({
@@ -219,6 +241,8 @@ export const StockTransferForm = ({
                   type="button"
                   onClick={() => removeItem(index)}
                   className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                  aria-label="Remove item"
+                  title="Remove item"
                 >
                   <Icon icon="line-md:close" width="20" height="20" />
                 </button>
@@ -243,16 +267,20 @@ export const StockTransferForm = ({
                       placeholder={
                         <span className="text-sm">Select inventory item</span>
                       }
+                      handleSearchSelect={(q: string) => {
+                        debouncedInventorySearch?.(q ?? "");
+                      }}
                       data={inventoryData || []}
                     />
                     <span className="text-[12px] italic text-error-50">
-                      {formErrors[
-                        `stock_transfer_inventories.${index}.inventory_id`
-                      ] ||
-                        (error as any)?.data?.errors?.[
-                          `stock_transfer_inventories.${index}.inventory_id`
-                        ]?.map((err: any) => err) ||
-                        ""}
+                      {getFieldErrors(
+                        `stock_transfer_inventories.${index}.inventory_id`,
+                        [
+                          `stock_transfer_inventories[${index}].inventory_id`,
+                          `stock_transfer_inventories.${index}[inventory_id]`,
+                          `stock_transfer_inventories[${index}][inventory_id]`,
+                        ]
+                      )}
                     </span>
                   </div>
 
@@ -261,15 +289,14 @@ export const StockTransferForm = ({
                       type="number"
                       name={`stock_transfer_inventories[${index}][quantity]`}
                       className="py-[13px]"
-                      errorMessage={
-                        formErrors[
-                          `stock_transfer_inventories.${index}.quantity`
-                        ] ||
-                        (error as any)?.data?.errors?.[
-                          `stock_transfer_inventories.${index}.quantity`
-                        ]?.map((err: any) => err) ||
-                        ""
-                      }
+                      errorMessage={getFieldErrors(
+                        `stock_transfer_inventories.${index}.quantity`,
+                        [
+                          `stock_transfer_inventories[${index}].quantity`,
+                          `stock_transfer_inventories.${index}[quantity]`,
+                          `stock_transfer_inventories[${index}][quantity]`,
+                        ]
+                      )}
                       value={item.quantity}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleItemChange(index, "quantity", e.target.value)
@@ -277,38 +304,50 @@ export const StockTransferForm = ({
                       placeholder="Enter quantity"
                       title={<span className="font-[500]">Quantity*</span>}
                       required={true}
+                      helperText={`Available: ${
+                        (inventoryData || []).find(
+                          (opt: any) => opt.value === item.inventory_id
+                        )?.quantity ?? "-"
+                      }`}
                     />
                   </div>
 
                   <div>
                     <TextInput
                       type="number"
-                      name={`stock_transfer_inventories[${index}][price_per_gram]`}
+                      name={`stock_transfer_inventories[${index}][cost_price]`}
                       className="py-[13px]"
-                      errorMessage={
-                        formErrors[
-                          `stock_transfer_inventories.${index}.price_per_gram`
-                        ] ||
-                        (error as any)?.data?.errors?.[
-                          `stock_transfer_inventories.${index}.price_per_gram`
-                        ]?.map((err: any) => err) ||
-                        ""
-                      }
-                      value={item.price_per_gram}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleItemChange(
-                          index,
-                          "price_per_gram",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Enter price per gram"
+                      readOnly={true}
+                      errorMessage={getFieldErrors(
+                        `stock_transfer_inventories.${index}.cost_price`,
+                        [
+                          `stock_transfer_inventories[${index}].cost_price`,
+                          `stock_transfer_inventories.${index}[cost_price]`,
+                          `stock_transfer_inventories[${index}][cost_price]`,
+                        ]
+                      )}
+                      value={item.cost_price}
+                      onChange={() => {}}
+                      placeholder="Auto cost price"
                       title={
-                        <span className="font-[500]">Price Per Gram*</span>
+                        <span className="font-[500]">
+                          Cost Price (readonly)
+                        </span>
                       }
-                      required={true}
+                      required={false}
                     />
                   </div>
+                </div>
+                {/* Per-item total */}
+                <div className="mt-3 text-sm text-gray-700 flex items-center justify-between">
+                  <span className="font-medium">Item total:</span>
+                  <span className="font-semibold">
+                    {(() => {
+                      const qty = Number(item.quantity) || 0;
+                      const price = Number(item.cost_price) || 0;
+                      return formatCurrency(qty * price);
+                    })()}
+                  </span>
                 </div>
               </div>
             )
@@ -322,7 +361,25 @@ export const StockTransferForm = ({
           )}
         </div>
 
-        <div className="flex justify-end border-t border-gray-300 pt-3 mt-4">
+        {/* Grand total */}
+        <div className="border-t border-gray-300 pt-3 mt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-medium">Grand total</span>
+            <span className="text-lg font-semibold">
+              {(() => {
+                const items = formValues.stock_transfer_inventories || [];
+                const total = items.reduce((sum: number, cur: any) => {
+                  const qty = Number(cur?.quantity) || 0;
+                  const price = Number(cur?.cost_price) || 0;
+                  return sum + qty * price;
+                }, 0);
+                return formatCurrency(total);
+              })()}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-3">
           <div className="w-fit flex gap-5">
             <CustomButton
               type="button"

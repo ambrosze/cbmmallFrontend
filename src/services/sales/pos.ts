@@ -16,10 +16,8 @@ interface UpdateCartItemPayload {
 }
 interface CheckoutPayload {
   discount_code?: string; // nullable
-  customer_name: string;
-  customer_phone_number: string;
+  customer_id: string;
   payment_method: string; // Cash, POS, Transfer, etc.
-  customer_email?: string;
 }
 export const posApi = api.injectEndpoints({
   overrideExisting: true,

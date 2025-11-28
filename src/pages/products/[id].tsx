@@ -439,7 +439,11 @@ const ProductDetailsPage = () => {
                             Variant({index + 1})
                           </h3>
                           <button
-                            onClick={() => setSelectedVariantId(v.id)}
+                            onClick={() => {
+                              setSelectedVariantId(v.id);
+                              // scroll to top
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
                             className="text-sm font-semibold text-blue-500 mb-2 underline"
                           >
                             View
@@ -449,7 +453,11 @@ const ProductDetailsPage = () => {
                           className={`p-3 border rounded-md grid grid-cols-1 sm:grid-cols-3 mb-2 gap-2 ${
                             selectedVariantId === v.id ? "bg-primary-50/30" : ""
                           }`}
-                          onClick={() => setSelectedVariantId(v.id)}
+                          onClick={() => {
+                            setSelectedVariantId(v.id);
+                            // scroll to top
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
                           role="button"
                           tabIndex={0}
                         >

@@ -47,7 +47,7 @@ export const CustomerForm = ({
               className="py-[13px]"
               value={formValues.name}
               onChange={handleInputChange}
-              placeholder="Enter a first name"
+              placeholder="Enter a name"
               title={<span className="font-[500]">Name*</span>}
               required={false}
             />

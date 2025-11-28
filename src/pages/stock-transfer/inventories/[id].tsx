@@ -1,7 +1,6 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
 import Header from "@/components/header";
-import { stockTransferInventoriesColumns } from "@/components/Items/itemsColumns";
 import DeleteModal from "@/components/sharedUI/DeleteModal";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
@@ -30,27 +29,20 @@ const index = () => {
     null
   );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isOpenModal, setIsOpenModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [selectedInventoryItem, setSelectedInventoryItem] = useState<any>(null);
   const [loginResponse] = useLocalStorage<UserResponseTopLevel | null>(
     "authLoginResponse",
     null
   );
   // Add delete mutation
-  const filteredStockTransferInventoriesColumns =
-    stockTransferInventoriesColumns.filter(
-      (column: any) =>
-        column?.dataIndex !== "action" || loginResponse?.user?.is_admin
-    );
   const [deleteInventory, { isLoading: isDeleteLoading }] =
     useDeleteSingleItemStockTransferMutation();
 
   const { data, refetch, isLoading } = useGetSingleStockTransferQuery(
     {
       id: router.query.id as string,
+      include:
+        "stockTransferInventories.inventory.productVariant.images,stockTransferInventories.inventory.productVariant.product.images",
     },
     {
       skip: !router.query.id,
@@ -107,46 +99,87 @@ const index = () => {
     }
   };
 
+  // Define table columns for stock transfer inventories
+  const stockTransferInventoriesColumns = [
+    {
+      title: "Inventory ID",
+      dataIndex: "inventoryId",
+      key: "inventoryId",
+      width: 150,
+    },
+    {
+      title: "Quantity",
+      dataIndex: "quantity",
+      key: "quantity",
+      width: 100,
+    },
+    {
+      title: "Date Added",
+      dataIndex: "dateAdded",
+      key: "dateAdded",
+      width: 120,
+    },
+    {
+      title: "Last Updated",
+      dataIndex: "lastUpdated",
+      key: "lastUpdated",
+      width: 120,
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
+      width: 100,
+    },
+  ];
+
+  // Filter columns based on user permissions
+  const filteredStockTransferInventoriesColumns =
+    stockTransferInventoriesColumns.filter(
+      (column: any) =>
+        column?.dataIndex !== "action" || loginResponse?.user?.is_admin
+    );
+
+  // Transform data for table
   const transformedData = data?.data?.stock_transfer_inventories?.map(
     (item) => ({
       key: item?.id,
-      material: (
-        <span className="font-medium">
-          {item?.inventory?.item?.material || "N/A"}
-        </span>
-      ),
-      type: (
-        <span className="font-medium">
-          {item?.inventory?.item?.type?.name || "N/A"}
-        </span>
-      ),
-      weight: (
-        <span className="font-medium text-center">
-          {item?.inventory?.item?.weight || "N/A"}
-        </span>
+      inventoryId: (
+        <div className="flex flex-col">
+          <span className="font-medium text-sm">
+            {item?.inventory_id ? item.inventory_id.slice(-8) : "N/A"}
+          </span>
+          <span className="text-xs text-gray-500">
+            {item?.inventory_id || "No ID"}
+          </span>
+        </div>
       ),
       quantity: (
         <span className="font-medium text-center">{item?.quantity || "-"}</span>
       ),
-
-      dateInitiated: newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY"),
-      action: loginResponse?.user.is_admin ? (
+      dateAdded: (
+        <span className="text-sm">
+          {newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY HH:mm")}
+        </span>
+      ),
+      lastUpdated: (
+        <span className="text-sm">
+          {newUserTimeZoneFormatDate(item?.updated_at, "DD/MM/YYYY HH:mm")}
+        </span>
+      ),
+      action: loginResponse?.user?.is_admin ? (
         <Tooltip title="Delete">
-          <span
+          <button
             onClick={() => {
               setSelectedInventoryId(item?.id);
               setSelectedInventoryItem(item);
               setShowDeleteModal(true);
             }}
-            className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-red-500 underline py-2`}
+            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200"
+            aria-label="Delete inventory item"
           >
-            <Icon
-              className="text-red-500 cursor-pointer"
-              icon="gg:trash"
-              width="30"
-              height="30"
-            />
-          </span>
+            <Icon icon="gg:trash" width="20" height="20" />
+          </button>
         </Tooltip>
       ) : null,
     })
@@ -155,14 +188,17 @@ const index = () => {
   const getInventoryDisplayName = () => {
     if (!selectedInventoryItem) return "this item";
 
-    const material =
-      selectedInventoryItem?.inventory?.item?.material || "Unknown";
-    const type = selectedInventoryItem?.inventory?.item?.type?.name || "";
-    const weight = selectedInventoryItem?.inventory?.item?.weight || "";
+    // Since inventory data might be null, we'll use the inventory_id as identifier
+    const inventoryId = selectedInventoryItem?.inventory_id;
+    const quantity = selectedInventoryItem?.quantity;
 
-    return `${material}${type ? ` ${type}` : ""}${
-      weight ? ` (${weight}g)` : ""
-    }`;
+    if (inventoryId) {
+      return `Inventory Item (ID: ${inventoryId.slice(-8)})${
+        quantity ? ` - Qty: ${quantity}` : ""
+      }`;
+    }
+
+    return "this inventory item";
   };
 
   return (
@@ -185,58 +221,204 @@ const index = () => {
       />
       <SharedLayout className="bg-white">
         {/* Show transfer details summary */}
-        <div className="bg-gray-50 p-4 mb-6 rounded-md">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gray-50 p-6 mb-6 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
-              <h4 className="text-gray-500 text-sm">From Store</h4>
-              <p className="font-medium">{data?.data?.from_store?.name}</p>
-              <p className="text-sm text-gray-600">
+              <h4 className="text-gray-500 text-sm font-medium mb-2">
+                From Store
+              </h4>
+              <p className="font-semibold text-gray-900">
+                {data?.data?.from_store?.name}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
                 {data?.data?.from_store?.address}
               </p>
+              {(data?.data?.from_store as any)?.city && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {(data?.data?.from_store as any)?.city},{" "}
+                  {(data?.data?.from_store as any)?.country}
+                </p>
+              )}
+              {data?.data?.from_store?.is_warehouse && (
+                <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Warehouse
+                </span>
+              )}
             </div>
+
             <div>
-              <h4 className="text-gray-500 text-sm">To Store</h4>
-              <p className="font-medium">{data?.data?.to_store?.name}</p>
-              <p className="text-sm text-gray-600">
+              <h4 className="text-gray-500 text-sm font-medium mb-2">
+                To Store
+              </h4>
+              <p className="font-semibold text-gray-900">
+                {data?.data?.to_store?.name}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
                 {data?.data?.to_store?.address}
               </p>
+              {(data?.data?.to_store as any)?.city && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {(data?.data?.to_store as any)?.city},{" "}
+                  {(data?.data?.to_store as any)?.country}
+                </p>
+              )}
+              {(data?.data?.to_store as any)?.phone_number && (
+                <p className="text-xs text-gray-500 mt-1">
+                  📞 {(data?.data?.to_store as any)?.phone_number}
+                </p>
+              )}
+              {(data?.data?.to_store as any)?.email && (
+                <p className="text-xs text-gray-500">
+                  ✉️ {(data?.data?.to_store as any)?.email}
+                </p>
+              )}
             </div>
+
             <div>
-              <h4 className="text-gray-500 text-sm">Driver</h4>
-              <p className="font-medium">{data?.data?.driver_name}</p>
-              <p className="text-sm text-gray-600">
-                {data?.data?.driver_phone_number}
+              <h4 className="text-gray-500 text-sm font-medium mb-2">
+                Driver Information
+              </h4>
+              <p className="font-semibold text-gray-900">
+                {data?.data?.driver_name}
               </p>
+              <p className="text-sm text-gray-600 mt-1">
+                📞 {data?.data?.driver_phone_number}
+              </p>
+
+              <div className="mt-3">
+                <h5 className="text-gray-500 text-xs font-medium mb-1">
+                  Transfer Details
+                </h5>
+                {data?.data?.dispatched_at && (
+                  <p className="text-xs text-gray-600">
+                    Dispatched:{" "}
+                    {newUserTimeZoneFormatDate(
+                      data.data.dispatched_at,
+                      "DD/MM/YYYY HH:mm"
+                    )}
+                  </p>
+                )}
+                {data?.data?.accepted_at && (
+                  <p className="text-xs text-gray-600">
+                    Accepted:{" "}
+                    {newUserTimeZoneFormatDate(
+                      data.data.accepted_at,
+                      "DD/MM/YYYY HH:mm"
+                    )}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-gray-500 text-sm font-medium mb-2">
+                Status & Details
+              </h4>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium inline-block capitalize mb-3
+                  ${
+                    data?.data?.status === "new"
+                      ? "bg-blue-100 text-blue-800"
+                      : ""
+                  }
+                  ${
+                    data?.data?.status === "dispatched"
+                      ? "bg-orange-100 text-orange-800"
+                      : ""
+                  }
+                  ${
+                    data?.data?.status === "accepted"
+                      ? "bg-green-100 text-green-800"
+                      : ""
+                  }
+                  ${
+                    data?.data?.status === "rejected"
+                      ? "bg-red-100 text-red-800"
+                      : ""
+                  }
+                `}
+              >
+                {data?.data?.status}
+              </span>
+
+              <div className="space-y-1">
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium">Ref:</span>{" "}
+                  {data?.data?.reference_no}
+                </p>
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium">Items:</span>{" "}
+                  {data?.data?.inventories_count || 0}
+                </p>
+                {data?.data?.comment && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    <span className="font-medium">Comment:</span>{" "}
+                    {data.data.comment}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-          <div className="mt-4">
-            <h4 className="text-gray-500 text-sm">Status</h4>
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium inline-block capitalize
-                ${
-                  data?.data?.status === "new"
-                    ? "bg-blue-100 text-blue-800"
-                    : ""
-                }
-                ${
-                  data?.data?.status === "dispatched"
-                    ? "bg-orange-100 text-orange-800"
-                    : ""
-                }
-                ${
-                  data?.data?.status === "accepted"
-                    ? "bg-green-100 text-green-800"
-                    : ""
-                }
-                ${
-                  data?.data?.status === "rejected"
-                    ? "bg-red-100 text-red-800"
-                    : ""
-                }
-              `}
-            >
-              {data?.data?.status}
-            </span>
+
+          {/* Sender & Receiver Info */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">
+                  Sender
+                </h4>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={
+                      data?.data?.sender?.profile_photo_url ||
+                      "/images/Avatar.png"
+                    }
+                    alt="Sender"
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {data?.data?.sender?.first_name}{" "}
+                      {data?.data?.sender?.last_name}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {data?.data?.sender?.email}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {data?.data?.sender?.phone_number}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">
+                  Receiver
+                </h4>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={
+                      data?.data?.receiver?.profile_photo_url ||
+                      "/images/Avatar.png"
+                    }
+                    alt="Receiver"
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {data?.data?.receiver?.first_name}{" "}
+                      {data?.data?.receiver?.last_name}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {data?.data?.receiver?.email}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {data?.data?.receiver?.phone_number}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -260,6 +442,42 @@ const index = () => {
               columnsTable={filteredStockTransferInventoriesColumns as any}
               transformedData={transformedData}
             />
+
+            {/* Summary Footer */}
+            {data?.data?.stock_transfer_inventories &&
+              data.data.stock_transfer_inventories.length > 0 && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <h4 className="text-sm text-gray-500">Total Items</h4>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {data.data.stock_transfer_inventories.length}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-sm text-gray-500">Total Quantity</h4>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {data.data.stock_transfer_inventories.reduce(
+                          (sum, item) => sum + (Number(item.quantity) || 0),
+                          0
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-sm text-gray-500">Status</h4>
+                      <p className="text-lg font-semibold text-gray-900 capitalize">
+                        {data?.data?.status}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-sm text-gray-500">Reference No.</h4>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {data?.data?.reference_no}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
           </>
         )}
       </SharedLayout>

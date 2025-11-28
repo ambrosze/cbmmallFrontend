@@ -590,7 +590,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
               {/* Filter Row 3 - Product specific advanced filters */}
               <div className="flex flex-wrap gap-4 items-center w-full">
                 {filterKeys && (filterKeys as any)["variantsIdKey"] && (
-                  <div className="flex flex-col gap-2 min-w-[220px]">
+                  <div className="flex flex-col gap-2 min-w-[220px] hidden">
                     <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                       <Icon icon="mdi:numeric" className="w-3 h-3" />
                       Variants
@@ -616,7 +616,7 @@ const ItemsFilter: React.FC<ItemsFilterProps> = ({
                 )}
 
                 {filterKeys && (filterKeys as any)["variantsSkuKey"] && (
-                  <div className="flex flex-col gap-2 min-w-[220px]">
+                  <div className="flex flex-col gap-2 min-w-[220px] hidden">
                     <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1">
                       <Icon icon="mdi:barcode" className="w-3 h-3" />
                       Variant SKUs

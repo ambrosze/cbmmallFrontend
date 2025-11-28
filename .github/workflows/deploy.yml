@@ -41,7 +41,8 @@ jobs:
             npm run build
 
             echo "🔄 Restarting PM2 app..."
-            pm2 restart cbm-mall-store-staging
+            pm2 start ecosystem.config.js
+            #pm2 restart cbm-mall-store-staging
           
             echo "✅ Staging Deployment Complete"
           EOF
@@ -78,7 +79,8 @@ jobs:
             npm run build
 
             echo "🔄 Restarting PM2 app..."
-            pm2 restart cbm-mall-store
+            pm2 start ecosystem.config.js
+            #pm2 restart cbm-mall-store
           
             echo "✅ Production Deployment Complete"
           EOF
