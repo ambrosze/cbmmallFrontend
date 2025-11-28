@@ -917,7 +917,6 @@ const index = () => {
         ) : (
           <>
             <TableMainComponent
-              deleteRowApi={deleteStockTransfer}
               DeleteModalText={
                 <>
                   {capitalizeOnlyFirstLetter(selectedItem?.driver_name || "")}

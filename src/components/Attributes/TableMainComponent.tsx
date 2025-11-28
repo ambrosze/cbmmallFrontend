@@ -15,7 +15,6 @@ interface IProps {
   formValues: any;
   columnsTable: any;
   refetch: () => void;
-  deleteRowApi: any;
   setShowDeleteModal: React.Dispatch<React.SetStateAction<boolean>>;
   showDeleteModal: boolean;
   isDeleteLoading: boolean;
@@ -40,7 +39,6 @@ interface IProps {
 const TableMainComponent = ({
   data,
   refetch,
-  deleteRowApi,
   deleteCardApi,
   setShowDeleteModal,
   showDeleteModal,
