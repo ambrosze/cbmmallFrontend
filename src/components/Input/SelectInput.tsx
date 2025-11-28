@@ -284,7 +284,9 @@ const SelectInput = ({
         options={displayOptions}
         notFoundContent={computedNotFoundContent}
         onSearch={handleSearch}
-        tagRender={mode ? tagRender || defaultTagRender : undefined}
+        tagRender={
+          mode  ? tagRender || defaultTagRender : undefined
+        }
         // Allow splitting tags by common separators when in tags mode
         tokenSeparators={mode === "tags" ? tokenSeparators ?? [","] : undefined}
         optionLabelProp={mode === "tags" ? "value" : "label"}

@@ -1,50 +1,74 @@
-import useWindowResize from '@/hooks/useWindowResize'
-import {Modal} from 'antd'
-import {twMerge} from 'tailwind-merge'
+import useWindowResize from "@/hooks/useWindowResize";
+import { Modal } from "antd";
+import { twMerge } from "tailwind-merge";
 interface IProps {
-  children?: React.ReactNode
-  modalOpen: boolean
-  setModalOpen: React.Dispatch<React.SetStateAction<boolean>>
-  title?: string
-  onCloseModal?: any
-  height?: number
-  width?: any
-  className?: string
-  maskCloseable?: boolean
+  children?: React.ReactNode;
+  modalOpen: boolean;
+  setModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  title?: string;
+  onCloseModal?: any;
+  height?: number;
+  width?: any;
+  className?: string;
+  backgroundColor?: string;
+  closable?: boolean;
+  maskClosable?: boolean;
+  keyboard?: boolean;
 }
 const PlannerModal = ({
   children,
   modalOpen,
   setModalOpen,
-  maskCloseable,
   title,
   onCloseModal,
   height,
   width,
-  className
+  className,
+  backgroundColor = "#fff",
+  closable = true,
+  maskClosable = true,
+  keyboard = true,
 }: IProps) => {
-  const {width: windowWidth} = useWindowResize()
+  const { width: windowWidth } = useWindowResize();
+  // const [modalOpen, setModalOpen] = useState(false);
+  //  <Button
+  //    className="text-error-50"
+  //    type="primary"
+  //    onClick={() => setModal2Open(true)}
+  //  >
+  //    Vertically centered modal dialog
+  //  </Button>;
 
   return (
     <>
       <Modal
         title={title}
         centered
-        maskClosable={maskCloseable}
         style={{
-          height: windowWidth < 1000 ? undefined : height
+          height: windowWidth < 1000 ? undefined : height,
+        }}
+        styles={{
+          content: {
+            backgroundColor: backgroundColor,
+          },
         }}
         width={windowWidth < 1000 ? undefined : width > 0 ? width : undefined}
-        className={twMerge(' overflow-auto', className ? className : '')}
+        className={twMerge(
+          "font-inters overflow-auto",
+          className ? className : ""
+        )}
         footer={null}
         open={modalOpen}
         onOk={onCloseModal}
         onCancel={onCloseModal}
+        closable={closable}
+        maskClosable={maskClosable}
+        keyboard={keyboard}
       >
         {children}
       </Modal>
     </>
-  )
-}
+  );
+};
 
-export default PlannerModal
+export default PlannerModal;
