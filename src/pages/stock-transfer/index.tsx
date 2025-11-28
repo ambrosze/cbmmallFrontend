@@ -16,7 +16,6 @@ import WarningModal from "@/components/sharedUI/WarningModal";
 import StockTransferDetailsModal from "@/components/StockTransfer/StockTransferDetailsModal";
 import StockTransferFilters from "@/components/StockTransfer/StockTransferFilters";
 import { useGetAllDailyGoldPricesQuery } from "@/services/admin/daily-gold-price";
-import { useGetAllInventoryItemsQuery } from "@/services/InventoryItem";
 import {
   useAcceptStockTransferMutation,
   useCreateStockTransferMutation,
@@ -29,8 +28,11 @@ import {
 } from "@/services/stock-transfer";
 
 import { useGetAllStoresQuery } from "@/services/admin/store";
+import { useGetAllInventoryQuery } from "@/services/inventories";
+import { InventoryDatum } from "@/types/inventoryListType";
 import { UserResponseTopLevel } from "@/types/loginInUserType";
 import { StockTransferDatum } from "@/types/StockTransferTypes";
+import debounce from "@/utils/debounce";
 import {
   capitalizeOnlyFirstLetter,
   newUserTimeZoneFormatDate,
@@ -43,9 +45,6 @@ import { useLocalStorage } from "react-use";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import { useGetAllInventoryQuery } from "@/services/inventories";
-import debounce from "@/utils/debounce";
-import { InventoryDatum } from "@/types/inventoryListType";
 interface InventoryListItem {
   label: string;
   value: string | number;
@@ -83,7 +82,7 @@ const index = () => {
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-    const [inventorySearch, setInventorySearch] = useState<string>("");
+  const [inventorySearch, setInventorySearch] = useState<string>("");
 
   const [createStockTransfer, { isLoading: isLoadingCreate, error }] =
     useCreateStockTransferMutation();
@@ -513,16 +512,16 @@ const index = () => {
     setCurrentPage(page);
     refetch();
   };
-    const inventoryList: InventoryListItem[] | undefined =
-      inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
-        return {
-          label: item?.product_variant?.name,
-          value: item.id,
-          price: item?.product_variant?.price,
-          quantity: item?.quantity,
-          cost_price: item?.product_variant?.cost_price,
-        };
-      });
+  const inventoryList: InventoryListItem[] | undefined =
+    inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
+      return {
+        label: item?.product_variant?.name,
+        value: item.id,
+        price: item?.product_variant?.price,
+        quantity: item?.quantity,
+        cost_price: item?.product_variant?.cost_price,
+      };
+    });
   const { data: storeData } = useGetAllStoresQuery({
     q: "",
     page: 1,
@@ -918,6 +917,7 @@ const index = () => {
         ) : (
           <>
             <TableMainComponent
+              deleteRowApi={deleteStockTransfer}
               DeleteModalText={
                 <>
                   {capitalizeOnlyFirstLetter(selectedItem?.driver_name || "")}
@@ -941,9 +941,21 @@ const index = () => {
           </>
         )}
 
-        <div className="py-8 flex justify-end items-center  w-full">
-          <div className="w-fit">
-            {data?.meta?.total! > 0 && (
+        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+          {(currentPage === 1 && data?.meta?.total! >= 10) ||
+          (currentPage > 1 && data?.meta?.total! >= 1) ? (
+            <div className={`text-sm hidden lg:block font-[500] text-black`}>
+              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+              {Math.min(
+                currentPage * data?.meta?.per_page!,
+                data?.meta?.total!
+              )}{" "}
+              of {data?.meta?.total!} results
+            </div>
+          ) : null}
+          {(currentPage === 1 && data?.meta?.total! >= 10) ||
+          (currentPage > 1 && data?.meta?.total! >= 1) ? (
+            <div className="">
               <PaginationComponent
                 paginationData={{
                   current_page: data?.meta?.current_page!,
@@ -955,8 +967,8 @@ const index = () => {
                 }}
                 onPageChange={handlePageChange}
               />
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       </SharedLayout>
       {isOpenModal && (

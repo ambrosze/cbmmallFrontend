@@ -521,9 +521,21 @@ const index = () => {
           exportColumns={exportColumns as any}
           transformedData={transformedData}
         />
-        <div className="mt-4 mb-10 flex justify-end items-center  w-full">
-          <div className="w-fit">
-            {data?.meta?.total! > 0 && (
+        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+          {(currentPage === 1 && data?.meta?.total! >= 10) ||
+          (currentPage > 1 && data?.meta?.total! >= 1) ? (
+            <div className={`text-sm hidden lg:block font-[500] text-black`}>
+              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+              {Math.min(
+                currentPage * data?.meta?.per_page!,
+                data?.meta?.total!
+              )}{" "}
+              of {data?.meta?.total!} results
+            </div>
+          ) : null}
+          {(currentPage === 1 && data?.meta?.total! >= 10) ||
+          (currentPage > 1 && data?.meta?.total! >= 1) ? (
+            <div className="">
               <PaginationComponent
                 paginationData={{
                   current_page: data?.meta?.current_page!,
@@ -535,8 +547,8 @@ const index = () => {
                 }}
                 onPageChange={handlePageChange}
               />
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       </SharedLayout>
       {isViewProductListModal && selectedItem && (
