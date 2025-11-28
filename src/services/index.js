@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { destroyCookie, parseCookies } from "nookies";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.baseUrl,
+  baseUrl: process.env.baseUrl || process.env.NEXT_PUBLIC_BASEURL + "/api/",
   prepareHeaders: (headers, { getState }) => {
     const allCookies = parseCookies();
     const token = allCookies["token"]; // auth token
