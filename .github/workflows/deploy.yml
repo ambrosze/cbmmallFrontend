@@ -31,6 +31,7 @@ jobs:
           echo "📂 Working directory: $(pwd)"
           
           echo "📥 Fetching and updating staging branch..."
+          git config --global --add safe.directory /var/www/cbm-mall-store-staging
           git fetch origin staging
           git reset --hard origin/staging
           git clean -fd
