@@ -39,7 +39,7 @@ jobs:
           echo "📌 Current commit: $(git log -1 --oneline)"
           
           echo "📦 Installing dependencies..."
-          npm ci --production=false
+          npm  install 
           
           echo "⚙️ Running Next.js build..."
           npm run build
