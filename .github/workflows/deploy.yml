@@ -23,29 +23,81 @@ jobs:
 
       - name: 🚀 Deploy to Staging Server
         run: |
-          ssh -o StrictHostKeyChecking=no -p 22 \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            set -e
-
-            echo "🔐 Logged in via SSH"
-            cd /var/www/cbm-mall-store-staging
-
-            echo "📥 Fetching and updating branch..."
-            git fetch origin staging
-            git reset --hard origin/staging
-
-            echo "📦 Installing dependencies..."
-            npm install
-
-            echo "⚙️ Running nextjs build..."
-            npm run build
-
-            echo "🔄 Restarting PM2 app..."
-            pm2 start ecosystem.config.js
-            #pm2 restart cbm-mall-store-staging
+          ssh -o StrictHostKeyChecking=no -p 22 ${{ secrets.SSH_USER }}@50.116.38.113 << 'ENDSSH'
+          set -e
+          echo "🔐 Logged in via SSH"
           
-            echo "✅ Staging Deployment Complete"
-          EOF
+          cd /var/www/cbm-mall-store-staging
+          echo "📂 Working directory: $(pwd)"
+          
+          echo "📥 Fetching and updating staging branch..."
+          git fetch origin staging
+          git reset --hard origin/staging
+          git clean -fd
+          
+          echo "📌 Current commit: $(git log -1 --oneline)"
+          
+          echo "📦 Installing dependencies..."
+          npm ci --production=false
+          
+          echo "⚙️ Running Next.js build..."
+          npm run build
+          
+          echo "📁 Ensuring logs directory exists..."
+          mkdir -p logs
+          
+          if [ ! -f "ecosystem.config.js" ]; then
+            echo "⚠️ ecosystem.config.js not found! Creating..."
+            cat > ecosystem.config.js << 'ECOEND'
+          module.exports = {
+            apps: [{
+              name: "cbm-mall-store-staging",
+              script: "npm",
+              args: "run start",
+              cwd: "/var/www/cbm-mall-store-staging",
+              env: {
+                NODE_ENV: "staging",
+                PORT: 3000,
+              },
+              instances: 1,
+              autorestart: true,
+              watch: false,
+              max_memory_restart: "1G",
+              error_file: "/var/www/cbm-mall-store-staging/logs/error.log",
+              out_file: "/var/www/cbm-mall-store-staging/logs/out.log",
+              log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+            }],
+          };
+          ECOEND
+          fi
+          
+          echo "🔄 Restarting PM2 staging app..."
+          if pm2 describe cbm-mall-store-staging > /dev/null 2>&1; then
+            echo "♻️ App exists, reloading (zero-downtime)..."
+            pm2 reload ecosystem.config.js --only cbm-mall-store-staging --update-env
+          else
+            echo "🆕 App doesn't exist, starting fresh..."
+            pm2 start ecosystem.config.js --only cbm-mall-store-staging
+          fi
+          
+          echo "💾 Saving PM2 process list..."
+          pm2 save --force
+          
+          echo "📊 PM2 Status:"
+          pm2 list
+          
+          echo "ℹ️ App Information:"
+          pm2 describe cbm-mall-store-staging | grep -E "status|uptime|restarts|script|port" || true
+          
+          echo "🔌 Port Check:"
+          if ss -tlnp 2>/dev/null | grep :3000 > /dev/null; then
+            echo "✅ App is listening on port 3000"
+          else
+            echo "⚠️ Warning: Port 3001 not in use yet (app may still be starting)"
+          fi
+          
+          echo "✅ Staging Deployment Complete"
+          ENDSSH
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -61,26 +113,78 @@ jobs:
 
       - name: 🚀 Deploy to Production Server
         run: |
-          ssh -o StrictHostKeyChecking=no -p 22 \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            set -e
-
-            echo "🔐 Logged in via SSH"
-            cd /var/www/cbm-mall-store
-
-            echo "📥 Fetching and updating branch..."
-            git fetch origin main
-            git reset --hard origin/main
-
-            echo "📦 Installing dependencies..."
-            npm install
-
-            echo "⚙️ Running nextjs build..."
-            npm run build
-
-            echo "🔄 Restarting PM2 app..."
-            pm2 start ecosystem.config.js
-            #pm2 restart cbm-mall-store
+          ssh -o StrictHostKeyChecking=no -p 22 ${{ secrets.SSH_USER }}@45.33.103.215 << 'ENDSSH'
+          set -e
+          echo "🔐 Logged in via SSH"
           
-            echo "✅ Production Deployment Complete"
-          EOF
+          cd /var/www/cbm-mall-store
+          echo "📂 Working directory: $(pwd)"
+          
+          echo "📥 Fetching and updating main branch..."
+          git fetch origin main
+          git reset --hard origin/main
+          git clean -fd
+          
+          echo "📌 Current commit: $(git log -1 --oneline)"
+          
+          echo "📦 Installing dependencies..."
+          npm ci --production=false
+          
+          echo "⚙️ Running Next.js build..."
+          npm run build
+          
+          echo "📁 Ensuring logs directory exists..."
+          mkdir -p logs
+          
+          if [ ! -f "ecosystem.config.js" ]; then
+            echo "⚠️ ecosystem.config.js not found! Creating..."
+            cat > ecosystem.config.js << 'ECOEND'
+          module.exports = {
+            apps: [{
+              name: "cbm-mall-store",
+              script: "npm",
+              args: "run start",
+              cwd: "/var/www/cbm-mall-store",
+              env: {
+                NODE_ENV: "production",
+                PORT: 3000,
+              },
+              instances: 1,
+              autorestart: true,
+              watch: false,
+              max_memory_restart: "1G",
+              error_file: "/var/www/cbm-mall-store/logs/error.log",
+              out_file: "/var/www/cbm-mall-store/logs/out.log",
+              log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+            }],
+          };
+          ECOEND
+          fi
+          
+          echo "🔄 Restarting PM2 production app..."
+          if pm2 describe cbm-mall-store > /dev/null 2>&1; then
+            echo "♻️ App exists, reloading (zero-downtime)..."
+            pm2 reload ecosystem.config.js --only cbm-mall-store --update-env
+          else
+            echo "🆕 App doesn't exist, starting fresh..."
+            pm2 start ecosystem.config.js --only cbm-mall-store
+          fi
+          
+          echo "💾 Saving PM2 process list..."
+          pm2 save --force
+          
+          echo "📊 PM2 Status:"
+          pm2 list
+          
+          echo "ℹ️ App Information:"
+          pm2 describe cbm-mall-store | grep -E "status|uptime|restarts|script|port" || true
+          
+          echo "🔌 Port Check:"
+          if ss -tlnp 2>/dev/null | grep :3000 > /dev/null; then
+            echo "✅ App is listening on port 3000"
+          else
+            echo "⚠️ Warning: Port 3000 not in use yet (app may still be starting)"
+          fi
+          
+          echo "✅ Production Deployment Complete"
+          ENDSSH

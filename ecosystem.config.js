@@ -15,7 +15,7 @@ module.exports = {
             args: "run start",
             env: {
                 NODE_ENV: "staging",
-                PORT: 3001,
+                PORT: 3000,
             },
         },
     ],
