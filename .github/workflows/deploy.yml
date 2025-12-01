@@ -94,7 +94,7 @@ jobs:
           if ss -tlnp 2>/dev/null | grep :3000 > /dev/null; then
             echo "✅ App is listening on port 3000"
           else
-            echo "⚠️ Warning: Port 3001 not in use yet (app may still be starting)"
+            echo "⚠️ Warning: Port 3000 not in use yet (app may still be starting)"
           fi
           
           echo "✅ Staging Deployment Complete"
