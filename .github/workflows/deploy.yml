@@ -122,6 +122,7 @@ jobs:
           echo "📂 Working directory: $(pwd)"
           
           echo "📥 Fetching and updating main branch..."
+          git config --global --add safe.directory /var/www/cbm-mall-store
           git fetch origin main
           git reset --hard origin/main
           git clean -fd
@@ -129,7 +130,7 @@ jobs:
           echo "📌 Current commit: $(git log -1 --oneline)"
           
           echo "📦 Installing dependencies..."
-          npm ci --production=false
+          npm install
           
           echo "⚙️ Running Next.js build..."
           npm run build
