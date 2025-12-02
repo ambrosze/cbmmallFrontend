@@ -27,6 +27,8 @@ import {
   useUpdateStockTransferMutation,
 } from "@/services/stock-transfer";
 
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
+import { useCheckPermission } from "@/hooks/useCheckPermission";
 import { useGetAllStoresQuery } from "@/services/admin/store";
 import { useGetAllInventoryQuery } from "@/services/inventories";
 import { InventoryDatum } from "@/types/inventoryListType";
@@ -60,6 +62,31 @@ const index = () => {
   const [rejectFormValues, setRejectFormValues] = useState({
     comment: "",
   });
+  const {
+    hasPermission: hasCreatePermission,
+    isLoading: isLoadingCreatePermission,
+  } = useCheckPermission("stock_transfers.create");
+  const {
+    hasPermission: hasViewPermission,
+    isLoading: isLoadingViewPermission,
+  } = useCheckPermission("stock_transfers.view");
+  // delete and edit permissions can be added similarly
+  const {
+    hasPermission: hasDeletePermission,
+    isLoading: isLoadingDeletePermission,
+  } = useCheckPermission("stock_transfers.delete");
+  const {
+    hasPermission: hasUpdatePermission,
+    isLoading: isLoadingUpdatePermission,
+  } = useCheckPermission("stock_transfers.update");
+  const {
+    hasPermission: hasViewOwnPermission,
+    isLoading: isLoadingViewOwnPermission,
+  } = useCheckPermission("stock_transfers.viewOwn");
+  const {
+    hasPermission: hasReceivePermission,
+    isLoading: isLoadingReceivePermission,
+  } = useCheckPermission("stock_transfers.receive");
   const [formValues, setFormValues] = useState({
     driver_name: "",
     driver_phone_number: "",
@@ -297,49 +324,61 @@ const index = () => {
   ]);
 
   const items: MenuProps["items"] = [
-    {
-      label: (
-        <button
-          onClick={() => {
-            setShowViewDetailsModal(true);
-          }}
-          className="flex w-full items-center gap-2"
-          type="button"
-        >
-          <Icon icon="mdi:eye-outline" className="w-4 h-4" />
-          View Details
-        </button>
-      ),
-      key: "0",
-    },
-    {
-      label: (
-        <button
-          onClick={handleOpenEditModal}
-          className="flex w-full items-center gap-2"
-          type="button"
-        >
-          <Icon icon="mdi:pencil-outline" className="w-4 h-4" />
-          Edit Transfer
-        </button>
-      ),
-      key: "1",
-    },
-    {
-      label: (
-        <button
-          onClick={() => {
-            router.push(`/stock-transfer/inventories/${selectedItem?.id}`);
-          }}
-          className="flex w-full items-center gap-2"
-          type="button"
-        >
-          <Icon icon="mdi:package-variant-closed" className="w-4 h-4" />
-          View Stock Inventories
-        </button>
-      ),
-      key: "4",
-    },
+    isLoadingViewPermission
+      ? null
+      : hasViewPermission
+      ? {
+          label: (
+            <button
+              onClick={() => {
+                setShowViewDetailsModal(true);
+              }}
+              className="flex w-full items-center gap-2"
+              type="button"
+            >
+              <Icon icon="mdi:eye-outline" className="w-4 h-4" />
+              View Details
+            </button>
+          ),
+          key: "0",
+        }
+      : null,
+    isLoadingUpdatePermission
+      ? null
+      : hasUpdatePermission
+      ? {
+          label: (
+            <button
+              onClick={handleOpenEditModal}
+              className="flex w-full items-center gap-2"
+              type="button"
+            >
+              <Icon icon="mdi:pencil-outline" className="w-4 h-4" />
+              Edit Transfer
+            </button>
+          ),
+          key: "1",
+        }
+      : null,
+    isLoadingViewOwnPermission
+      ? null
+      : hasViewOwnPermission
+      ? {
+          label: (
+            <button
+              onClick={() => {
+                router.push(`/stock-transfer/inventories/${selectedItem?.id}`);
+              }}
+              className="flex w-full items-center gap-2"
+              type="button"
+            >
+              <Icon icon="mdi:package-variant-closed" className="w-4 h-4" />
+              View Stock Inventories
+            </button>
+          ),
+          key: "4",
+        }
+      : null,
     {
       label: (
         <button
@@ -355,21 +394,28 @@ const index = () => {
       ),
       key: "5",
     },
-    {
-      label: (
-        <button
-          onClick={() => {
-            setShowAcceptModal(true);
-          }}
-          className="flex w-full items-center gap-2"
-          type="button"
-        >
-          <Icon icon="flat-color-icons:accept-database" className="w-4 h-4" />
-          Accept Stock Transfer
-        </button>
-      ),
-      key: "6",
-    },
+    isLoadingReceivePermission
+      ? null
+      : hasReceivePermission
+      ? {
+          label: (
+            <button
+              onClick={() => {
+                setShowAcceptModal(true);
+              }}
+              className="flex w-full items-center gap-2"
+              type="button"
+            >
+              <Icon
+                icon="flat-color-icons:accept-database"
+                className="w-4 h-4"
+              />
+              Accept Stock Transfer
+            </button>
+          ),
+          key: "6",
+        }
+      : null,
     {
       label: (
         <button
@@ -388,25 +434,26 @@ const index = () => {
       ),
       key: "7",
     },
-    ...(loginResponse?.user.is_admin!
-      ? [
-          {
-            label: (
-              <button
-                onClick={() => {
-                  setShowDeleteModal(true);
-                }}
-                className="flex w-full items-center text-red-500 gap-2"
-                type="button"
-              >
-                <Icon icon="mdi:delete-outline" className="w-4 h-4" />
-                Delete
-              </button>
-            ),
-            key: "3",
-          },
-        ]
-      : []),
+
+    isLoadingDeletePermission
+      ? null
+      : hasDeletePermission
+      ? {
+          label: (
+            <button
+              onClick={() => {
+                setShowDeleteModal(true);
+              }}
+              className="flex w-full items-center text-red-500 gap-2"
+              type="button"
+            >
+              <Icon icon="mdi:delete-outline" className="w-4 h-4" />
+              Delete
+            </button>
+          ),
+          key: "3",
+        }
+      : null,
   ];
 
   const transformedData = data?.data?.map((item) => ({
@@ -890,6 +937,7 @@ const index = () => {
       />
       <AttributeHeader
         headerText="All Stock Transfers"
+        showAddButton={isLoadingCreatePermission ? false : hasCreatePermission}
         btnText="Create Stock Transfer"
         onClick={() => {
           setIsOpenModal(true);
@@ -906,69 +954,71 @@ const index = () => {
       />
 
       <SharedLayout className="bg-white">
-        <StockTransferFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onClearFilters={handleClearFilters}
-        />
+        <PermissionGuard permission="stock_transfers.viewAny">
+          <StockTransferFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+          />
 
-        {isLoading ? (
-          <SkeletonLoaderForPage />
-        ) : (
-          <>
-            <TableMainComponent
-              DeleteModalText={
-                <>
-                  {capitalizeOnlyFirstLetter(selectedItem?.driver_name || "")}
-                </>
-              }
-              data={selectedItem}
-              deleteCardApi={deleteStockTransfer}
-              isDeleteLoading={isDeleteLoading}
-              printTitle="Stock Transfers"
-              showExportButton={true}
-              showPrintButton={true}
-              showDeleteModal={showDeleteModal}
-              refetch={refetch}
-              formValues={formValues}
-              setShowDeleteModal={setShowDeleteModal}
-              isLoading={false}
-              columnsTable={stockTransferColumns as any}
-              exportColumns={exportColumns as any}
-              transformedData={transformedData}
-            />
-          </>
-        )}
-
-        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className={`text-sm hidden lg:block font-[500] text-black`}>
-              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
-              {Math.min(
-                currentPage * data?.meta?.per_page!,
-                data?.meta?.total!
-              )}{" "}
-              of {data?.meta?.total!} results
-            </div>
-          ) : null}
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className="">
-              <PaginationComponent
-                paginationData={{
-                  current_page: data?.meta?.current_page!,
-                  last_page: data?.meta?.last_page!,
-                  per_page: data?.meta?.per_page!,
-                  total: data?.meta?.total!,
-                  next_page_url: data?.links?.next!,
-                  prev_page_url: data?.links?.prev!,
-                }}
-                onPageChange={handlePageChange}
+          {isLoading ? (
+            <SkeletonLoaderForPage />
+          ) : (
+            <>
+              <TableMainComponent
+                DeleteModalText={
+                  <>
+                    {capitalizeOnlyFirstLetter(selectedItem?.driver_name || "")}
+                  </>
+                }
+                data={selectedItem}
+                deleteCardApi={deleteStockTransfer}
+                isDeleteLoading={isDeleteLoading}
+                printTitle="Stock Transfers"
+                showExportButton={true}
+                showPrintButton={true}
+                showDeleteModal={showDeleteModal}
+                refetch={refetch}
+                formValues={formValues}
+                setShowDeleteModal={setShowDeleteModal}
+                isLoading={false}
+                columnsTable={stockTransferColumns as any}
+                exportColumns={exportColumns as any}
+                transformedData={transformedData}
               />
-            </div>
-          ) : null}
-        </div>
+            </>
+          )}
+
+          <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className={`text-sm hidden lg:block font-[500] text-black`}>
+                Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+                {Math.min(
+                  currentPage * data?.meta?.per_page!,
+                  data?.meta?.total!
+                )}{" "}
+                of {data?.meta?.total!} results
+              </div>
+            ) : null}
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className="">
+                <PaginationComponent
+                  paginationData={{
+                    current_page: data?.meta?.current_page!,
+                    last_page: data?.meta?.last_page!,
+                    per_page: data?.meta?.per_page!,
+                    total: data?.meta?.total!,
+                    next_page_url: data?.links?.next!,
+                    prev_page_url: data?.links?.prev!,
+                  }}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : null}
+          </div>
+        </PermissionGuard>
       </SharedLayout>
       {isOpenModal && (
         <PlannerModal

@@ -404,7 +404,7 @@ export const rolesColumns: TableColumnsType<any> = [
   {
     title: "Name",
     dataIndex: "name",
-    width: 200,
+    width: 220,
     // sorter: {
     //   compare: (a, b) => a.name.localeCompare(b.name),
     //   multiple: 3,
@@ -413,7 +413,16 @@ export const rolesColumns: TableColumnsType<any> = [
   {
     title: "Guardian name",
     dataIndex: "guard_name",
-    width: 350,
+    width: 300,
+    // sorter: {
+    //   compare: (a, b) => a.email.localeCompare(b.email),
+    //   multiple: 3,
+    // },
+  },
+  {
+    title: "Permission Count",
+    dataIndex: "permission_count",
+    width: 250,
     // sorter: {
     //   compare: (a, b) => a.email.localeCompare(b.email),
     //   multiple: 3,
@@ -436,7 +445,7 @@ export const rolesColumns: TableColumnsType<any> = [
     title: "Action",
     fixed: "right",
     dataIndex: "action",
-    width: 140,
+    width: 80,
   },
 ];
 export const dailyGoldPriceColumns: TableColumnsType<any> = [

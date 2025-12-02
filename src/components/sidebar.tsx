@@ -80,7 +80,7 @@ const Sidebar = ({
     if (path.includes("/people/staffs")) return ["43", "sub5"];
     if (path.includes("/people/suppliers")) return ["41", "sub5"];
     if (path.includes("/people/users")) return ["42", "sub5"];
-
+    if (path.includes("/people/roles")) return ["45", "sub5"];
 
     return ["1"]; // Default to dashboard
   };
@@ -256,21 +256,29 @@ const Sidebar = ({
           },
         },
         {
-          key: "41",
-          icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
-          label: "Suppliers",
+          key: "45",
+          icon: <Icon icon="oui:app-users-roles" width="20" height="20" />,
+          label: "Roles",
           onClick: () => {
-            router.push("/people/suppliers");
+            router.push("/people/roles");
           },
         },
-        {
-          key: "42",
-          icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
-          label: "Users",
-          onClick: () => {
-            router.push("/people/users");
-          },
-        },
+        // {
+        //   key: "41",
+        //   icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
+        //   label: "Suppliers",
+        //   onClick: () => {
+        //     router.push("/people/suppliers");
+        //   },
+        // },
+        // {
+        //   key: "42",
+        //   icon: <Icon icon="mdi:account-circle" width="20" height="20" />,
+        //   label: "Users",
+        //   onClick: () => {
+        //     router.push("/people/users");
+        //   },
+        // },
 
         // {
         //   key: "31",
@@ -281,51 +289,8 @@ const Sidebar = ({
         // },
       ],
     },
-    ...(loginResponse?.user.is_admin
-      ? [
-          {
-            key: "sub4",
-            label: <span className="font-[500]">Admin</span>,
-            icon: (
-              <Icon icon="eos-icons:admin-outlined" width="28" height="28" />
-            ),
-            children: [
-              // {
-              //   key: "53",
-              //   icon: (
-              //     <Icon icon="hugeicons:group-items" width="20" height="20" />
-              //   ),
-              //   label: <span className="">Stocks</span>,
-              //   onClick: () => {
-              //     router.push("/admin/stocks");
-              //   },
-              // },
 
-              // {
-              //   key: "55",
-              //   icon: (
-              //     <Icon icon="hugeicons:task-daily-01" width="20" height="20" />
-              //   ),
-              //   label: <span className="">Daily Gold Price</span>,
-              //   onClick: () => {
-              //     router.push("/admin/daily-gold-price");
-              //   },
-              // },
 
-              {
-                key: "52",
-                icon: (
-                  <Icon icon="oui:app-users-roles" width="20" height="20" />
-                ),
-                label: "Roles",
-                onClick: () => {
-                  router.push("/admin/roles");
-                },
-              },
-            ],
-          },
-        ]
-      : []),
 
     // {
     //   key: "41",

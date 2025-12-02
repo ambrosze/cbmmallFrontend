@@ -15,6 +15,7 @@ export const rolesApi = api.injectEndpoints({
         paginate?: boolean;
         per_page?: number;
         page?: number;
+        include?: string;
       }
     >({
       query: ({
@@ -23,12 +24,14 @@ export const rolesApi = api.injectEndpoints({
         paginate,
         per_page,
         page,
+        include,
       }: {
         sort?: string;
         q?: string;
         paginate?: boolean;
         per_page?: number;
         page?: number;
+        include?: string;
       }) => {
         const params: any = {};
         if (q) params.q = q;
@@ -37,6 +40,7 @@ export const rolesApi = api.injectEndpoints({
         if (per_page) params.per_page = per_page;
         if (page) params.page = page;
         if (sort) params.sort = sort;
+        if (include) params.include = include;
 
         return {
           url: "roles",
@@ -82,6 +86,20 @@ export const rolesApi = api.injectEndpoints({
         invalidatesTags: ["roles"],
       }),
     }),
+    syncRolePermissions: builder.mutation<
+      any,
+      { role_id: string; body: { permissions: string[] } }
+    >({
+      query: ({ body, role_id }) => ({
+        url: `roles/${role_id}/sync-permissions`,
+        method: "POST",
+        body: body,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        invalidatesTags: ["roles"],
+      }),
+    }),
     updateRoles: builder.mutation<any, { id: string; body: CreateRolesType }>({
       query: ({ id, body }) => ({
         url: `roles/${id}`,
@@ -108,6 +126,7 @@ export const rolesApi = api.injectEndpoints({
 
 export const {
   useGetAllRolesQuery,
+  useSyncRolePermissionsMutation,
   useGetSingleRolesQuery,
   useCreateRolesMutation,
   useUpdateRolesMutation,
