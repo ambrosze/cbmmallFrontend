@@ -22,6 +22,9 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 
+import { orderTableColumns } from "@/components/Order/OrderTableColumns";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
+import { useCheckPermission } from "@/hooks/useCheckPermission";
 import Image from "next/image";
 import {
   Dispatch,
@@ -31,7 +34,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { orderTableColumns } from "@/components/Order/OrderTableColumns";
 
 interface AddItemFormState {
   sku: string;
@@ -56,6 +58,15 @@ const index = () => {
   const { data: orderStatusData } = useGetAllEnumsQuery({
     enum: "OrderStatus",
   });
+  const {
+    hasPermission: hasViewPermission,
+    isLoading: isLoadingViewPermission,
+  } = useCheckPermission("orders.view");
+
+  const {
+    hasPermission: hasUpdatePermission,
+    isLoading: isLoadingUpdatePermission,
+  } = useCheckPermission("orders.update");
   console.log("OrderStatus", orderStatusData?.values);
   const ORDER_STATUS_OPTIONS =
     orderStatusData?.values.map((v) => v.value) || [];
@@ -337,6 +348,16 @@ const index = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isFilterOpen]);
 
+  const filteredOrderTableColumns = orderTableColumns.filter((column) => {
+    if (column.key === "status") {
+      return !isLoadingUpdatePermission && hasUpdatePermission;
+    }
+    if (column.key === "action") {
+      return !isLoadingViewPermission && hasViewPermission;
+    }
+    return true;
+  });
+
   return (
     <div className="">
       <Header
@@ -356,270 +377,282 @@ const index = () => {
       />
 
       <SharedLayout className="bg-white">
-        <div
-          className="relative  flex justify-end bottom-16"
-          ref={filterDropdownRef}
-        >
-          <button
-            type="button"
-            aria-label="Toggle filters"
-            aria-haspopup="menu"
-            onClick={() => setIsFilterOpen((prev) => !prev)}
-            className={`flex border justify-center items-center bg-white shadow-sm p-2 rounded-md transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
-              hasActiveFilters ? "text-primary" : "text-gray-700"
-            }`}
+        <PermissionGuard permission="orders.viewAny">
+          <div
+            className="relative  flex justify-end bottom-16"
+            ref={filterDropdownRef}
           >
-            <Icon icon="mynaui:filter" width="24" height="24" />
-            {hasActiveFilters && (
-              <span className="ml-2 text-xs font-medium tracking-wide">
-                Filters
-              </span>
-            )}
-          </button>
-          {isFilterOpen && (
-            <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xl z-20">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-gray-900">
-                  Filter Orders
-                </p>
-                {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={handleResetFilters}
-                    className="text-xs font-semibold bg-transparent !py-2 px-3 text-primary hover:text-primary/80"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="uppercase text-[11px] font-semibold text-gray-400 tracking-wide">
-                    Status
+            <button
+              type="button"
+              aria-label="Toggle filters"
+              aria-haspopup="menu"
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+              className={`flex border justify-center items-center bg-white shadow-sm p-2 rounded-md transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                hasActiveFilters ? "text-primary" : "text-gray-700"
+              }`}
+            >
+              <Icon icon="mynaui:filter" width="24" height="24" />
+              {hasActiveFilters && (
+                <span className="ml-2 text-xs font-medium tracking-wide">
+                  Filters
+                </span>
+              )}
+            </button>
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-gray-100 bg-white p-4 shadow-2xl z-20">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-gray-900">
+                    Filter Orders
                   </p>
-                  <select
-                    aria-label="Filter by status"
-                    value={filters.status}
-                    onChange={(event) =>
-                      handleFilterChange(
-                        "status",
-                        event.target.value as OrderStatusValue
-                      )
-                    }
-                    className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none"
-                  >
-                    <option value="">All statuses</option>
-                    {ORDER_STATUS_OPTIONS.filter((status) => status !== "").map(
-                      (status) => (
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="text-xs font-semibold bg-transparent !py-2 px-3 text-primary hover:text-primary/80"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <p className="uppercase text-[11px] font-semibold text-gray-400 tracking-wide">
+                      Status
+                    </p>
+                    <select
+                      aria-label="Filter by status"
+                      value={filters.status}
+                      onChange={(event) =>
+                        handleFilterChange(
+                          "status",
+                          event.target.value as OrderStatusValue
+                        )
+                      }
+                      className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none"
+                    >
+                      <option value="">All statuses</option>
+                      {ORDER_STATUS_OPTIONS.filter(
+                        (status) => status !== ""
+                      ).map((status) => (
                         <option key={status} value={status}>
                           {formatStatusLabel(status)}
                         </option>
-                      )
-                    )}
-                  </select>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsFilterOpen(false)}
-                  className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFilterOpen(false)}
-                  className="rounded-full bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        {isLoading ? (
-          <SkeletonLoaderForPage />
-        ) : (
-          <>
-            <div className="flex flex-col lg:flex-row gap-4 ">
-              <div className="hidden lg:block overflow-hidden">
-                <TableMainComponent
-                  deleteCardApi={() => {}}
-                  data={selectedItem} // Pass empty data as placeholder
-                  formValues={{}}
-                  refetch={refetch}
-                  firstRowClassName="bg-white"
-                  secondRowClassName="bg-white"
-                  bordered={true}
-                  setShowDeleteModal={() => {}}
-                  showDeleteModal={false}
-                  isDeleteLoading={false}
-                  isLoading={isLoading}
-                  transformedData={transformedData}
-                  DeleteModalText={<></>}
-                  columnsTable={orderTableColumns}
-                />
-              </div>
-            </div>
-            <div className="lg:hidden flex flex-col gap-[16px]">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div
-                    key={`orders-skeleton-${index}`}
-                    className="animate-pulse rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="h-3 w-24 rounded bg-gray-200" />
-                      <div className="h-3 w-16 rounded bg-gray-200" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="h-2.5 w-20 rounded bg-gray-200" />
-                        <div className="h-3 w-28 rounded bg-gray-200" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-2.5 w-16 rounded bg-gray-200 ml-auto" />
-                        <div className="h-3 w-24 rounded bg-gray-200 ml-auto" />
-                      </div>
-                      <div className="col-span-2 space-y-2">
-                        <div className="h-2.5 w-24 rounded bg-gray-200" />
-                        <div className="h-3 w-full rounded bg-gray-200" />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between border-t pt-4">
-                      <div className="h-2.5 w-28 rounded bg-gray-200" />
-                      <div className="h-8 w-24 rounded-full bg-gray-200" />
-                    </div>
+                      ))}
+                    </select>
                   </div>
-                ))
-              ) : data?.data && data.data.length > 0 ? (
-                data.data.map((item) => (
-                  <article
-                    key={item.id}
-                    className="rounded-2xl border border-gray-100 bg-white px-3 py-[20px] shadow-sm"
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterOpen(false)}
+                    className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-gray-500">
-                          Order ID
-                        </p>
-                        <p className="text-base font-semibold text-gray-900">
-                          {item.reference}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full`}
-                      >
-                        <SelectInput
-                          className={
-                            getStatusDisplay(item.status).backgroundColor +
-                            " " +
-                            "border-none focus:ring-0 focus:outline-none w-full block rounded-full min-w-[180px] text-center"
-                          }
-                          data={
-                            orderStatusData?.values?.map((v) => ({
-                              label: v.name,
-                              value: v.value,
-                            })) || []
-                          }
-                          disabled={updateOrderStatusLoading}
-                          value={
-                            item.status ||
-                            orderStatusData?.values[0]?.value ||
-                            ""
-                          }
-                          onChange={(value) => {
-                            handleUpdateOrderStatus(item.id, value);
-                          }}
-                        />
-
-                        {/* {formatStatusLabel(item.status)} */}
-                      </span>
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-xs text-gray-500">Placed on</p>
-                        <p className="font-medium text-gray-900">
-                          {newUserTimeZoneFormatDate(
-                            item.created_at,
-                            "DD MMM YYYY"
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500">Total</p>
-                        <p className="text-base font-semibold text-gray-900">
-                          {formatCurrency(item?.total_price)}
-                        </p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-xs text-gray-500">Shipping to</p>
-                        <p className="font-medium text-gray-900">
-                          {item.delivery_address?.full_name || "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {item.delivery_address?.address ||
-                            "Address not provided"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenOrderDetails(item)}
-                        className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
-                      >
-                        View Details
-                      </button>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center">
-                  <p className="text-sm font-medium text-gray-700">
-                    No orders found.
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Try adjusting your search or filters.
-                  </p>
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterOpen(false)}
+                    className="rounded-full bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
+                  >
+                    Apply Filters
+                  </button>
                 </div>
-              )}
-            </div>
-            <div className="flex lg:justify-between justify-end  items-center w-full py-10">
-              {(currentPage === 1 && data?.meta?.total! >= 10) ||
-              (currentPage > 1 && data?.meta?.total! >= 1) ? (
-                <div
-                  className={`text-sm hidden lg:block font-[500] text-black`}
-                >
-                  Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
-                  {Math.min(
-                    currentPage * data?.meta?.per_page!,
-                    data?.meta?.total!
-                  )}{" "}
-                  of {data?.meta?.total!} results
-                </div>
-              ) : null}
-              {(currentPage === 1 && data?.meta?.total! >= 10) ||
-              (currentPage > 1 && data?.meta?.total! >= 1) ? (
-                <div className="">
-                  <PaginationComponent
-                    paginationData={{
-                      current_page: data?.meta?.current_page!,
-                      last_page: data?.meta?.last_page!,
-                      per_page: data?.meta?.per_page!,
-                      total: data?.meta?.total!,
-                      next_page_url: data?.links?.next!,
-                      prev_page_url: data?.links?.prev!,
-                    }}
-                    onPageChange={handlePageChange}
+              </div>
+            )}
+          </div>
+          {isLoading ? (
+            <SkeletonLoaderForPage />
+          ) : (
+            <>
+              <div className="flex flex-col lg:flex-row gap-4 ">
+                <div className="hidden lg:block overflow-hidden">
+                  <TableMainComponent
+                    deleteCardApi={() => {}}
+                    data={selectedItem} // Pass empty data as placeholder
+                    formValues={{}}
+                    refetch={refetch}
+                    firstRowClassName="bg-white"
+                    secondRowClassName="bg-white"
+                    bordered={true}
+                    setShowDeleteModal={() => {}}
+                    showDeleteModal={false}
+                    isDeleteLoading={false}
+                    isLoading={isLoading}
+                    transformedData={transformedData}
+                    DeleteModalText={<></>}
+                    columnsTable={filteredOrderTableColumns}
                   />
                 </div>
-              ) : null}
-            </div>
-          </>
-        )}
+              </div>
+              <div className="lg:hidden flex flex-col gap-[16px]">
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={`orders-skeleton-${index}`}
+                      className="animate-pulse rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-3 w-24 rounded bg-gray-200" />
+                        <div className="h-3 w-16 rounded bg-gray-200" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="h-2.5 w-20 rounded bg-gray-200" />
+                          <div className="h-3 w-28 rounded bg-gray-200" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2.5 w-16 rounded bg-gray-200 ml-auto" />
+                          <div className="h-3 w-24 rounded bg-gray-200 ml-auto" />
+                        </div>
+                        <div className="col-span-2 space-y-2">
+                          <div className="h-2.5 w-24 rounded bg-gray-200" />
+                          <div className="h-3 w-full rounded bg-gray-200" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between border-t pt-4">
+                        <div className="h-2.5 w-28 rounded bg-gray-200" />
+                        <div className="h-8 w-24 rounded-full bg-gray-200" />
+                      </div>
+                    </div>
+                  ))
+                ) : data?.data && data.data.length > 0 ? (
+                  data.data.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-2xl border border-gray-100 bg-white px-3 py-[20px] shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500">
+                            Order ID
+                          </p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {item.reference}
+                          </p>
+                        </div>
+                        {
+                          /* Status Badge */
+                          isLoadingUpdatePermission ? null : hasUpdatePermission ? (
+                            <span
+                              className={`px-3 py-1 text-xs font-semibold rounded-full`}
+                            >
+                              <SelectInput
+                                className={
+                                  getStatusDisplay(item.status)
+                                    .backgroundColor +
+                                  " " +
+                                  "border-none focus:ring-0 focus:outline-none w-full block rounded-full min-w-[180px] text-center"
+                                }
+                                data={
+                                  orderStatusData?.values?.map((v) => ({
+                                    label: v.name,
+                                    value: v.value,
+                                  })) || []
+                                }
+                                disabled={updateOrderStatusLoading}
+                                value={
+                                  item.status ||
+                                  orderStatusData?.values[0]?.value ||
+                                  ""
+                                }
+                                onChange={(value) => {
+                                  handleUpdateOrderStatus(item.id, value);
+                                }}
+                              />
+
+                              {/* {formatStatusLabel(item.status)} */}
+                            </span>
+                          ) : null
+                        }
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-xs text-gray-500">Placed on</p>
+                          <p className="font-medium text-gray-900">
+                            {newUserTimeZoneFormatDate(
+                              item.created_at,
+                              "DD MMM YYYY"
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Total</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {formatCurrency(item?.total_price)}
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-500">Shipping to</p>
+                          <p className="font-medium text-gray-900">
+                            {item.delivery_address?.full_name || "N/A"}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {item.delivery_address?.address ||
+                              "Address not provided"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t">
+                        {
+                          /* View Details Button */
+                          isLoadingUpdatePermission ? null : hasViewPermission ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenOrderDetails(item)}
+                              className="rounded-full mt-1 bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
+                            >
+                              View Details
+                            </button>
+                          ) : null
+                        }
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center">
+                    <p className="text-sm font-medium text-gray-700">
+                      No orders found.
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Try adjusting your search or filters.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+                {(currentPage === 1 && data?.meta?.total! >= 10) ||
+                (currentPage > 1 && data?.meta?.total! >= 1) ? (
+                  <div
+                    className={`text-sm hidden lg:block font-[500] text-black`}
+                  >
+                    Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+                    {Math.min(
+                      currentPage * data?.meta?.per_page!,
+                      data?.meta?.total!
+                    )}{" "}
+                    of {data?.meta?.total!} results
+                  </div>
+                ) : null}
+                {(currentPage === 1 && data?.meta?.total! >= 10) ||
+                (currentPage > 1 && data?.meta?.total! >= 1) ? (
+                  <div className="">
+                    <PaginationComponent
+                      paginationData={{
+                        current_page: data?.meta?.current_page!,
+                        last_page: data?.meta?.last_page!,
+                        per_page: data?.meta?.per_page!,
+                        total: data?.meta?.total!,
+                        next_page_url: data?.links?.next!,
+                        prev_page_url: data?.links?.prev!,
+                      }}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
+        </PermissionGuard>
       </SharedLayout>
       {/* details modal table */}
       <PlannerModal

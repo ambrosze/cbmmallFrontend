@@ -52,7 +52,7 @@ const InventoryFilter: React.FC<InventoryFilterProps> = ({
   return (
     <div className="mb-6">
       <Card
-        className="shadow-f2 border-0 bg-gradient-to-r from-white to-gray-50/50"
+        className="shadow-f2 bg-gradient-to-r border border-gray-100 from-white to-gray-50/50"
         style={{ borderRadius: 16 }}
       >
         {/* Header */}

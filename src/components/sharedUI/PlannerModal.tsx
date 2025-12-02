@@ -5,7 +5,7 @@ interface IProps {
   children?: React.ReactNode;
   modalOpen: boolean;
   setModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  title?: string;
+  title?: string | React.ReactNode;
   onCloseModal?: any;
   height?: number;
   width?: any;

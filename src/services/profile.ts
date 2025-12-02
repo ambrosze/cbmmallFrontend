@@ -1,5 +1,6 @@
 import { IColourTopLevel } from "@/types/colourTypes";
 import { api } from ".";
+import { IPermissionsResponse } from "@/types/ProfileTYpes";
 
 interface CreateProfileType {
   first_name: string;
@@ -12,16 +13,26 @@ export const userProfileApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getAllProfile: builder.query<
-      IColourTopLevel,
+      IPermissionsResponse,
       {
         sort?: string;
         include?: string;
+        append?: string;
       }
     >({
-      query: ({ sort, include }: { sort?: string; include?: string }) => {
+      query: ({
+        sort,
+        include,
+        append,
+      }: {
+        sort?: string;
+        include?: string;
+        append?: string;
+      }) => {
         const params: any = {};
         if (include) params.include = include;
         if (sort) params.sort = sort;
+        if (append) params.append = append;
 
         return {
           url: "user/profile",

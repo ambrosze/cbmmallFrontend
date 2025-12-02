@@ -1,6 +1,7 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
 import Header from "@/components/header";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import DeleteModal from "@/components/sharedUI/DeleteModal";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
@@ -221,101 +222,102 @@ const index = () => {
       />
       <SharedLayout className="bg-white">
         {/* Show transfer details summary */}
-        <div className="bg-gray-50 p-6 mb-6 rounded-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <h4 className="text-gray-500 text-sm font-medium mb-2">
-                From Store
-              </h4>
-              <p className="font-semibold text-gray-900">
-                {data?.data?.from_store?.name}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">
-                {data?.data?.from_store?.address}
-              </p>
-              {(data?.data?.from_store as any)?.city && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {(data?.data?.from_store as any)?.city},{" "}
-                  {(data?.data?.from_store as any)?.country}
+        <PermissionGuard permission="stock_transfers.viewOwn">
+          <div className="bg-gray-50 p-6 mb-6 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">
+                  From Store
+                </h4>
+                <p className="font-semibold text-gray-900">
+                  {data?.data?.from_store?.name}
                 </p>
-              )}
-              {data?.data?.from_store?.is_warehouse && (
-                <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  Warehouse
-                </span>
-              )}
-            </div>
-
-            <div>
-              <h4 className="text-gray-500 text-sm font-medium mb-2">
-                To Store
-              </h4>
-              <p className="font-semibold text-gray-900">
-                {data?.data?.to_store?.name}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">
-                {data?.data?.to_store?.address}
-              </p>
-              {(data?.data?.to_store as any)?.city && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {(data?.data?.to_store as any)?.city},{" "}
-                  {(data?.data?.to_store as any)?.country}
+                <p className="text-sm text-gray-600 mt-1">
+                  {data?.data?.from_store?.address}
                 </p>
-              )}
-              {(data?.data?.to_store as any)?.phone_number && (
-                <p className="text-xs text-gray-500 mt-1">
-                  📞 {(data?.data?.to_store as any)?.phone_number}
-                </p>
-              )}
-              {(data?.data?.to_store as any)?.email && (
-                <p className="text-xs text-gray-500">
-                  ✉️ {(data?.data?.to_store as any)?.email}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <h4 className="text-gray-500 text-sm font-medium mb-2">
-                Driver Information
-              </h4>
-              <p className="font-semibold text-gray-900">
-                {data?.data?.driver_name}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">
-                📞 {data?.data?.driver_phone_number}
-              </p>
-
-              <div className="mt-3">
-                <h5 className="text-gray-500 text-xs font-medium mb-1">
-                  Transfer Details
-                </h5>
-                {data?.data?.dispatched_at && (
-                  <p className="text-xs text-gray-600">
-                    Dispatched:{" "}
-                    {newUserTimeZoneFormatDate(
-                      data.data.dispatched_at,
-                      "DD/MM/YYYY HH:mm"
-                    )}
+                {(data?.data?.from_store as any)?.city && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(data?.data?.from_store as any)?.city},{" "}
+                    {(data?.data?.from_store as any)?.country}
                   </p>
                 )}
-                {data?.data?.accepted_at && (
-                  <p className="text-xs text-gray-600">
-                    Accepted:{" "}
-                    {newUserTimeZoneFormatDate(
-                      data.data.accepted_at,
-                      "DD/MM/YYYY HH:mm"
-                    )}
+                {data?.data?.from_store?.is_warehouse && (
+                  <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    Warehouse
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">
+                  To Store
+                </h4>
+                <p className="font-semibold text-gray-900">
+                  {data?.data?.to_store?.name}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {data?.data?.to_store?.address}
+                </p>
+                {(data?.data?.to_store as any)?.city && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(data?.data?.to_store as any)?.city},{" "}
+                    {(data?.data?.to_store as any)?.country}
+                  </p>
+                )}
+                {(data?.data?.to_store as any)?.phone_number && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    📞 {(data?.data?.to_store as any)?.phone_number}
+                  </p>
+                )}
+                {(data?.data?.to_store as any)?.email && (
+                  <p className="text-xs text-gray-500">
+                    ✉️ {(data?.data?.to_store as any)?.email}
                   </p>
                 )}
               </div>
-            </div>
 
-            <div>
-              <h4 className="text-gray-500 text-sm font-medium mb-2">
-                Status & Details
-              </h4>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium inline-block capitalize mb-3
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">
+                  Driver Information
+                </h4>
+                <p className="font-semibold text-gray-900">
+                  {data?.data?.driver_name}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  📞 {data?.data?.driver_phone_number}
+                </p>
+
+                <div className="mt-3">
+                  <h5 className="text-gray-500 text-xs font-medium mb-1">
+                    Transfer Details
+                  </h5>
+                  {data?.data?.dispatched_at && (
+                    <p className="text-xs text-gray-600">
+                      Dispatched:{" "}
+                      {newUserTimeZoneFormatDate(
+                        data.data.dispatched_at,
+                        "DD/MM/YYYY HH:mm"
+                      )}
+                    </p>
+                  )}
+                  {data?.data?.accepted_at && (
+                    <p className="text-xs text-gray-600">
+                      Accepted:{" "}
+                      {newUserTimeZoneFormatDate(
+                        data.data.accepted_at,
+                        "DD/MM/YYYY HH:mm"
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">
+                  Status & Details
+                </h4>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium inline-block capitalize mb-3
                   ${
                     data?.data?.status === "new"
                       ? "bg-blue-100 text-blue-800"
@@ -337,149 +339,152 @@ const index = () => {
                       : ""
                   }
                 `}
-              >
-                {data?.data?.status}
-              </span>
+                >
+                  {data?.data?.status}
+                </span>
 
-              <div className="space-y-1">
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Ref:</span>{" "}
-                  {data?.data?.reference_no}
-                </p>
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Items:</span>{" "}
-                  {data?.data?.inventories_count || 0}
-                </p>
-                {data?.data?.comment && (
-                  <p className="text-xs text-gray-600 mt-2">
-                    <span className="font-medium">Comment:</span>{" "}
-                    {data.data.comment}
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Ref:</span>{" "}
+                    {data?.data?.reference_no}
                   </p>
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Items:</span>{" "}
+                    {data?.data?.inventories_count || 0}
+                  </p>
+                  {data?.data?.comment && (
+                    <p className="text-xs text-gray-600 mt-2">
+                      <span className="font-medium">Comment:</span>{" "}
+                      {data.data.comment}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sender & Receiver Info */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-gray-500 text-sm font-medium mb-2">
+                    Sender
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        data?.data?.sender?.profile_photo_url ||
+                        "/images/Avatar.png"
+                      }
+                      alt="Sender"
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {data?.data?.sender?.first_name}{" "}
+                        {data?.data?.sender?.last_name}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {data?.data?.sender?.email}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {data?.data?.sender?.phone_number}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-gray-500 text-sm font-medium mb-2">
+                    Receiver
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        data?.data?.receiver?.profile_photo_url ||
+                        "/images/Avatar.png"
+                      }
+                      alt="Receiver"
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {data?.data?.receiver?.first_name}{" "}
+                        {data?.data?.receiver?.last_name}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {data?.data?.receiver?.email}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {data?.data?.receiver?.phone_number}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <SkeletonLoaderForPage />
+          ) : (
+            <>
+              <TableMainComponent
+                DeleteModalText={<>Item from this stock transfer</>}
+                data={null}
+                deleteCardApi={() => {}}
+                isDeleteLoading={false}
+                showDeleteModal={false}
+                refetch={refetch}
+                formValues={formValues}
+                setShowDeleteModal={setShowDeleteModal}
+                isLoading={false}
+                printTitle="Stock Transfer Inventories"
+                showExportButton={true}
+                showPrintButton={true}
+                columnsTable={filteredStockTransferInventoriesColumns as any}
+                transformedData={transformedData}
+              />
+
+              {/* Summary Footer */}
+              {data?.data?.stock_transfer_inventories &&
+                data.data.stock_transfer_inventories.length > 0 && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <h4 className="text-sm text-gray-500">Total Items</h4>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {data.data.stock_transfer_inventories.length}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <h4 className="text-sm text-gray-500">
+                          Total Quantity
+                        </h4>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {data.data.stock_transfer_inventories.reduce(
+                            (sum, item) => sum + (Number(item.quantity) || 0),
+                            0
+                          )}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <h4 className="text-sm text-gray-500">Status</h4>
+                        <p className="text-lg font-semibold text-gray-900 capitalize">
+                          {data?.data?.status}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <h4 className="text-sm text-gray-500">Reference No.</h4>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {data?.data?.reference_no}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* Sender & Receiver Info */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-gray-500 text-sm font-medium mb-2">
-                  Sender
-                </h4>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={
-                      data?.data?.sender?.profile_photo_url ||
-                      "/images/Avatar.png"
-                    }
-                    alt="Sender"
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {data?.data?.sender?.first_name}{" "}
-                      {data?.data?.sender?.last_name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {data?.data?.sender?.email}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {data?.data?.sender?.phone_number}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-gray-500 text-sm font-medium mb-2">
-                  Receiver
-                </h4>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={
-                      data?.data?.receiver?.profile_photo_url ||
-                      "/images/Avatar.png"
-                    }
-                    alt="Receiver"
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {data?.data?.receiver?.first_name}{" "}
-                      {data?.data?.receiver?.last_name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {data?.data?.receiver?.email}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {data?.data?.receiver?.phone_number}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <SkeletonLoaderForPage />
-        ) : (
-          <>
-            <TableMainComponent
-              DeleteModalText={<>Item from this stock transfer</>}
-              data={null}
-              deleteCardApi={() => {}}
-              isDeleteLoading={false}
-              showDeleteModal={false}
-              refetch={refetch}
-              formValues={formValues}
-              setShowDeleteModal={setShowDeleteModal}
-              isLoading={false}
-              printTitle="Stock Transfer Inventories"
-              showExportButton={true}
-              showPrintButton={true}
-              columnsTable={filteredStockTransferInventoriesColumns as any}
-              transformedData={transformedData}
-            />
-
-            {/* Summary Footer */}
-            {data?.data?.stock_transfer_inventories &&
-              data.data.stock_transfer_inventories.length > 0 && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <h4 className="text-sm text-gray-500">Total Items</h4>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {data.data.stock_transfer_inventories.length}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <h4 className="text-sm text-gray-500">Total Quantity</h4>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {data.data.stock_transfer_inventories.reduce(
-                          (sum, item) => sum + (Number(item.quantity) || 0),
-                          0
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <h4 className="text-sm text-gray-500">Status</h4>
-                      <p className="text-lg font-semibold text-gray-900 capitalize">
-                        {data?.data?.status}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <h4 className="text-sm text-gray-500">Reference No.</h4>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {data?.data?.reference_no}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-          </>
-        )}
+            </>
+          )}
+        </PermissionGuard>
       </SharedLayout>
 
       {/* Delete confirmation modal */}

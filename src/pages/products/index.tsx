@@ -2,10 +2,12 @@ import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
 import Header from "@/components/header";
 import ItemsFilter from "@/components/ItemComponent/ItemsFilter";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import ImageComponent from "@/components/sharedUI/ImageComponent";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
+import { useCheckPermission } from "@/hooks/useCheckPermission";
 import { useGetAllStoresQuery } from "@/services/admin/store";
 import { useGetAllAttributesQuery } from "@/services/attributes-values/attributes";
 import { useGetAllAttributeValuesQuery } from "@/services/attributes-values/values";
@@ -37,7 +39,20 @@ const index = () => {
     "attributeValues.attribute.id"?: string | string[];
     "attributeValues.id"?: string | string[];
   }>({});
-
+  const {
+    hasPermission: hasCreatePermission,
+    isLoading: isLoadingCreatePermission,
+  } = useCheckPermission("products.create");
+  // delete and edit permissions can be added similarly
+  const {
+    hasPermission: hasDeletePermission,
+    isLoading: isLoadingDeletePermission,
+  } = useCheckPermission("products.delete");
+  console.log("🚀 ~ index ~ hasDeletePermission:", hasDeletePermission);
+  const {
+    hasPermission: hasUpdatePermission,
+    isLoading: isLoadingUpdatePermission,
+  } = useCheckPermission("products.update");
   const router = useRouter();
   const { data, isLoading, refetch } = useGetAllProductsQuery({
     paginate: true,
@@ -139,34 +154,42 @@ const index = () => {
                   ),
                   key: "view",
                 },
-                {
-                  label: (
-                    <Link href={`/products/edit/${prod?.id}`}>
-                      <button
-                        className="flex w-full items-center gap-2"
-                        type="button"
-                      >
-                        Edit
-                      </button>
-                    </Link>
-                  ),
-                  key: "edit",
-                },
-                {
-                  label: (
-                    <button
-                      onClick={() => {
-                        setSelectedItem(prod);
-                        setShowDeleteModal(true);
-                      }}
-                      className="flex w-full items-center text-red-500 gap-2"
-                      type="button"
-                    >
-                      Delete
-                    </button>
-                  ),
-                  key: "delete",
-                },
+                isLoadingUpdatePermission
+                  ? null
+                  : hasUpdatePermission
+                  ? {
+                      label: (
+                        <Link href={`/products/edit/${prod?.id}`}>
+                          <button
+                            className="flex w-full items-center gap-2"
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                        </Link>
+                      ),
+                      key: "edit",
+                    }
+                  : null,
+                isLoadingDeletePermission
+                  ? null
+                  : hasDeletePermission
+                  ? {
+                      label: (
+                        <button
+                          onClick={() => {
+                            setSelectedItem(prod);
+                            setShowDeleteModal(true);
+                          }}
+                          className="flex w-full items-center text-red-500 gap-2"
+                          type="button"
+                        >
+                          Delete
+                        </button>
+                      ),
+                      key: "delete",
+                    }
+                  : null,
               ];
               return (
                 <Dropdown menu={{ items }} trigger={["click"]}>
@@ -327,98 +350,100 @@ const index = () => {
       />
       <AttributeHeader
         headerText="All Products"
-        showAddButton={true}
+        showAddButton={isLoadingCreatePermission ? false : hasCreatePermission}
         btnText="Add New Product"
         onClick={() => {
           router.push("/products/create");
         }}
       />
-      <SharedLayout>
-        <div className="">
-          <ItemsFilter
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onClearFilters={handleClearFilters}
-            showBtn={false}
-            selectedFilterTypes={selectedFilterTypes}
-            setSelectedFilterTypes={setSelectedFilterTypes}
-            storeOptions={storeOptions}
-            categoryOptions={transformedCategoryData || []}
-            typeOptions={[]}
-            colourOptions={[]}
-            itemOptions={itemOptions as any}
-            // Product-specific filter options
-            variantOptions={variantOptions}
-            variantSkuOptions={variantSkuOptions}
-            attributeOptions={attributeOptions}
-            attributeValueOptions={attributeValueOptions}
-            filterKeys={{
-              // keep basic keys available but use categories.id instead of item.category_id
-              essentialKeys: ["categories.id"],
-              advancedKeys: [
-                "variants.id",
-                "variants.sku",
-                "attributeValues.attribute.id",
-                "attributeValues.id",
-                "out_of_stock",
-                "low_stock",
-              ],
-              categoryKey: "categories.id",
-              stockKey: "out_of_stock",
-              lowStockKey: "low_stock",
-              variantsIdKey: true,
-              variantsSkuKey: true,
-              attributeKey: true,
-              attributeValueKey: true,
-            }}
+      <SharedLayout className="bg-white">
+        <PermissionGuard permission="products.viewAny">
+          <div className="">
+            <ItemsFilter
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
+              showBtn={false}
+              selectedFilterTypes={selectedFilterTypes}
+              setSelectedFilterTypes={setSelectedFilterTypes}
+              storeOptions={storeOptions}
+              categoryOptions={transformedCategoryData || []}
+              typeOptions={[]}
+              colourOptions={[]}
+              itemOptions={itemOptions as any}
+              // Product-specific filter options
+              variantOptions={variantOptions}
+              variantSkuOptions={variantSkuOptions}
+              attributeOptions={attributeOptions}
+              attributeValueOptions={attributeValueOptions}
+              filterKeys={{
+                // keep basic keys available but use categories.id instead of item.category_id
+                essentialKeys: ["categories.id"],
+                advancedKeys: [
+                  "variants.id",
+                  "variants.sku",
+                  "attributeValues.attribute.id",
+                  "attributeValues.id",
+                  "out_of_stock",
+                  "low_stock",
+                ],
+                categoryKey: "categories.id",
+                stockKey: "out_of_stock",
+                lowStockKey: "low_stock",
+                variantsIdKey: true,
+                variantsSkuKey: true,
+                attributeKey: true,
+                attributeValueKey: true,
+              }}
+            />
+          </div>
+          <TableMainComponent
+            DeleteModalText={selectedItem?.name}
+            data={selectedItem}
+            deleteCardApi={deleteProducts}
+            isDeleteLoading={isDeleteLoading}
+            printTitle="Products"
+            showExportButton={true}
+            showPrintButton={true}
+            showDeleteModal={showDeleteModal}
+            refetch={refetch}
+            formValues={formValues}
+            setShowDeleteModal={setShowDeleteModal}
+            isLoading={isLoading}
+            columnsTable={columns as any}
+            exportColumns={exportColumns as any}
+            transformedData={transformedData}
           />
-        </div>
-        <TableMainComponent
-          DeleteModalText={selectedItem?.name}
-          data={selectedItem}
-          deleteCardApi={deleteProducts}
-          isDeleteLoading={isDeleteLoading}
-          printTitle="Products"
-          showExportButton={true}
-          showPrintButton={true}
-          showDeleteModal={showDeleteModal}
-          refetch={refetch}
-          formValues={formValues}
-          setShowDeleteModal={setShowDeleteModal}
-          isLoading={isLoading}
-          columnsTable={columns as any}
-          exportColumns={exportColumns as any}
-          transformedData={transformedData}
-        />
-        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className={`text-sm hidden lg:block font-[500] text-black`}>
-              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
-              {Math.min(
-                currentPage * data?.meta?.per_page!,
-                data?.meta?.total!
-              )}{" "}
-              of {data?.meta?.total!} results
-            </div>
-          ) : null}
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className="">
-              <PaginationComponent
-                paginationData={{
-                  current_page: data?.meta?.current_page!,
-                  last_page: data?.meta?.last_page!,
-                  per_page: data?.meta?.per_page!,
-                  total: data?.meta?.total!,
-                  next_page_url: data?.links?.next!,
-                  prev_page_url: data?.links?.prev!,
-                }}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          ) : null}
-        </div>
+          <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className={`text-sm hidden lg:block font-[500] text-black`}>
+                Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+                {Math.min(
+                  currentPage * data?.meta?.per_page!,
+                  data?.meta?.total!
+                )}{" "}
+                of {data?.meta?.total!} results
+              </div>
+            ) : null}
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className="">
+                <PaginationComponent
+                  paginationData={{
+                    current_page: data?.meta?.current_page!,
+                    last_page: data?.meta?.last_page!,
+                    per_page: data?.meta?.per_page!,
+                    total: data?.meta?.total!,
+                    next_page_url: data?.links?.next!,
+                    prev_page_url: data?.links?.prev!,
+                  }}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : null}
+          </div>
+        </PermissionGuard>
       </SharedLayout>
       {isViewProductListModal && (
         <PlannerModal
