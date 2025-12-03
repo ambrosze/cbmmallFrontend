@@ -47,7 +47,7 @@ export const CustomerForm = ({
               className="py-[13px]"
               value={formValues.name}
               onChange={handleInputChange}
-              placeholder="Enter a name"
+              placeholder="Enter name"
               title={<span className="font-[500]">Name*</span>}
               required={false}
             />
@@ -82,7 +82,7 @@ export const CustomerForm = ({
               }
               value={formValues.email}
               onChange={handleInputChange}
-              placeholder="Enter an email"
+              placeholder="Enter email"
               title={<span className="font-[500]">Email</span>}
               required={false}
             />
@@ -101,7 +101,7 @@ export const CustomerForm = ({
               }
               value={formValues.country}
               onChange={handleInputChange}
-              placeholder="Enter an country"
+              placeholder="Enter country"
               title={<span className="font-[500]">Country</span>}
               required={false}
             />
@@ -119,7 +119,7 @@ export const CustomerForm = ({
               }
               value={formValues.city}
               onChange={handleInputChange}
-              placeholder="Enter an city"
+              placeholder="Enter state"
               title={<span className="font-[500]">State</span>}
               required={false}
             />
@@ -138,7 +138,7 @@ export const CustomerForm = ({
             }
             value={formValues.address}
             onChange={handleInputChange}
-            placeholder="Enter an address"
+            placeholder="Enter address"
             title={<span className="font-[500]">Address</span>}
             required={false}
           />

@@ -1,9 +1,10 @@
 import AttributeHeader from "@/components/Attributes/AttributeHeader";
 import TableMainComponent from "@/components/Attributes/TableMainComponent";
+import { CustomerForm } from "@/components/Forms/CustomerForm";
 import Header from "@/components/header";
-import PhoneInputWithCountry from "@/components/Input/PhoneInputWithCountry";
 import SelectInput from "@/components/Input/SelectInput";
 import TextInput from "@/components/Input/TextInput";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import CustomButton from "@/components/sharedUI/Buttons/Button";
 import DeleteModal from "@/components/sharedUI/DeleteModal";
 import ImageComponent from "@/components/sharedUI/ImageComponent";
@@ -12,6 +13,10 @@ import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
+import {
+  useCreateCustomerMutation,
+  useGetAllCustomersQuery,
+} from "@/services/customers";
 import {
   useCheckoutPosCartMutation,
   useClearPosCartMutation,
@@ -23,15 +28,15 @@ import {
 } from "@/services/sales/pos";
 import { useGetAllPosSalesCheckoutQuery } from "@/services/sales/sales";
 import { PosCartItem } from "@/types/PosTypes";
+import debounce from "@/utils/debounce";
 import { formatCurrency } from "@/utils/fx";
+import { customerSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import { useGetAllCustomersQuery } from "@/services/customers";
-import debounce from "@/utils/debounce";
-import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
+import * as yup from "yup";
 
 interface AddItemFormState {
   sku: string;
@@ -88,12 +93,33 @@ const index = () => {
   const [showDeleteClearAllModal, setShowDeleteClearAllModal] = useState(false);
   const [isLoadingImage, setIsLoadingImage] = useState(true);
   const [customerSearch, setCustomerSearch] = useState<string>("");
-
-  const { data: customerData, isLoading: isLoadingCustomers } =
-    useGetAllCustomersQuery({
+  const [isOpenCustomerModal, setIsOpenCustomerModal] = useState(false);
+  const [formCustomerValues, setFormCustomerValues] = useState({
+    name: "",
+    email: "",
+    phone_number: "",
+    country: "",
+    city: "",
+    address: "",
+  });
+  const [formCustomerErrors, setFormCustomerErrors] = useState<{
+    [key: string]: string;
+  }>({});
+  const {
+    data: customerData,
+    isLoading: isLoadingCustomers,
+    refetch: refetchCustomers,
+  } = useGetAllCustomersQuery(
+    {
       q: customerSearch,
       per_page: 50,
-    }, { refetchOnMountOrArgChange: true });
+    },
+    { refetchOnMountOrArgChange: true }
+  );
+  const [
+    createCustomer,
+    { isLoading: isLoadingCustomerCreate, error: errorCustomerCreate },
+  ] = useCreateCustomerMutation();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
@@ -102,6 +128,7 @@ const index = () => {
     quantity: "1",
   });
   const skuInputRef = useRef<HTMLInputElement | null>(null);
+
   const debouncedSearch = useMemo(
     () => debounce((q: string) => setCustomerSearch(q.trim()), 400),
     []
@@ -179,7 +206,7 @@ const index = () => {
     payment_method: "POS",
     discount_code: "",
   });
-  console.log("🚀 ~ index ~ customerForm:", customerForm)
+  console.log("🚀 ~ index ~ customerForm:", customerForm);
 
   // POS cart hooks
   const {
@@ -203,6 +230,75 @@ const index = () => {
     useCheckoutPosCartMutation();
 
   // Handlers
+  const handleCustomerSubmit = async () => {
+    try {
+      // Validate form values using yup
+      await customerSchema.validate(formCustomerValues, {
+        abortEarly: false,
+      });
+
+      // Clear previous form errors if validation is successful
+      setFormCustomerErrors({});
+      let payload = {
+        name: formCustomerValues.name,
+        email: formCustomerValues.email,
+        phone_number: formCustomerValues.phone_number,
+        country: formCustomerValues.country,
+        city: formCustomerValues.city,
+        address: formCustomerValues.address,
+      };
+
+      // Proceed with server-side submission
+      const response = await createCustomer(payload).unwrap();
+      showPlannerToast({
+        options: {
+          customToast: (
+            <CustomToast
+              altText={"Success"}
+              title={"Customer Created Successfully"}
+              image={imgSuccess}
+              textColor="green"
+              message={"Thank you..."}
+              backgroundColor="#FCFCFD"
+            />
+          ),
+        },
+        message: "Please check your email for verification.",
+      });
+      refetchCustomers();
+      setIsOpenCustomerModal(false);
+    } catch (err: any) {
+      if (err.name === "ValidationError") {
+        // Handle client-side validation errors
+        const errors: { [key: string]: string } = {};
+        err.inner.forEach((validationError: yup.ValidationError) => {
+          if (validationError.path) {
+            errors[validationError.path] = validationError.message;
+          }
+        });
+        setFormCustomerErrors(errors);
+      } else {
+        // Handle server-side errors
+        console.log("🚀 ~ handleSubmit ~ err:", err);
+        refetchCustomers();
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={"Customer Creation Failed"}
+                image={imgError}
+                textColor="red"
+                message={(err as any)?.data?.message || "Something went wrong"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Invalid Credentials",
+        });
+      }
+    }
+  };
   const handleAddItemSubmit = async () => {
     if (!addItemForm.sku) return;
     try {
@@ -301,7 +397,15 @@ const index = () => {
     }
     focusSku();
   };
-
+  const handleCustomerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormCustomerValues((prev: any) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
   const handleRemove = async (id: string) => {
     await removeCartItem({ id }).unwrap();
     refetchPosCart();
@@ -889,12 +993,21 @@ const index = () => {
             <div className="space-y-3">
               <div className="flex lg:flex-row flex-col gap-5 w-full">
                 <div className="w-full">
-                  <div className={`pb-1`}>
+                  <div className={`pb-1 flex justify-between items-center`}>
                     <label
                       className={"text-sm font-[500] capitalize text-[#2C3137]"}
                     >
                       Customer name*
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOpenCustomerModal(true);
+                      }}
+                      className="text-sm underline font-bold capitalize text-blue-600"
+                    >
+                      Create new customer
+                    </button>
                   </div>
                   <SelectInput
                     onChange={(value) => {
@@ -986,6 +1099,28 @@ const index = () => {
               </button>
             </div>
           </form>
+        </PlannerModal>
+      )}
+      {isOpenCustomerModal && (
+        <PlannerModal
+          modalOpen={isOpenCustomerModal}
+          setModalOpen={setIsOpenCustomerModal}
+          className=""
+          width={600}
+          title="Create Customer"
+          onCloseModal={() => setIsOpenCustomerModal(false)}
+        >
+          <CustomerForm
+            error={errorCustomerCreate}
+            btnText="Create Customer"
+            formErrors={formCustomerErrors}
+            formValues={formCustomerValues}
+            setFormValues={setFormCustomerValues}
+            handleInputChange={handleCustomerInputChange}
+            handleSubmit={handleCustomerSubmit}
+            isLoadingCreate={isLoadingCustomerCreate}
+            setIsOpenModal={setIsOpenCustomerModal}
+          />
         </PlannerModal>
       )}
     </div>
