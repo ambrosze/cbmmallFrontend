@@ -119,7 +119,7 @@ export const CustomerForm = ({
               }
               value={formValues.city}
               onChange={handleInputChange}
-              placeholder="Enter city"
+              placeholder="Enter state"
               title={<span className="font-[500]">State</span>}
               required={false}
             />
