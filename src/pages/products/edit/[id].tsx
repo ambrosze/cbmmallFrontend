@@ -4,6 +4,7 @@ import RichTextEditor from "@/components/Input/RichTextEditor";
 import SelectInput from "@/components/Input/SelectInput";
 import TextAreaInput from "@/components/Input/TextAreaInput";
 import TextInput from "@/components/Input/TextInput";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import CustomButton from "@/components/sharedUI/Buttons/Button";
 import ImageComponent from "@/components/sharedUI/ImageComponent";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
@@ -1307,537 +1308,762 @@ const index = () => {
         onClick={() => {}}
       />
       <SharedLayout className="bg-white">
-        <Breadcrumb
-          className="mb-4"
-          items={[
-            { title: "Products", href: "/products" },
-            {
-              title: (
-                <span className="font-semibold">{data?.data?.name|| "Edit"}</span>
-              ),
-            },
-          ]}
-        />
-        {isLoading ? (
-          <div className="pb-20">
-            <SkeletonLoaderForPage />
-          </div>
-        ) : (
-          <div>
-            <form className="mt-5 flex flex-col gap-5">
-              {/* Basic Info */}
-              <section>
-                <h3 className="text-base font-semibold mb-3">Basic info</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <TextInput
-                    type="text"
-                    name="name"
-                    errorMessage={
-                      formErrors.name ||
-                      (error as any)?.data?.errors?.name?.join?.("\n") ||
-                      ""
-                    }
-                    value={formValues.name}
-                    onChange={handleInputChange}
-                    className="py-[11px]"
-                    placeholder="Enter product name"
-                    title={<span className="font-[500]">Name*</span>}
-                    required={false}
-                  />
-                  <div
-                    className={`grid  gap-4 ${
-                      formValues.is_serialized === 1
-                        ? "grid-cols-2"
-                        : "grid-cols-1"
-                    }`}
-                  >
+        <PermissionGuard permission="products.update">
+          <Breadcrumb
+            className="mb-4"
+            items={[
+              { title: "Products", href: "/products" },
+              {
+                title: (
+                  <span className="font-semibold">
+                    {data?.data?.name || "Edit"}
+                  </span>
+                ),
+              },
+            ]}
+          />
+          {isLoading ? (
+            <div className="pb-20">
+              <SkeletonLoaderForPage />
+            </div>
+          ) : (
+            <div>
+              <form className="mt-5 flex flex-col gap-5">
+                {/* Basic Info */}
+                <section>
+                  <h3 className="text-base font-semibold mb-3">Basic info</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextInput
+                      type="text"
+                      name="name"
+                      errorMessage={
+                        formErrors.name ||
+                        (error as any)?.data?.errors?.name?.join?.("\n") ||
+                        ""
+                      }
+                      value={formValues.name}
+                      onChange={handleInputChange}
+                      className="py-[11px]"
+                      placeholder="Enter product name"
+                      title={<span className="font-[500]">Name*</span>}
+                      required={false}
+                    />
+                    <div
+                      className={`grid  gap-4 ${
+                        formValues.is_serialized === 1
+                          ? "grid-cols-2"
+                          : "grid-cols-1"
+                      }`}
+                    >
+                      <div>
+                        <div className={`pb-1`}>
+                          <label
+                            className={"text-sm capitalize text-[#2C3137]"}
+                          >
+                            Serialized
+                          </label>
+                        </div>
+                        <SelectInput
+                          onChange={(v) =>
+                            setFormValues((p: FormValues) => ({
+                              ...p,
+                              is_serialized: Number(v) as 0 | 1,
+                              serial_number:
+                                Number(v) === 1 ? p.serial_number : "",
+                            }))
+                          }
+                          value={formValues.is_serialized}
+                          placeholder={
+                            <span className="text-sm font-bold">Select</span>
+                          }
+                          data={[
+                            { label: "No", value: 0 },
+                            { label: "Yes", value: 1 },
+                          ]}
+                        />
+                      </div>
+                      {formValues.is_serialized === 1 && (
+                        <TextInput
+                          type="text"
+                          name="serial_number"
+                          errorMessage={
+                            formErrors.serial_number ||
+                            (error as any)?.data?.errors?.serial_number?.join?.(
+                              "\n"
+                            ) ||
+                            ""
+                          }
+                          value={formValues.serial_number}
+                          onChange={handleInputChange}
+                          placeholder="e.g., SN-12345"
+                          title={
+                            <span className="font-[500]">Serial number*</span>
+                          }
+                        />
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Pricing & Inventory */}
+                <section className="hidden">
+                  <h3 className="text-base font-semibold mb-3">
+                    Pricing & inventory
+                  </h3>
+                  <div className=" md:grid grid-cols-1 md:grid-cols-4 gap-4 ">
+                    <TextInput
+                      type="number"
+                      name="price"
+                      errorMessage={
+                        formErrors.price ||
+                        (error as any)?.data?.errors?.price?.join?.("\n") ||
+                        ""
+                      }
+                      value={formValues.price}
+                      onChange={handleInputChange}
+                      placeholder="0.00"
+                      title={<span className="font-[500]">Price*</span>}
+                    />
+                    <TextInput
+                      type="number"
+                      name="compare_price"
+                      errorMessage={
+                        formErrors.compare_price ||
+                        (error as any)?.data?.errors?.compare_price?.join?.(
+                          "\n"
+                        ) ||
+                        ""
+                      }
+                      value={formValues.compare_price as any}
+                      onChange={handleInputChange}
+                      placeholder="0.00"
+                      title={<span className="font-[500]">Compare price</span>}
+                    />
+                    <TextInput
+                      type="number"
+                      name="cost_price"
+                      errorMessage={
+                        formErrors.cost_price ||
+                        (error as any)?.data?.errors?.cost_price?.join?.(
+                          "\n"
+                        ) ||
+                        ""
+                      }
+                      value={formValues.cost_price}
+                      onChange={handleInputChange}
+                      placeholder="0.00"
+                      title={<span className="font-[500]">Cost price*</span>}
+                    />
+                    <TextInput
+                      type="number"
+                      name="quantity"
+                      errorMessage={
+                        formErrors.quantity ||
+                        (error as any)?.data?.errors?.quantity?.join?.("\n") ||
+                        ""
+                      }
+                      value={formValues.quantity}
+                      onChange={handleInputChange}
+                      placeholder="0"
+                      title={<span className="font-[500]">Quantity*</span>}
+                    />
+                  </div>
+                </section>
+
+                {/* Categorization & Attributes */}
+                <section>
+                  <h3 className="text-base font-semibold mb-3">
+                    Categorization
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <div className={`pb-1`}>
                         <label className={"text-sm capitalize text-[#2C3137]"}>
-                          Serialized
+                          Categories*
                         </label>
                       </div>
                       <SelectInput
-                        onChange={(v) =>
+                        loading={isUpdatingCategories}
+                        onChange={async (values) => {
                           setFormValues((p: FormValues) => ({
                             ...p,
-                            is_serialized: Number(v) as 0 | 1,
-                            serial_number:
-                              Number(v) === 1 ? p.serial_number : "",
-                          }))
-                        }
-                        value={formValues.is_serialized}
+                            category_ids: values,
+                          }));
+                          if (!id) return;
+                          try {
+                            await updateProductCategories({
+                              product_id: id,
+                              body: { category_ids: values },
+                            }).unwrap();
+                            showPlannerToast({
+                              options: {
+                                customToast: (
+                                  <CustomToast
+                                    altText={"Success"}
+                                    title={"Categories Updated"}
+                                    image={imgSuccess}
+                                    textColor="green"
+                                    message={"Product categories updated."}
+                                    backgroundColor="#FCFCFD"
+                                  />
+                                ),
+                              },
+                              message: "Success",
+                            });
+                          } catch (e: any) {
+                            showPlannerToast({
+                              options: {
+                                customToast: (
+                                  <CustomToast
+                                    altText={"Error"}
+                                    title={"Categories Update Failed"}
+                                    image={imgError}
+                                    textColor="red"
+                                    message={
+                                      e?.data?.message ||
+                                      "Unable to update categories"
+                                    }
+                                    backgroundColor="#FCFCFD"
+                                  />
+                                ),
+                              },
+                              message: "Error",
+                            });
+                          }
+                        }}
+                        onDeselect={async (value) => {
+                          if (!id || !value) return;
+                          try {
+                            await deleteProductCategory({
+                              product_id: id,
+                              category_id: value as string,
+                            }).unwrap();
+                          } catch (e) {}
+                        }}
+                        value={formValues.category_ids}
                         placeholder={
                           <span className="text-sm font-bold">Select</span>
                         }
-                        data={[
-                          { label: "No", value: 0 },
-                          { label: "Yes", value: 1 },
-                        ]}
+                        data={categoryOptions}
+                        mode="multiple"
                       />
-                    </div>
-                    {formValues.is_serialized === 1 && (
-                      <TextInput
-                        type="text"
-                        name="serial_number"
-                        errorMessage={
-                          formErrors.serial_number ||
-                          (error as any)?.data?.errors?.serial_number?.join?.(
-                            "\n"
-                          ) ||
-                          ""
-                        }
-                        value={formValues.serial_number}
-                        onChange={handleInputChange}
-                        placeholder="e.g., SN-12345"
-                        title={
-                          <span className="font-[500]">Serial number*</span>
-                        }
-                      />
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* Pricing & Inventory */}
-              <section className="hidden">
-                <h3 className="text-base font-semibold mb-3">
-                  Pricing & inventory
-                </h3>
-                <div className=" md:grid grid-cols-1 md:grid-cols-4 gap-4 ">
-                  <TextInput
-                    type="number"
-                    name="price"
-                    errorMessage={
-                      formErrors.price ||
-                      (error as any)?.data?.errors?.price?.join?.("\n") ||
-                      ""
-                    }
-                    value={formValues.price}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    title={<span className="font-[500]">Price*</span>}
-                  />
-                  <TextInput
-                    type="number"
-                    name="compare_price"
-                    errorMessage={
-                      formErrors.compare_price ||
-                      (error as any)?.data?.errors?.compare_price?.join?.(
-                        "\n"
-                      ) ||
-                      ""
-                    }
-                    value={formValues.compare_price as any}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    title={<span className="font-[500]">Compare price</span>}
-                  />
-                  <TextInput
-                    type="number"
-                    name="cost_price"
-                    errorMessage={
-                      formErrors.cost_price ||
-                      (error as any)?.data?.errors?.cost_price?.join?.("\n") ||
-                      ""
-                    }
-                    value={formValues.cost_price}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    title={<span className="font-[500]">Cost price*</span>}
-                  />
-                  <TextInput
-                    type="number"
-                    name="quantity"
-                    errorMessage={
-                      formErrors.quantity ||
-                      (error as any)?.data?.errors?.quantity?.join?.("\n") ||
-                      ""
-                    }
-                    value={formValues.quantity}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    title={<span className="font-[500]">Quantity*</span>}
-                  />
-                </div>
-              </section>
-
-              {/* Categorization & Attributes */}
-              <section>
-                <h3 className="text-base font-semibold mb-3">Categorization</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className={`pb-1`}>
-                      <label className={"text-sm capitalize text-[#2C3137]"}>
-                        Categories*
-                      </label>
-                    </div>
-                    <SelectInput
-                      loading={isUpdatingCategories}
-                      onChange={async (values) => {
-                        setFormValues((p: FormValues) => ({
-                          ...p,
-                          category_ids: values,
-                        }));
-                        if (!id) return;
-                        try {
-                          await updateProductCategories({
-                            product_id: id,
-                            body: { category_ids: values },
-                          }).unwrap();
-                          showPlannerToast({
-                            options: {
-                              customToast: (
-                                <CustomToast
-                                  altText={"Success"}
-                                  title={"Categories Updated"}
-                                  image={imgSuccess}
-                                  textColor="green"
-                                  message={"Product categories updated."}
-                                  backgroundColor="#FCFCFD"
-                                />
-                              ),
-                            },
-                            message: "Success",
-                          });
-                        } catch (e: any) {
-                          showPlannerToast({
-                            options: {
-                              customToast: (
-                                <CustomToast
-                                  altText={"Error"}
-                                  title={"Categories Update Failed"}
-                                  image={imgError}
-                                  textColor="red"
-                                  message={
-                                    e?.data?.message ||
-                                    "Unable to update categories"
-                                  }
-                                  backgroundColor="#FCFCFD"
-                                />
-                              ),
-                            },
-                            message: "Error",
-                          });
-                        }
-                      }}
-                      onDeselect={async (value) => {
-                        if (!id || !value) return;
-                        try {
-                          await deleteProductCategory({
-                            product_id: id,
-                            category_id: value as string,
-                          }).unwrap();
-                        } catch (e) {}
-                      }}
-                      value={formValues.category_ids}
-                      placeholder={
-                        <span className="text-sm font-bold">Select</span>
-                      }
-                      data={categoryOptions}
-                      mode="multiple"
-                    />
-                    {(formErrors.category_ids ||
-                      (error as any)?.data?.errors?.category_ids) && (
-                      <p className="flex flex-col gap-1 text-xs italic text-red-600">
-                        {formErrors.category_ids ||
-                          (error as any)?.data?.errors?.category_ids?.join?.(
-                            "\n"
-                          ) ||
-                          ""}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <div className={`pb-1`}>
-                      <label className={"text-sm capitalize text-[#2C3137]"}>
-                        Attribute values
-                      </label>
-                    </div>
-                    <SelectInput
-                      loading={isUpdatingAttributes}
-                      onChange={async (values) => {
-                        setFormValues((p: FormValues) => ({
-                          ...p,
-                          attribute_value_ids: values,
-                        }));
-                        if (!id) return;
-                        try {
-                          await updateProductAttributeValues({
-                            product_id: id,
-                            body: { attribute_value_ids: values },
-                          }).unwrap();
-                          showPlannerToast({
-                            options: {
-                              customToast: (
-                                <CustomToast
-                                  altText={"Success"}
-                                  title={"Attributes Updated"}
-                                  image={imgSuccess}
-                                  textColor="green"
-                                  message={"Product attributes updated."}
-                                  backgroundColor="#FCFCFD"
-                                />
-                              ),
-                            },
-                            message: "Success",
-                          });
-                        } catch (e: any) {
-                          showPlannerToast({
-                            options: {
-                              customToast: (
-                                <CustomToast
-                                  altText={"Error"}
-                                  title={"Attributes Update Failed"}
-                                  image={imgError}
-                                  textColor="red"
-                                  message={
-                                    e?.data?.message ||
-                                    "Unable to update attributes"
-                                  }
-                                  backgroundColor="#FCFCFD"
-                                />
-                              ),
-                            },
-                            message: "Error",
-                          });
-                        }
-                      }}
-                      onDeselect={async (value) => {
-                        if (!id || !value) return;
-                        try {
-                          await deleteProductAttributeValue({
-                            product_id: id,
-                            attribute_value_id: value as string,
-                          }).unwrap();
-                        } catch (e) {}
-                      }}
-                      value={formValues.attribute_value_ids}
-                      placeholder={
-                        <span className="text-sm font-bold">Select</span>
-                      }
-                      data={attributeValueOptions}
-                      mode="multiple"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Descriptions */}
-              <section>
-                <h3 className="text-base font-semibold mb-3">Descriptions</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <TextAreaInput
-                    row={8}
-                    name="short_description"
-                    errorMessage={""}
-                    className="w-full"
-                    value={formValues.short_description}
-                    onChange={handleInputChange}
-                    placeholder="Short description"
-                    title={
-                      <span className="font-[500]">Short description</span>
-                    }
-                  />
-                  <div>
-                    <RichTextEditor
-                      value={formValues.description}
-                      onChange={(html) =>
-                        setFormValues((p: FormValues) => ({
-                          ...p,
-                          description: html,
-                        }))
-                      }
-                      placeholder="Write full description..."
-                      className="h-[205px]"
-                      label={<span className="font-[500]">Description</span>}
-                      errorMessage={""}
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Images */}
-              <section>
-                <h3 className="text-base font-semibold mb-3">
-                  Images ({fileList.length || 0})
-                </h3>
-                <div className="w-full">
-                  <div
-                    className={`relative w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
-                      fileList.length > 0 ? "grid" : "block"
-                    }`}
-                  >
-                    <Upload
-                      ref={uploadRef}
-                      className="main-hidden-upload w-full hidden"
-                      multiple
-                      maxCount={6}
-                      fileList={fileList}
-                      onChange={handleFileChange}
-                      beforeUpload={(f) => {
-                        if (fileList.length >= 6) {
-                          message.warning("You can only upload up to 6 images");
-                          return (Upload as any).LIST_IGNORE ?? false;
-                        }
-                        return false;
-                      }}
-                      accept="image/*"
-                      showUploadList={false}
-                      customRequest={({ onSuccess }) => {
-                        if (onSuccess) onSuccess("ok", undefined);
-                      }}
-                    >
-                      <div></div>
-                    </Upload>
-
-                    <button
-                      type="button"
-                      onClick={triggerUpload}
-                      className={`p-6 w-full border-2 border-dashed ${
-                        formErrors.images ||
-                        (error as any)?.data?.errors?.images?.join?.("\n")
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
-                    >
-                      <div className="flex justify-center items-center gap-2 py-4">
-                        <Icon icon="ic:round-plus" width="24" height="24" />
-                        <p className="text-xs font-bold text-center">
-                          Add Images
+                      {(formErrors.category_ids ||
+                        (error as any)?.data?.errors?.category_ids) && (
+                        <p className="flex flex-col gap-1 text-xs italic text-red-600">
+                          {formErrors.category_ids ||
+                            (error as any)?.data?.errors?.category_ids?.join?.(
+                              "\n"
+                            ) ||
+                            ""}
                         </p>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`pb-1`}>
+                        <label className={"text-sm capitalize text-[#2C3137]"}>
+                          Attribute values
+                        </label>
                       </div>
-                    </button>
-                    {(formErrors.images ||
-                      (error as any)?.data?.errors?.images) && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {formErrors.images ||
-                          (error as any)?.data?.errors?.images?.join?.("\n") ||
-                          ""}
-                      </p>
-                    )}
-
-                    {fileList.length > 0 && (
-                      <>
-                        {fileList.map((f, idx) => (
-                          <div
-                            key={f.uid ?? idx}
-                            className="border rounded p-2 flex flex-col items-center gap-2"
-                          >
-                            <div className="w-16 h-16">
-                              <ImageComponent
-                                isLoadingImage={false}
-                                setIsLoadingImage={() => {}}
-                                width={64}
-                                aspectRatio="1/1"
-                                src={f.url || f._previewUrl || f.thumbUrl}
-                                alt="Variant Preview"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-
-                            {f.status === "uploading" && (
-                              <span className="text-[10px] text-gray-500">
-                                Uploading…
-                              </span>
-                            )}
-                            {f.status === "error" && (
-                              <span className="text-[10px] text-red-500">
-                                Upload failed
-                              </span>
-                            )}
-                            {f._deleting && (
-                              <span className="text-[10px] text-gray-500">
-                                Deleting…
-                              </span>
-                            )}
-                            <p className="text-xs truncate w-full text-center">
-                              {f.name}
-                            </p>
-                            <button
-                              type="button"
-                              className="text-red-500 text-xs disabled:opacity-50"
-                              disabled={f.status === "uploading" || f._deleting}
-                              onClick={() => removeProductImage(idx)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </>
-                    )}
+                      <SelectInput
+                        loading={isUpdatingAttributes}
+                        onChange={async (values) => {
+                          setFormValues((p: FormValues) => ({
+                            ...p,
+                            attribute_value_ids: values,
+                          }));
+                          if (!id) return;
+                          try {
+                            await updateProductAttributeValues({
+                              product_id: id,
+                              body: { attribute_value_ids: values },
+                            }).unwrap();
+                            showPlannerToast({
+                              options: {
+                                customToast: (
+                                  <CustomToast
+                                    altText={"Success"}
+                                    title={"Attributes Updated"}
+                                    image={imgSuccess}
+                                    textColor="green"
+                                    message={"Product attributes updated."}
+                                    backgroundColor="#FCFCFD"
+                                  />
+                                ),
+                              },
+                              message: "Success",
+                            });
+                          } catch (e: any) {
+                            showPlannerToast({
+                              options: {
+                                customToast: (
+                                  <CustomToast
+                                    altText={"Error"}
+                                    title={"Attributes Update Failed"}
+                                    image={imgError}
+                                    textColor="red"
+                                    message={
+                                      e?.data?.message ||
+                                      "Unable to update attributes"
+                                    }
+                                    backgroundColor="#FCFCFD"
+                                  />
+                                ),
+                              },
+                              message: "Error",
+                            });
+                          }
+                        }}
+                        onDeselect={async (value) => {
+                          if (!id || !value) return;
+                          try {
+                            await deleteProductAttributeValue({
+                              product_id: id,
+                              attribute_value_id: value as string,
+                            }).unwrap();
+                          } catch (e) {}
+                        }}
+                        value={formValues.attribute_value_ids}
+                        placeholder={
+                          <span className="text-sm font-bold">Select</span>
+                        }
+                        data={attributeValueOptions}
+                        mode="multiple"
+                      />
+                    </div>
                   </div>
-                </div>
-                {/* Upload is automatic on add; no manual upload button */}
-              </section>
+                </section>
 
-              {/* Variants */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-semibold">Variants</h3>
-                  <div className="w-fit">
-                    <CustomButton
-                      onClick={addVariant}
-                      className="bg-primary-30 text-white w-auto px-4"
+                {/* Descriptions */}
+                <section>
+                  <h3 className="text-base font-semibold mb-3">Descriptions</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextAreaInput
+                      row={8}
+                      name="short_description"
+                      errorMessage={""}
+                      className="w-full"
+                      value={formValues.short_description}
+                      onChange={handleInputChange}
+                      placeholder="Short description"
+                      title={
+                        <span className="font-[500]">Short description</span>
+                      }
+                    />
+                    <div>
+                      <RichTextEditor
+                        value={formValues.description}
+                        onChange={(html) =>
+                          setFormValues((p: FormValues) => ({
+                            ...p,
+                            description: html,
+                          }))
+                        }
+                        placeholder="Write full description..."
+                        className="h-[205px]"
+                        label={<span className="font-[500]">Description</span>}
+                        errorMessage={""}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Images */}
+                <section>
+                  <h3 className="text-base font-semibold mb-3">
+                    Images ({fileList.length || 0})
+                  </h3>
+                  <div className="w-full">
+                    <div
+                      className={`relative w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                        fileList.length > 0 ? "grid" : "block"
+                      }`}
                     >
-                      Add variant
-                    </CustomButton>
-                  </div>
-                </div>
-
-                {formValues.variants.length === 0 ? (
-                  <p className="text-sm text-gray-500">No variants added.</p>
-                ) : (
-                  <div className="flex flex-col gap-6">
-                    {formValues.variants.map((v: Variant, i: number) => (
-                      <div
-                        key={i}
-                        className="border rounded-lg p-4"
-                        onClick={() => {
-                          if (v.id) setSelectedVariantId(v.id);
+                      <Upload
+                        ref={uploadRef}
+                        className="main-hidden-upload w-full hidden"
+                        multiple
+                        maxCount={6}
+                        fileList={fileList}
+                        onChange={handleFileChange}
+                        beforeUpload={(f) => {
+                          if (fileList.length >= 6) {
+                            message.warning(
+                              "You can only upload up to 6 images"
+                            );
+                            return (Upload as any).LIST_IGNORE ?? false;
+                          }
+                          return false;
+                        }}
+                        accept="image/*"
+                        showUploadList={false}
+                        customRequest={({ onSuccess }) => {
+                          if (onSuccess) onSuccess("ok", undefined);
                         }}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold">Variant {i + 1}</h4>
-                          <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2 text-xs">
-                              <input
-                                type="checkbox"
-                                checked={!!v.copy_from_main}
-                                onChange={(e) =>
-                                  handleCopyFromMain(i, e.target.checked)
-                                }
-                              />
-                              <span>Copy main product values</span>
-                            </label>
-                            {!v.id && (
+                        <div></div>
+                      </Upload>
+
+                      <button
+                        type="button"
+                        onClick={triggerUpload}
+                        className={`p-6 w-full border-2 border-dashed ${
+                          formErrors.images ||
+                          (error as any)?.data?.errors?.images?.join?.("\n")
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
+                      >
+                        <div className="flex justify-center items-center gap-2 py-4">
+                          <Icon icon="ic:round-plus" width="24" height="24" />
+                          <p className="text-xs font-bold text-center">
+                            Add Images
+                          </p>
+                        </div>
+                      </button>
+                      {(formErrors.images ||
+                        (error as any)?.data?.errors?.images) && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {formErrors.images ||
+                            (error as any)?.data?.errors?.images?.join?.(
+                              "\n"
+                            ) ||
+                            ""}
+                        </p>
+                      )}
+
+                      {fileList.length > 0 && (
+                        <>
+                          {fileList.map((f, idx) => (
+                            <div
+                              key={f.uid ?? idx}
+                              className="border rounded p-2 flex flex-col items-center gap-2"
+                            >
+                              <div className="w-16 h-16">
+                                <ImageComponent
+                                  isLoadingImage={false}
+                                  setIsLoadingImage={() => {}}
+                                  width={64}
+                                  aspectRatio="1/1"
+                                  src={f.url || f._previewUrl || f.thumbUrl}
+                                  alt="Variant Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+
+                              {f.status === "uploading" && (
+                                <span className="text-[10px] text-gray-500">
+                                  Uploading…
+                                </span>
+                              )}
+                              {f.status === "error" && (
+                                <span className="text-[10px] text-red-500">
+                                  Upload failed
+                                </span>
+                              )}
+                              {f._deleting && (
+                                <span className="text-[10px] text-gray-500">
+                                  Deleting…
+                                </span>
+                              )}
+                              <p className="text-xs truncate w-full text-center">
+                                {f.name}
+                              </p>
                               <button
                                 type="button"
-                                onClick={() => removeVariant(i)}
-                                className="text-red-500 font-[500] text-xs"
+                                className="text-red-500 text-xs disabled:opacity-50"
+                                disabled={
+                                  f.status === "uploading" || f._deleting
+                                }
+                                onClick={() => removeProductImage(idx)}
                               >
                                 Remove
                               </button>
-                            )}
-                            {v.id && (
-                              <button
-                                type="button"
-                                onClick={async () => {
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {/* Upload is automatic on add; no manual upload button */}
+                </section>
+
+                {/* Variants */}
+                <section>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold">Variants</h3>
+                    <div className="w-fit">
+                      <CustomButton
+                        onClick={addVariant}
+                        className="bg-primary-30 text-white w-auto px-4"
+                      >
+                        Add variant
+                      </CustomButton>
+                    </div>
+                  </div>
+
+                  {formValues.variants.length === 0 ? (
+                    <p className="text-sm text-gray-500">No variants added.</p>
+                  ) : (
+                    <div className="flex flex-col gap-6">
+                      {formValues.variants.map((v: Variant, i: number) => (
+                        <div
+                          key={i}
+                          className="border rounded-lg p-4"
+                          onClick={() => {
+                            if (v.id) setSelectedVariantId(v.id);
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold">Variant {i + 1}</h4>
+                            <div className="flex items-center gap-3">
+                              <label className="flex items-center gap-2 text-xs">
+                                <input
+                                  type="checkbox"
+                                  checked={!!v.copy_from_main}
+                                  onChange={(e) =>
+                                    handleCopyFromMain(i, e.target.checked)
+                                  }
+                                />
+                                <span>Copy main product values</span>
+                              </label>
+                              {!v.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariant(i)}
+                                  className="text-red-500 font-[500] text-xs"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                              {v.id && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      await deleteVariantApi({
+                                        id: v.id!,
+                                      }).unwrap();
+                                      removeVariant(i);
+                                    } catch (e) {
+                                      showPlannerToast({
+                                        options: {
+                                          customToast: (
+                                            <CustomToast
+                                              altText={"Error"}
+                                              title={"Delete Failed"}
+                                              image={imgError}
+                                              textColor="red"
+                                              message={
+                                                "Unable to delete variant"
+                                              }
+                                              backgroundColor="#FCFCFD"
+                                            />
+                                          ),
+                                        },
+                                        message: "Error",
+                                      });
+                                    }
+                                  }}
+                                  className="text-red-500 font-[500] text-xs"
+                                >
+                                  Delete variant
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <TextInput
+                              type="text"
+                              name={`variant_name_${i}`}
+                              errorMessage={getVariantError(i, "name")}
+                              value={v.name}
+                              className="py-[11px]"
+                              onChange={(e) =>
+                                updateVariantField(i, "name", e.target.value)
+                              }
+                              placeholder="Variant name"
+                              title={<span className="font-[500]">Name*</span>}
+                            />
+                            <div
+                              className={`grid  gap-4 ${
+                                v.is_serialized === 1
+                                  ? "grid-cols-2"
+                                  : "grid-cols-1"
+                              }`}
+                            >
+                              <div className="">
+                                {" "}
+                                <div className={`pb-1`}>
+                                  <label
+                                    className={
+                                      "text-sm capitalize text-[#2C3137]"
+                                    }
+                                  >
+                                    Serialized
+                                  </label>
+                                </div>
+                                <SelectInput
+                                  onChange={(val) =>
+                                    updateVariantField(
+                                      i,
+                                      "is_serialized",
+                                      Number(val)
+                                    )
+                                  }
+                                  className="h-fit"
+                                  value={v.is_serialized}
+                                  placeholder={
+                                    <span className="text-sm font-bold">
+                                      Serialized
+                                    </span>
+                                  }
+                                  data={[
+                                    { label: "No", value: 0 },
+                                    { label: "Yes", value: 1 },
+                                  ]}
+                                />
+                              </div>
+                              {v.is_serialized === 1 && (
+                                <TextInput
+                                  type="text"
+                                  name={`variant_serial_${i}`}
+                                  errorMessage={getVariantError(
+                                    i,
+                                    "serial_number"
+                                  )}
+                                  value={v.serial_number || ""}
+                                  onChange={(e) =>
+                                    updateVariantField(
+                                      i,
+                                      "serial_number",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="Serial number"
+                                  title={
+                                    <span className="font-[500]">Serial*</span>
+                                  }
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                            <TextInput
+                              type="number"
+                              name={`variant_price_${i}`}
+                              errorMessage={getVariantError(i, "price")}
+                              value={v.price}
+                              onChange={(e) =>
+                                updateVariantField(i, "price", e.target.value)
+                              }
+                              placeholder="0.00"
+                              title={<span className="font-[500]">Price*</span>}
+                            />
+                            <TextInput
+                              type="number"
+                              name={`variant_compare_${i}`}
+                              errorMessage={getVariantError(i, "compare_price")}
+                              value={v.compare_price as any}
+                              onChange={(e) =>
+                                updateVariantField(
+                                  i,
+                                  "compare_price",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0.00"
+                              title={
+                                <span className="font-[500]">Compare</span>
+                              }
+                            />
+                            <TextInput
+                              type="number"
+                              name={`variant_cost_${i}`}
+                              errorMessage={getVariantError(i, "cost_price")}
+                              value={v.cost_price}
+                              onChange={(e) =>
+                                updateVariantField(
+                                  i,
+                                  "cost_price",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0.00"
+                              title={<span className="font-[500]">Cost*</span>}
+                            />
+                            <TextInput
+                              type="number"
+                              name={`variant_qty_${i}`}
+                              errorMessage={getVariantError(i, "quantity")}
+                              value={v.quantity}
+                              onChange={(e) =>
+                                updateVariantField(
+                                  i,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0"
+                              title={<span className="font-[500]">Qty*</span>}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                            <div>
+                              <div className={`pb-1`}>
+                                <label
+                                  className={
+                                    "text-sm capitalize text-[#2C3137]"
+                                  }
+                                >
+                                  Attribute values
+                                </label>
+                              </div>
+                              <SelectInput
+                                loading={isUpdatingVariantAttrs}
+                                onChange={async (values) => {
+                                  updateVariantField(
+                                    i,
+                                    "attribute_value_ids",
+                                    values
+                                  );
+                                  const vid =
+                                    (formValues.variants[i] || {}).id || v.id;
+                                  if (!vid) return;
                                   try {
-                                    await deleteVariantApi({
-                                      id: v.id!,
+                                    await updateVariantAttributes({
+                                      product_variant_id: vid,
+                                      body: { attribute_value_ids: values },
                                     }).unwrap();
-                                    removeVariant(i);
-                                  } catch (e) {
+                                    showPlannerToast({
+                                      options: {
+                                        customToast: (
+                                          <CustomToast
+                                            altText={"Success"}
+                                            title={"Variant Attributes Updated"}
+                                            image={imgSuccess}
+                                            textColor="green"
+                                            message={
+                                              "Variant attributes updated."
+                                            }
+                                            backgroundColor="#FCFCFD"
+                                          />
+                                        ),
+                                      },
+                                      message: "Success",
+                                    });
+                                  } catch (e: any) {
                                     showPlannerToast({
                                       options: {
                                         customToast: (
                                           <CustomToast
                                             altText={"Error"}
-                                            title={"Delete Failed"}
+                                            title={"Update Failed"}
                                             image={imgError}
                                             textColor="red"
-                                            message={"Unable to delete variant"}
+                                            message={
+                                              e?.data?.message ||
+                                              "Unable to update variant attributes"
+                                            }
                                             backgroundColor="#FCFCFD"
                                           />
                                         ),
@@ -1846,452 +2072,255 @@ const index = () => {
                                     });
                                   }
                                 }}
-                                className="text-red-500 font-[500] text-xs"
-                              >
-                                Delete variant
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <TextInput
-                            type="text"
-                            name={`variant_name_${i}`}
-                            errorMessage={getVariantError(i, "name")}
-                            value={v.name}
-                            className="py-[11px]"
-                            onChange={(e) =>
-                              updateVariantField(i, "name", e.target.value)
-                            }
-                            placeholder="Variant name"
-                            title={<span className="font-[500]">Name*</span>}
-                          />
-                          <div
-                            className={`grid  gap-4 ${
-                              v.is_serialized === 1
-                                ? "grid-cols-2"
-                                : "grid-cols-1"
-                            }`}
-                          >
-                            <div className="">
-                              {" "}
-                              <div className={`pb-1`}>
-                                <label
-                                  className={
-                                    "text-sm capitalize text-[#2C3137]"
-                                  }
-                                >
-                                  Serialized
-                                </label>
-                              </div>
-                              <SelectInput
-                                onChange={(val) =>
-                                  updateVariantField(
-                                    i,
-                                    "is_serialized",
-                                    Number(val)
-                                  )
-                                }
-                                className="h-fit"
-                                value={v.is_serialized}
+                                onDeselect={async (value) => {
+                                  const vid =
+                                    (formValues.variants[i] || {}).id || v.id;
+                                  if (!vid || !value) return;
+                                  try {
+                                    await deleteVariantAttributes({
+                                      product_variant_id: vid,
+                                      attribute_value_id: value as string,
+                                    }).unwrap();
+                                  } catch (e) {}
+                                }}
+                                value={v.attribute_value_ids}
                                 placeholder={
                                   <span className="text-sm font-bold">
-                                    Serialized
+                                    Select
                                   </span>
                                 }
-                                data={[
-                                  { label: "No", value: 0 },
-                                  { label: "Yes", value: 1 },
-                                ]}
+                                data={attributeValueOptions}
+                                mode="multiple"
                               />
+                              {getVariantError(i, "attribute_value_ids") && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  {getVariantError(i, "attribute_value_ids")}
+                                </p>
+                              )}
                             </div>
-                            {v.is_serialized === 1 && (
-                              <TextInput
-                                type="text"
-                                name={`variant_serial_${i}`}
-                                errorMessage={getVariantError(
-                                  i,
-                                  "serial_number"
-                                )}
-                                value={v.serial_number || ""}
-                                onChange={(e) =>
-                                  updateVariantField(
-                                    i,
-                                    "serial_number",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Serial number"
-                                title={
-                                  <span className="font-[500]">Serial*</span>
-                                }
-                              />
-                            )}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
-                          <TextInput
-                            type="number"
-                            name={`variant_price_${i}`}
-                            errorMessage={getVariantError(i, "price")}
-                            value={v.price}
-                            onChange={(e) =>
-                              updateVariantField(i, "price", e.target.value)
-                            }
-                            placeholder="0.00"
-                            title={<span className="font-[500]">Price*</span>}
-                          />
-                          <TextInput
-                            type="number"
-                            name={`variant_compare_${i}`}
-                            errorMessage={getVariantError(i, "compare_price")}
-                            value={v.compare_price as any}
-                            onChange={(e) =>
-                              updateVariantField(
-                                i,
-                                "compare_price",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0.00"
-                            title={<span className="font-[500]">Compare</span>}
-                          />
-                          <TextInput
-                            type="number"
-                            name={`variant_cost_${i}`}
-                            errorMessage={getVariantError(i, "cost_price")}
-                            value={v.cost_price}
-                            onChange={(e) =>
-                              updateVariantField(
-                                i,
-                                "cost_price",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0.00"
-                            title={<span className="font-[500]">Cost*</span>}
-                          />
-                          <TextInput
-                            type="number"
-                            name={`variant_qty_${i}`}
-                            errorMessage={getVariantError(i, "quantity")}
-                            value={v.quantity}
-                            onChange={(e) =>
-                              updateVariantField(i, "quantity", e.target.value)
-                            }
-                            placeholder="0"
-                            title={<span className="font-[500]">Qty*</span>}
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                          <div>
-                            <div className={`pb-1`}>
-                              <label
-                                className={"text-sm capitalize text-[#2C3137]"}
-                              >
-                                Attribute values
-                              </label>
-                            </div>
-                            <SelectInput
-                              loading={isUpdatingVariantAttrs}
-                              onChange={async (values) => {
+                            <TextInput
+                              type="text"
+                              name={`variant_batch_${i}`}
+                              errorMessage={""}
+                              value={v.batch_number || ""}
+                              onChange={(e) =>
                                 updateVariantField(
                                   i,
-                                  "attribute_value_ids",
-                                  values
-                                );
-                                const vid =
-                                  (formValues.variants[i] || {}).id || v.id;
-                                if (!vid) return;
-                                try {
-                                  await updateVariantAttributes({
-                                    product_variant_id: vid,
-                                    body: { attribute_value_ids: values },
-                                  }).unwrap();
-                                  showPlannerToast({
-                                    options: {
-                                      customToast: (
-                                        <CustomToast
-                                          altText={"Success"}
-                                          title={"Variant Attributes Updated"}
-                                          image={imgSuccess}
-                                          textColor="green"
-                                          message={
-                                            "Variant attributes updated."
-                                          }
-                                          backgroundColor="#FCFCFD"
-                                        />
-                                      ),
-                                    },
-                                    message: "Success",
-                                  });
-                                } catch (e: any) {
-                                  showPlannerToast({
-                                    options: {
-                                      customToast: (
-                                        <CustomToast
-                                          altText={"Error"}
-                                          title={"Update Failed"}
-                                          image={imgError}
-                                          textColor="red"
-                                          message={
-                                            e?.data?.message ||
-                                            "Unable to update variant attributes"
-                                          }
-                                          backgroundColor="#FCFCFD"
-                                        />
-                                      ),
-                                    },
-                                    message: "Error",
-                                  });
-                                }
-                              }}
-                              onDeselect={async (value) => {
-                                const vid =
-                                  (formValues.variants[i] || {}).id || v.id;
-                                if (!vid || !value) return;
-                                try {
-                                  await deleteVariantAttributes({
-                                    product_variant_id: vid,
-                                    attribute_value_id: value as string,
-                                  }).unwrap();
-                                } catch (e) {}
-                              }}
-                              value={v.attribute_value_ids}
-                              placeholder={
-                                <span className="text-sm font-bold">
-                                  Select
-                                </span>
+                                  "batch_number",
+                                  e.target.value
+                                )
                               }
-                              data={attributeValueOptions}
-                              mode="multiple"
+                              placeholder="Batch number (optional)"
+                              title={
+                                <span className="font-[500]">Batch No.</span>
+                              }
                             />
-                            {getVariantError(i, "attribute_value_ids") && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {getVariantError(i, "attribute_value_ids")}
-                              </p>
-                            )}
                           </div>
-                          <TextInput
-                            type="text"
-                            name={`variant_batch_${i}`}
-                            errorMessage={""}
-                            value={v.batch_number || ""}
-                            onChange={(e) =>
-                              updateVariantField(
-                                i,
-                                "batch_number",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Batch number (optional)"
-                            title={
-                              <span className="font-[500]">Batch No.</span>
-                            }
-                          />
-                        </div>
-                        {/* Variant Images */}
-                        <div className="mt-4">
-                          <p className="text-sm capitalize font-[500] text-[#000]">
-                            Variant Images ({v.ui_files?.length || 0})
-                          </p>
-                          <div
-                            className={`relative w-full mt-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
-                              v.ui_files?.length! > 0 ? "grid" : "block"
-                            }`}
-                            id={`variant-upload-${i}`}
-                          >
-                            <Upload
-                              className="hidden-upload w-full hidden"
-                              multiple
-                              maxCount={6}
-                              fileList={v.ui_files as any}
-                              onChange={(info) =>
-                                handleVariantFileChange(i, info)
-                              }
-                              beforeUpload={() => {
-                                if ((v.ui_files?.length ?? 0) >= 6) {
-                                  message.warning(
-                                    "You can only upload up to 6 images per variant"
-                                  );
-                                  return (Upload as any).LIST_IGNORE ?? false;
-                                }
-                                return false;
-                              }}
-                              accept="image/*"
-                              showUploadList={false}
-                              customRequest={({ onSuccess }) => {
-                                if (onSuccess) onSuccess("ok", undefined);
-                              }}
+                          {/* Variant Images */}
+                          <div className="mt-4">
+                            <p className="text-sm capitalize font-[500] text-[#000]">
+                              Variant Images ({v.ui_files?.length || 0})
+                            </p>
+                            <div
+                              className={`relative w-full mt-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                                v.ui_files?.length! > 0 ? "grid" : "block"
+                              }`}
+                              id={`variant-upload-${i}`}
                             >
-                              <div></div>
-                            </Upload>
+                              <Upload
+                                className="hidden-upload w-full hidden"
+                                multiple
+                                maxCount={6}
+                                fileList={v.ui_files as any}
+                                onChange={(info) =>
+                                  handleVariantFileChange(i, info)
+                                }
+                                beforeUpload={() => {
+                                  if ((v.ui_files?.length ?? 0) >= 6) {
+                                    message.warning(
+                                      "You can only upload up to 6 images per variant"
+                                    );
+                                    return (Upload as any).LIST_IGNORE ?? false;
+                                  }
+                                  return false;
+                                }}
+                                accept="image/*"
+                                showUploadList={false}
+                                customRequest={({ onSuccess }) => {
+                                  if (onSuccess) onSuccess("ok", undefined);
+                                }}
+                              >
+                                <div></div>
+                              </Upload>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if ((v.ui_files?.length ?? 0) >= 6) {
-                                  message.warning(
-                                    "You can only upload up to 6 images per variant"
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if ((v.ui_files?.length ?? 0) >= 6) {
+                                    message.warning(
+                                      "You can only upload up to 6 images per variant"
+                                    );
+                                    return;
+                                  }
+                                  const container = document.getElementById(
+                                    `variant-upload-${i}`
                                   );
-                                  return;
-                                }
-                                const container = document.getElementById(
-                                  `variant-upload-${i}`
-                                );
-                                const input = container?.querySelector(
-                                  '.ant-upload input[type="file"]'
-                                ) as HTMLElement | null;
-                                input?.click?.();
-                              }}
-                              className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg  cursor-pointer hover:border-blue-500 transition-colors`}
-                            >
-                              <div className="flex justify-center items-center gap-2 py-3">
-                                <Icon
-                                  icon="ic:round-plus"
-                                  width="20"
-                                  height="20"
-                                />
-                                <p className="text-xs font-bold text-center">
-                                  Add Variant Images
+                                  const input = container?.querySelector(
+                                    '.ant-upload input[type="file"]'
+                                  ) as HTMLElement | null;
+                                  input?.click?.();
+                                }}
+                                className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg  cursor-pointer hover:border-blue-500 transition-colors`}
+                              >
+                                <div className="flex justify-center items-center gap-2 py-3">
+                                  <Icon
+                                    icon="ic:round-plus"
+                                    width="20"
+                                    height="20"
+                                  />
+                                  <p className="text-xs font-bold text-center">
+                                    Add Variant Images
+                                  </p>
+                                </div>
+                              </button>
+
+                              {getVariantError(i, "images") && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  {getVariantError(i, "images")}
                                 </p>
-                              </div>
-                            </button>
-
-                            {getVariantError(i, "images") && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {getVariantError(i, "images")}
-                              </p>
-                            )}
-
-                            {(v.ui_files?.length ?? 0) > 0 && (
-                              <>
-                                {(v.ui_files as any[]).map((file, idx) => (
-                                  <div
-                                    key={file.uid ?? idx}
-                                    className="border rounded p-2 flex flex-col items-center gap-2"
-                                  >
-                                    <div className="w-16 h-16">
-                                      <ImageComponent
-                                        isLoadingImage={false}
-                                        setIsLoadingImage={() => {}}
-                                        width={64}
-                                        aspectRatio="1/1"
-                                        src={
-                                          file.url ||
-                                          file._previewUrl ||
-                                          file.thumbUrl
-                                        }
-                                        alt="Variant Preview"
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                    {file.status === "uploading" && (
-                                      <span className="text-[10px] text-gray-500">
-                                        Uploading…
-                                      </span>
-                                    )}
-                                    {file.status === "error" && (
-                                      <span className="text-[10px] text-red-500">
-                                        Upload failed
-                                      </span>
-                                    )}
-                                    {file._deleting && (
-                                      <span className="text-[10px] text-gray-500">
-                                        Deleting…
-                                      </span>
-                                    )}
-                                    <p className="text-[10px] truncate w-full text-center">
-                                      {file.name}
-                                    </p>
-                                    <button
-                                      type="button"
-                                      className="text-red-500 text-[10px] disabled:opacity-50"
-                                      disabled={
-                                        file.status === "uploading" ||
-                                        file._deleting
-                                      }
-                                      onClick={() => removeVariantImage(i, idx)}
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-                                ))}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-4">
-                          <div className="">
-                            <CustomButton
-                              type="button"
-                              onClick={() => saveVariant(v)}
-                              disabled={isUpdatingVariant || !v.id}
-                              className="border bg-black text-white px-4 py-2"
-                            >
-                              {isUpdatingVariant ? (
-                                <span className="flex items-center gap-2">
-                                  <Spinner className="border-white" /> Saving…
-                                </span>
-                              ) : (
-                                "Save variant"
                               )}
-                            </CustomButton>
-                          </div>
-                          {/* Variant image upload is automatic on add; no manual upload button */}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
 
-              {/* Actions */}
-              <div className="flex justify-end border-t border-gray-300 pt-3 pb-20">
-                <div className="w-fit flex gap-5">
-                  <CustomButton
-                    type="button"
-                    onClick={() => {
-                      // simple reset
-                      setFormValues((prev: FormValues) => ({
-                        ...prev,
-                        name: "",
-                        price: "",
-                        compare_price: "",
-                        cost_price: "",
-                        quantity: "",
-                        short_description: "",
-                        description: "",
-                        images: [],
-                        category_ids: [],
-                        attribute_value_ids: [],
-                        is_serialized: 0,
-                        serial_number: "",
-                        variants: [],
-                      }));
-                      setFileList([]);
-                    }}
-                    className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
-                  >
-                    Cancel
-                  </CustomButton>
-                  <CustomButton
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={isLoadingUpdate}
-                    className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
-                  >
-                    {isLoadingUpdate ? (
-                      <Spinner className="border-white" />
-                    ) : (
-                      "Update product"
-                    )}
-                  </CustomButton>
+                              {(v.ui_files?.length ?? 0) > 0 && (
+                                <>
+                                  {(v.ui_files as any[]).map((file, idx) => (
+                                    <div
+                                      key={file.uid ?? idx}
+                                      className="border rounded p-2 flex flex-col items-center gap-2"
+                                    >
+                                      <div className="w-16 h-16">
+                                        <ImageComponent
+                                          isLoadingImage={false}
+                                          setIsLoadingImage={() => {}}
+                                          width={64}
+                                          aspectRatio="1/1"
+                                          src={
+                                            file.url ||
+                                            file._previewUrl ||
+                                            file.thumbUrl
+                                          }
+                                          alt="Variant Preview"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      {file.status === "uploading" && (
+                                        <span className="text-[10px] text-gray-500">
+                                          Uploading…
+                                        </span>
+                                      )}
+                                      {file.status === "error" && (
+                                        <span className="text-[10px] text-red-500">
+                                          Upload failed
+                                        </span>
+                                      )}
+                                      {file._deleting && (
+                                        <span className="text-[10px] text-gray-500">
+                                          Deleting…
+                                        </span>
+                                      )}
+                                      <p className="text-[10px] truncate w-full text-center">
+                                        {file.name}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        className="text-red-500 text-[10px] disabled:opacity-50"
+                                        disabled={
+                                          file.status === "uploading" ||
+                                          file._deleting
+                                        }
+                                        onClick={() =>
+                                          removeVariantImage(i, idx)
+                                        }
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-3 mt-4">
+                            <div className="">
+                              <CustomButton
+                                type="button"
+                                onClick={() => saveVariant(v)}
+                                disabled={isUpdatingVariant || !v.id}
+                                className="border bg-black text-white px-4 py-2"
+                              >
+                                {isUpdatingVariant ? (
+                                  <span className="flex items-center gap-2">
+                                    <Spinner className="border-white" /> Saving…
+                                  </span>
+                                ) : (
+                                  "Save variant"
+                                )}
+                              </CustomButton>
+                            </div>
+                            {/* Variant image upload is automatic on add; no manual upload button */}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                {/* Actions */}
+                <div className="flex justify-end border-t border-gray-300 pt-3 pb-20">
+                  <div className="w-fit flex gap-5">
+                    <CustomButton
+                      type="button"
+                      onClick={() => {
+                        // simple reset
+                        setFormValues((prev: FormValues) => ({
+                          ...prev,
+                          name: "",
+                          price: "",
+                          compare_price: "",
+                          cost_price: "",
+                          quantity: "",
+                          short_description: "",
+                          description: "",
+                          images: [],
+                          category_ids: [],
+                          attribute_value_ids: [],
+                          is_serialized: 0,
+                          serial_number: "",
+                          variants: [],
+                        }));
+                        setFileList([]);
+                      }}
+                      className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
+                    >
+                      Cancel
+                    </CustomButton>
+                    <CustomButton
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isLoadingUpdate}
+                      className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
+                    >
+                      {isLoadingUpdate ? (
+                        <Spinner className="border-white" />
+                      ) : (
+                        "Update product"
+                      )}
+                    </CustomButton>
+                  </div>
                 </div>
-              </div>
-            </form>
-          </div>
-        )}
+              </form>
+            </div>
+          )}
+        </PermissionGuard>
       </SharedLayout>
     </div>
   );

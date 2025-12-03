@@ -1,7 +1,5 @@
-
-import { UserProfileTopLevel } from "@/types/userProfileTypes";
-import { api } from ".";
 import { CountryTopLevel, StateTopLevel } from "@/types/globalTypes";
+import { api } from ".";
 export interface IEnumsResponse {
   enum: string;
   values: IEnumsValue[];
@@ -16,25 +14,6 @@ export interface IEnumsValue {
 export const authApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getUserProfile: builder.query<
-      UserProfileTopLevel,
-      {
-        include?: string;
-        append?: string;
-      }
-    >({
-      query: ({ include, append }: { include?: string; append?: string }) => {
-        const params: any = {};
-        if (include) params.include = include;
-        if (append) params.append = append;
-        return {
-          url: "user/profile",
-          method: "GET",
-          params,
-          providesTags: ["user"],
-        };
-      },
-    }),
     getAllEnums: builder.query<
       IEnumsResponse,
       {
@@ -137,7 +116,6 @@ export const authApi = api.injectEndpoints({
 });
 
 export const {
-  useGetUserProfileQuery,
   useGetAllEnumsQuery,
   useGetAllCountriesQuery,
   useGetAllStatesQuery,

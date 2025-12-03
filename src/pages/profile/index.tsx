@@ -44,7 +44,8 @@ const ProfilePage = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data, isLoading, isError, refetch } = useGetAllProfileQuery({
-    include: "staff.store",
+    include: "roles,staff,permissions",
+    append: "is_admin",
   });
   const [createProfile, { isLoading: isCreating }] = useCreateProfileMutation();
 
@@ -423,7 +424,7 @@ const ProfilePage = () => {
 
                 {/* Roles and Permissions Section */}
                 {(profile.roles?.length > 0 ||
-                  profile.all_permissions?.length > 0) && (
+                  profile.permissions?.length > 0) && (
                   <ProfileSection
                     title="Roles & Permissions"
                     description="User roles and associated permissions within the system."
@@ -438,7 +439,7 @@ const ProfilePage = () => {
                               className="text-indigo-600"
                               width={18}
                             />
-                            Assigned Roles
+                            Assigned Role
                           </h4>
                           <div className="flex flex-wrap gap-2">
                             {profile.roles.map((role: any) => (
@@ -454,18 +455,18 @@ const ProfilePage = () => {
                       )}
 
                       {/* User Permissions */}
-                      {profile.all_permissions?.length > 0 && (
-                        <div className="hidden">
+                      {profile.permissions?.length > 0 && (
+                        <div className="">
                           <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                             <Icon
                               icon="mdi:shield-check"
                               className="text-green-600"
                               width={18}
                             />
-                            Permissions ({profile.all_permissions.length})
+                            Permissions ({profile.permissions.length})
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {profile.all_permissions.map((permission: any) => (
+                            {profile.permissions.map((permission: any) => (
                               <div
                                 key={permission.id}
                                 className="flex items-center gap-2 p-2 rounded border border-gray-200 bg-white"

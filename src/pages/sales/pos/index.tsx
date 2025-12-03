@@ -31,6 +31,7 @@ import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 import { useGetAllCustomersQuery } from "@/services/customers";
 import debounce from "@/utils/debounce";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 
 interface AddItemFormState {
   sku: string;
@@ -600,178 +601,183 @@ const index = () => {
       />
 
       <SharedLayout className="bg-white">
-        {isLoadingPosCart ? (
-          <SkeletonLoaderForPage />
-        ) : (
-          <div className="flex flex-col lg:flex-row gap-4 ">
-            <form className="space-y-4 py-2 lg:w-[30%] w-full">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">SKU</label>
-                <TextInput
-                  name="sku"
-                  type="text"
-                  value={addItemForm.sku}
-                  onChange={(e) =>
-                    setAddItemForm((p) => ({ ...p, sku: e.target.value }))
-                  }
-                  placeholder="Enter product SKU"
-                  autoFocus
-                  maintainFocus
-                  ref={skuInputRef}
-                  className="w-full border rounded px-3 py-3 text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Quantity</label>
-                <TextInput
-                  name="quantity"
-                  type="number"
-                  placeholder="Enter quantity"
-                  value={addItemForm.quantity}
-                  onChange={(e) =>
-                    setAddItemForm((p) => ({ ...p, quantity: e.target.value }))
-                  }
-                  className="w-full border rounded px-3 py-3 text-sm"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <button
-                  onClick={() => {
-                    setAddItemForm({ sku: "", quantity: "1" });
-                    focusSku();
-                  }}
-                  type="button"
-                  className="px-4 py-2 text-sm rounded border hover:bg-gray-50"
-                >
-                  Clear
-                </button>
-
-                <button
-                  disabled={isAddingItem || !addItemForm.sku}
-                  onClick={handleAddItemSubmit}
-                  className="px-4 py-2 text-sm rounded bg-primary-40 text-white disabled:opacity-50 w-full hover:opacity-90"
-                >
-                  {isAddingItem ? "Adding..." : "Add to Cart"}
-                </button>
-              </div>
-            </form>
-            <div className="lg:w-[70%] w-full">
-              <TableMainComponent
-                DeleteModalText={<>{selectedItem?.name}</>}
-                data={selectedItem}
-                deleteCardApi={removeCartItem}
-                isDeleteLoading={isClearingCart || isRemovingCartItem}
-                showDeleteModal={showDeleteModal}
-                refetch={refetchPosCart}
-                formValues={{}}
-                setShowDeleteModal={setShowDeleteModal}
-                isLoading={false}
-                printTitle="POS Cart"
-                showExportButton={false}
-                showPrintButton={false}
-                columnsTable={posCartColumns as any}
-                transformedData={transformedCartData || []}
-              />
-
-              {/* Cart Summary */}
-              <div className="flex md:flex-row flex-col justify-between items-center mt-4 p-4 bg-gray-50 rounded">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">
-                    Items: {posCartData?.data?.length || 0}
-                  </span>
-                  <div className="md:flex gap-3 hidden">
-                    <CustomButton
-                      onClick={() => {
-                        if (!posCartData?.data?.length) {
-                          showPlannerToast({
-                            options: {
-                              customToast: (
-                                <CustomToast
-                                  altText={"Success"}
-                                  title={<>Cart is empty</>}
-                                  image={imgError}
-                                  textColor="red"
-                                  message={"Please add to cart"}
-                                  backgroundColor="#FCFCFD"
-                                />
-                              ),
-                            },
-                            message:
-                              "Please check your email for verification.",
-                          });
-                          focusSku();
-                          return;
-                        }
-                        setShowCheckoutModal(true);
-                      }}
-                      className="flex w-full bg-primary-40  items-center justify-center px-5 gap-2 text-white"
-                      type="button"
-                    >
-                      <Icon
-                        icon="solar:card-outline"
-                        width="26"
-                        height="26"
-                        className="w-[40px]"
-                      />
-                      Checkout Cart
-                    </CustomButton>
-                    <CustomButton
-                      onClick={() => {
-                        if (!posCartData?.data?.length) {
-                          showPlannerToast({
-                            options: {
-                              customToast: (
-                                <CustomToast
-                                  altText={"Success"}
-                                  title={<>Cart is empty</>}
-                                  image={imgError}
-                                  textColor="red"
-                                  message={"Please add to cart"}
-                                  backgroundColor="#FCFCFD"
-                                />
-                              ),
-                            },
-                            message:
-                              "Please check your email for verification.",
-                          });
-                          focusSku();
-                          return;
-                        }
-                        setShowDeleteClearAllModal(true);
-                      }}
-                      className="flex w-full items-center justify-center text-white bg-red-500 px-5 gap-2"
-                      type="button"
-                    >
-                      <Icon
-                        icon="solar:trash-bin-trash-outline"
-                        width="16"
-                        height="16"
-                      />
-                      Clear Cart
-                    </CustomButton>
-                  </div>
-                  <Dropdown
-                    menu={{ items }}
-                    className="md:hidden block"
-                    trigger={["click"]}
-                  >
-                    <button className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700">
-                      <Icon
-                        icon="solar:menu-dots-outline"
-                        width="16"
-                        height="16"
-                      />
-                      Actions
-                    </button>
-                  </Dropdown>
+        <PermissionGuard permission="pos.checkout">
+          {isLoadingPosCart ? (
+            <SkeletonLoaderForPage />
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-4 ">
+              <form className="space-y-4 py-2 lg:w-[30%] w-full">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">SKU</label>
+                  <TextInput
+                    name="sku"
+                    type="text"
+                    value={addItemForm.sku}
+                    onChange={(e) =>
+                      setAddItemForm((p) => ({ ...p, sku: e.target.value }))
+                    }
+                    placeholder="Enter product SKU"
+                    autoFocus
+                    maintainFocus
+                    ref={skuInputRef}
+                    className="w-full border rounded px-3 py-3 text-sm"
+                  />
                 </div>
-                <div className="text-lg font-semibold">
-                  Sub Total: {formatCurrency(posCartData?.sub_total || 0)}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quantity</label>
+                  <TextInput
+                    name="quantity"
+                    type="number"
+                    placeholder="Enter quantity"
+                    value={addItemForm.quantity}
+                    onChange={(e) =>
+                      setAddItemForm((p) => ({
+                        ...p,
+                        quantity: e.target.value,
+                      }))
+                    }
+                    className="w-full border rounded px-3 py-3 text-sm"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <button
+                    onClick={() => {
+                      setAddItemForm({ sku: "", quantity: "1" });
+                      focusSku();
+                    }}
+                    type="button"
+                    className="px-4 py-2 text-sm rounded border hover:bg-gray-50"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    disabled={isAddingItem || !addItemForm.sku}
+                    onClick={handleAddItemSubmit}
+                    className="px-4 py-2 text-sm rounded bg-primary-40 text-white disabled:opacity-50 w-full hover:opacity-90"
+                  >
+                    {isAddingItem ? "Adding..." : "Add to Cart"}
+                  </button>
+                </div>
+              </form>
+              <div className="lg:w-[70%] w-full">
+                <TableMainComponent
+                  DeleteModalText={<>{selectedItem?.name}</>}
+                  data={selectedItem}
+                  deleteCardApi={removeCartItem}
+                  isDeleteLoading={isClearingCart || isRemovingCartItem}
+                  showDeleteModal={showDeleteModal}
+                  refetch={refetchPosCart}
+                  formValues={{}}
+                  setShowDeleteModal={setShowDeleteModal}
+                  isLoading={false}
+                  printTitle="POS Cart"
+                  showExportButton={false}
+                  showPrintButton={false}
+                  columnsTable={posCartColumns as any}
+                  transformedData={transformedCartData || []}
+                />
+
+                {/* Cart Summary */}
+                <div className="flex md:flex-row flex-col justify-between items-center mt-4 p-4 bg-gray-50 rounded">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-600">
+                      Items: {posCartData?.data?.length || 0}
+                    </span>
+                    <div className="md:flex gap-3 hidden">
+                      <CustomButton
+                        onClick={() => {
+                          if (!posCartData?.data?.length) {
+                            showPlannerToast({
+                              options: {
+                                customToast: (
+                                  <CustomToast
+                                    altText={"Success"}
+                                    title={<>Cart is empty</>}
+                                    image={imgError}
+                                    textColor="red"
+                                    message={"Please add to cart"}
+                                    backgroundColor="#FCFCFD"
+                                  />
+                                ),
+                              },
+                              message:
+                                "Please check your email for verification.",
+                            });
+                            focusSku();
+                            return;
+                          }
+                          setShowCheckoutModal(true);
+                        }}
+                        className="flex w-full bg-primary-40  items-center justify-center px-5 gap-2 text-white"
+                        type="button"
+                      >
+                        <Icon
+                          icon="solar:card-outline"
+                          width="26"
+                          height="26"
+                          className="w-[40px]"
+                        />
+                        Checkout Cart
+                      </CustomButton>
+                      <CustomButton
+                        onClick={() => {
+                          if (!posCartData?.data?.length) {
+                            showPlannerToast({
+                              options: {
+                                customToast: (
+                                  <CustomToast
+                                    altText={"Success"}
+                                    title={<>Cart is empty</>}
+                                    image={imgError}
+                                    textColor="red"
+                                    message={"Please add to cart"}
+                                    backgroundColor="#FCFCFD"
+                                  />
+                                ),
+                              },
+                              message:
+                                "Please check your email for verification.",
+                            });
+                            focusSku();
+                            return;
+                          }
+                          setShowDeleteClearAllModal(true);
+                        }}
+                        className="flex w-full items-center justify-center text-white bg-red-500 px-5 gap-2"
+                        type="button"
+                      >
+                        <Icon
+                          icon="solar:trash-bin-trash-outline"
+                          width="16"
+                          height="16"
+                        />
+                        Clear Cart
+                      </CustomButton>
+                    </div>
+                    <Dropdown
+                      menu={{ items }}
+                      className="md:hidden block"
+                      trigger={["click"]}
+                    >
+                      <button className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700">
+                        <Icon
+                          icon="solar:menu-dots-outline"
+                          width="16"
+                          height="16"
+                        />
+                        Actions
+                      </button>
+                    </Dropdown>
+                  </div>
+                  <div className="text-lg font-semibold">
+                    Sub Total: {formatCurrency(posCartData?.sub_total || 0)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </PermissionGuard>
       </SharedLayout>
       {showDeleteClearAllModal && (
         <>
@@ -900,9 +906,7 @@ const index = () => {
                           )?.id || "",
                       }));
                     }}
-                    handleSearchSelect={(q: string) =>
-                      debouncedSearch(q ?? "")
-                    }
+                    handleSearchSelect={(q: string) => debouncedSearch(q ?? "")}
                     loading={isLoadingCustomers}
                     value={customerForm.customer_id || undefined}
                     placeholder={

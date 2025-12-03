@@ -4,6 +4,7 @@ import RichTextEditor from "@/components/Input/RichTextEditor";
 import SelectInput from "@/components/Input/SelectInput";
 import TextAreaInput from "@/components/Input/TextAreaInput";
 import TextInput from "@/components/Input/TextInput";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import CustomButton from "@/components/sharedUI/Buttons/Button";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import Spinner from "@/components/sharedUI/Spinner";
@@ -527,764 +528,786 @@ const index = () => {
         onClick={() => {}}
       />
       <SharedLayout className="bg-white">
-        <Breadcrumb
-          className="mb-4"
-          items={[
-            { title: "Back", href: "/products" },
-            {
-              title: (
-                <span className="font-semibold">
-                  {formValues.name || "Create Product"}
-                </span>
-              ),
-            },
-          ]}
-        />
-        <div>
-          <form className="mt-5 flex flex-col gap-8">
-            {/* Basic Info */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">Basic info</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextInput
-                  type="text"
-                  name="name"
-                  errorMessage={
-                    formErrors.name ||
-                    (error as any)?.data?.errors?.name?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.name}
-                  onChange={handleInputChange}
-                  className="py-[11px]"
-                  placeholder="Enter product name"
-                  title={<span className="font-[500]">Name*</span>}
-                  required={false}
-                />
-                <div
-                  className={`grid  gap-4 ${
-                    formValues.is_serialized === 1
-                      ? "grid-cols-2"
-                      : "grid-cols-1"
-                  }`}
-                >
+        <PermissionGuard permission="products.create">
+          <Breadcrumb
+            className="mb-4"
+            items={[
+              { title: "Back", href: "/products" },
+              {
+                title: (
+                  <span className="font-semibold">
+                    {formValues.name || "Create Product"}
+                  </span>
+                ),
+              },
+            ]}
+          />
+          <div>
+            <form className="mt-5 flex flex-col gap-8">
+              {/* Basic Info */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">Basic info</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TextInput
+                    type="text"
+                    name="name"
+                    errorMessage={
+                      formErrors.name ||
+                      (error as any)?.data?.errors?.name?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.name}
+                    onChange={handleInputChange}
+                    className="py-[11px]"
+                    placeholder="Enter product name"
+                    title={<span className="font-[500]">Name*</span>}
+                    required={false}
+                  />
+                  <div
+                    className={`grid  gap-4 ${
+                      formValues.is_serialized === 1
+                        ? "grid-cols-2"
+                        : "grid-cols-1"
+                    }`}
+                  >
+                    <div>
+                      <div className={`pb-1`}>
+                        <label className={"text-sm capitalize text-[#2C3137]"}>
+                          Serialized
+                        </label>
+                      </div>
+                      <SelectInput
+                        onChange={(v) =>
+                          setFormValues((p) => ({
+                            ...p,
+                            is_serialized: Number(v) as 0 | 1,
+                            serial_number:
+                              Number(v) === 1 ? p.serial_number : "",
+                          }))
+                        }
+                        value={formValues.is_serialized}
+                        placeholder={
+                          <span className="text-sm font-bold">Select</span>
+                        }
+                        data={[
+                          { label: "No", value: 0 },
+                          { label: "Yes", value: 1 },
+                        ]}
+                      />
+                    </div>
+                    {formValues.is_serialized === 1 && (
+                      <TextInput
+                        type="text"
+                        name="serial_number"
+                        errorMessage={
+                          formErrors.serial_number ||
+                          (error as any)?.data?.errors?.serial_number?.join?.(
+                            "\n"
+                          ) ||
+                          ""
+                        }
+                        value={formValues.serial_number}
+                        onChange={handleInputChange}
+                        placeholder="e.g., SN-12345"
+                        title={
+                          <span className="font-[500]">Serial number*</span>
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Pricing & Inventory */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">
+                  Pricing & inventory
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <TextInput
+                    type="number"
+                    name="price"
+                    errorMessage={
+                      formErrors.price ||
+                      (error as any)?.data?.errors?.price?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    title={<span className="font-[500]">Price*</span>}
+                  />
+                  <TextInput
+                    type="number"
+                    name="compare_price"
+                    errorMessage={
+                      formErrors.compare_price ||
+                      (error as any)?.data?.errors?.compare_price?.join?.(
+                        "\n"
+                      ) ||
+                      ""
+                    }
+                    value={formValues.compare_price as any}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    title={<span className="font-[500]">Compare price</span>}
+                  />
+                  <TextInput
+                    type="number"
+                    name="cost_price"
+                    errorMessage={
+                      formErrors.cost_price ||
+                      (error as any)?.data?.errors?.cost_price?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.cost_price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    title={<span className="font-[500]">Cost price*</span>}
+                  />
+                  <TextInput
+                    type="number"
+                    name="quantity"
+                    errorMessage={
+                      formErrors.quantity ||
+                      (error as any)?.data?.errors?.quantity?.join?.("\n") ||
+                      ""
+                    }
+                    value={formValues.quantity}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    title={<span className="font-[500]">Quantity*</span>}
+                  />
+                </div>
+              </section>
+
+              {/* Categorization & Attributes */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">Categorization</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <div className={`pb-1`}>
                       <label className={"text-sm capitalize text-[#2C3137]"}>
-                        Serialized
+                        Categories*
                       </label>
                     </div>
                     <SelectInput
-                      onChange={(v) =>
-                        setFormValues((p) => ({
-                          ...p,
-                          is_serialized: Number(v) as 0 | 1,
-                          serial_number: Number(v) === 1 ? p.serial_number : "",
-                        }))
+                      onChange={(values) =>
+                        setFormValues((p) => ({ ...p, category_ids: values }))
                       }
-                      value={formValues.is_serialized}
+                      handleSearchSelect={(q: string) =>
+                        debouncedCategorySearch(q ?? "")
+                      }
+                      loading={isLoadingCategories}
+                      notFoundContent={
+                        isLoadingCategories ? (
+                          <Spinner />
+                        ) : (
+                          <span className="text-gray-500">
+                            No categories found
+                          </span>
+                        )
+                      }
+                      value={formValues.category_ids}
                       placeholder={
                         <span className="text-sm font-bold">Select</span>
                       }
-                      data={[
-                        { label: "No", value: 0 },
-                        { label: "Yes", value: 1 },
-                      ]}
+                      data={categoryOptions}
+                      mode="multiple"
                     />
-                  </div>
-                  {formValues.is_serialized === 1 && (
-                    <TextInput
-                      type="text"
-                      name="serial_number"
-                      errorMessage={
-                        formErrors.serial_number ||
-                        (error as any)?.data?.errors?.serial_number?.join?.(
-                          "\n"
-                        ) ||
-                        ""
-                      }
-                      value={formValues.serial_number}
-                      onChange={handleInputChange}
-                      placeholder="e.g., SN-12345"
-                      title={<span className="font-[500]">Serial number*</span>}
-                    />
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Pricing & Inventory */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">
-                Pricing & inventory
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <TextInput
-                  type="number"
-                  name="price"
-                  errorMessage={
-                    formErrors.price ||
-                    (error as any)?.data?.errors?.price?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.price}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  title={<span className="font-[500]">Price*</span>}
-                />
-                <TextInput
-                  type="number"
-                  name="compare_price"
-                  errorMessage={
-                    formErrors.compare_price ||
-                    (error as any)?.data?.errors?.compare_price?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.compare_price as any}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  title={<span className="font-[500]">Compare price</span>}
-                />
-                <TextInput
-                  type="number"
-                  name="cost_price"
-                  errorMessage={
-                    formErrors.cost_price ||
-                    (error as any)?.data?.errors?.cost_price?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.cost_price}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  title={<span className="font-[500]">Cost price*</span>}
-                />
-                <TextInput
-                  type="number"
-                  name="quantity"
-                  errorMessage={
-                    formErrors.quantity ||
-                    (error as any)?.data?.errors?.quantity?.join?.("\n") ||
-                    ""
-                  }
-                  value={formValues.quantity}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  title={<span className="font-[500]">Quantity*</span>}
-                />
-              </div>
-            </section>
-
-            {/* Categorization & Attributes */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">Categorization</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className={`pb-1`}>
-                    <label className={"text-sm capitalize text-[#2C3137]"}>
-                      Categories*
-                    </label>
-                  </div>
-                  <SelectInput
-                    onChange={(values) =>
-                      setFormValues((p) => ({ ...p, category_ids: values }))
-                    }
-                    handleSearchSelect={(q: string) =>
-                      debouncedCategorySearch(q ?? "")
-                    }
-                    loading={isLoadingCategories}
-                    notFoundContent={
-                      isLoadingCategories ? (
-                        <Spinner />
-                      ) : (
-                        <span className="text-gray-500">
-                          No categories found
-                        </span>
-                      )
-                    }
-                    value={formValues.category_ids}
-                    placeholder={
-                      <span className="text-sm font-bold">Select</span>
-                    }
-                    data={categoryOptions}
-                    mode="multiple"
-                  />
-                  {(formErrors.category_ids ||
-                    (error as any)?.data?.errors?.category_ids) && (
-                    <p className="flex flex-col gap-1 text-xs italic text-red-600">
-                      {formErrors.category_ids ||
-                        (error as any)?.data?.errors?.category_ids?.join?.(
-                          "\n"
-                        ) ||
-                        ""}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <div className={`pb-1`}>
-                    <label className={"text-sm capitalize text-[#2C3137]"}>
-                      Attribute values
-                    </label>
-                  </div>
-                  <SelectInput
-                    onChange={(values) =>
-                      setFormValues((p) => ({
-                        ...p,
-                        attribute_value_ids: values,
-                      }))
-                    }
-                    notFoundContent={
-                      isLoadingAttributes ? (
-                        <Spinner />
-                      ) : (
-                        <span className="text-gray-500">
-                          No attributes found{" "}
-                        </span>
-                      )
-                    }
-                    handleSearchSelect={(q: string) =>
-                      debouncedAttrSearch(q ?? "")
-                    }
-                    loading={isLoadingAttributes}
-                    value={formValues.attribute_value_ids}
-                    placeholder={
-                      <span className="text-sm font-bold">Select</span>
-                    }
-                    data={attributeValueOptions}
-                    mode="multiple"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Descriptions */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">Descriptions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="w-full">
-                  <div className="flex items-center justify-between pb-1">
-                    <span className="text-sm font-[500]">
-                      Short description (maximum 200 characters)
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {Math.max(
-                        0,
-                        200 - (formValues.short_description?.length ?? 0)
-                      )}{" "}
-                      left
-                    </span>
-                  </div>
-                  <TextAreaInput
-                    row={8}
-                    maxLength={200}
-                    name="short_description"
-                    errorMessage={""}
-                    className="w-full"
-                    value={formValues.short_description}
-                    onChange={handleInputChange}
-                    placeholder="Short description"
-                  />
-                </div>
-                <div>
-                  <RichTextEditor
-                    value={formValues.description}
-                    onChange={(html) =>
-                      setFormValues((p) => ({ ...p, description: html }))
-                    }
-                    placeholder="Write full description..."
-                    className="h-[205px]"
-                    label={<span className="font-[500]">Description</span>}
-                    errorMessage={""}
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Images */}
-            <section>
-              <h3 className="text-base font-semibold mb-3">
-                Images ({fileList.length || 0})
-              </h3>
-              <div className="w-full">
-                <div
-                  className={`relative w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
-                    fileList.length > 0 ? "grid" : "block"
-                  }`}
-                >
-                  <Upload
-                    ref={uploadRef}
-                    className="main-hidden-upload w-full hidden"
-                    multiple
-                    maxCount={6}
-                    fileList={fileList}
-                    onChange={handleFileChange}
-                    beforeUpload={(f) => {
-                      if (fileList.length >= 4) {
-                        message.warning("You can only upload up to 4 images");
-                        return (Upload as any).LIST_IGNORE ?? false;
-                      }
-                      return false;
-                    }}
-                    accept="image/*"
-                    showUploadList={false}
-                    customRequest={({ onSuccess }) => {
-                      if (onSuccess) onSuccess("ok", undefined);
-                    }}
-                  >
-                    <div></div>
-                  </Upload>
-
-                  <button
-                    type="button"
-                    onClick={triggerUpload}
-                    className={`p-6 w-full block border-2 border-dashed ${
-                      formErrors.images ||
-                      (error as any)?.data?.errors?.images?.join?.("\n")
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
-                  >
-                    <div className="flex justify-center items-center gap-2 py-4">
-                      <Icon icon="ic:round-plus" width="24" height="24" />
-                      <p className="text-xs font-bold text-center">
-                        Add Images
+                    {(formErrors.category_ids ||
+                      (error as any)?.data?.errors?.category_ids) && (
+                      <p className="flex flex-col gap-1 text-xs italic text-red-600">
+                        {formErrors.category_ids ||
+                          (error as any)?.data?.errors?.category_ids?.join?.(
+                            "\n"
+                          ) ||
+                          ""}
                       </p>
+                    )}
+                  </div>
+                  <div>
+                    <div className={`pb-1`}>
+                      <label className={"text-sm capitalize text-[#2C3137]"}>
+                        Attribute values
+                      </label>
                     </div>
-                  </button>
-                  {(formErrors.images ||
-                    (error as any)?.data?.errors?.images) && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {formErrors.images ||
-                        (error as any)?.data?.errors?.images?.join?.("\n") ||
-                        ""}
-                    </p>
-                  )}
-
-                  {fileList.length > 0 && (
-                    <>
-                      {fileList.map((f, idx) => (
-                        <div
-                          key={f.uid ?? idx}
-                          className="border rounded p-2 flex flex-col items-center gap-2"
-                        >
-                          <img
-                            src={
-                              f.thumbUrl ||
-                              f.url ||
-                              (f.originFileObj &&
-                                URL.createObjectURL(f.originFileObj))
-                            }
-                            alt="Preview"
-                            className="w-20 h-20 object-cover"
-                          />
-                          <p className="text-xs truncate w-full text-center">
-                            {f.name}
-                          </p>
-                          <button
-                            type="button"
-                            className="text-red-500 text-xs"
-                            onClick={() => {
-                              const copy = [...fileList];
-                              copy.splice(idx, 1);
-                              handleFileChange({ fileList: copy });
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                    <SelectInput
+                      onChange={(values) =>
+                        setFormValues((p) => ({
+                          ...p,
+                          attribute_value_ids: values,
+                        }))
+                      }
+                      notFoundContent={
+                        isLoadingAttributes ? (
+                          <Spinner />
+                        ) : (
+                          <span className="text-gray-500">
+                            No attributes found{" "}
+                          </span>
+                        )
+                      }
+                      handleSearchSelect={(q: string) =>
+                        debouncedAttrSearch(q ?? "")
+                      }
+                      loading={isLoadingAttributes}
+                      value={formValues.attribute_value_ids}
+                      placeholder={
+                        <span className="text-sm font-bold">Select</span>
+                      }
+                      data={attributeValueOptions}
+                      mode="multiple"
+                    />
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Variants */}
-            <section>
-              <div className="flex items-center justify-between w-full mb-3">
-                <h3 className="text-base font-semibold">Variants</h3>
-                <div className="">
-                  <CustomButton
-                    onClick={addVariant}
-                    className="bg-primary-20 w-fit text-white px-4"
+              {/* Descriptions */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">Descriptions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="w-full">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="text-sm font-[500]">
+                        Short description (maximum 200 characters)
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {Math.max(
+                          0,
+                          200 - (formValues.short_description?.length ?? 0)
+                        )}{" "}
+                        left
+                      </span>
+                    </div>
+                    <TextAreaInput
+                      row={8}
+                      maxLength={200}
+                      name="short_description"
+                      errorMessage={""}
+                      className="w-full"
+                      value={formValues.short_description}
+                      onChange={handleInputChange}
+                      placeholder="Short description"
+                    />
+                  </div>
+                  <div>
+                    <RichTextEditor
+                      value={formValues.description}
+                      onChange={(html) =>
+                        setFormValues((p) => ({ ...p, description: html }))
+                      }
+                      placeholder="Write full description..."
+                      className="h-[205px]"
+                      label={<span className="font-[500]">Description</span>}
+                      errorMessage={""}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Images */}
+              <section>
+                <h3 className="text-base font-semibold mb-3">
+                  Images ({fileList.length || 0})
+                </h3>
+                <div className="w-full">
+                  <div
+                    className={`relative w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                      fileList.length > 0 ? "grid" : "block"
+                    }`}
                   >
-                    Add variant
-                  </CustomButton>
-                </div>
-              </div>
+                    <Upload
+                      ref={uploadRef}
+                      className="main-hidden-upload w-full hidden"
+                      multiple
+                      maxCount={6}
+                      fileList={fileList}
+                      onChange={handleFileChange}
+                      beforeUpload={(f) => {
+                        if (fileList.length >= 4) {
+                          message.warning("You can only upload up to 4 images");
+                          return (Upload as any).LIST_IGNORE ?? false;
+                        }
+                        return false;
+                      }}
+                      accept="image/*"
+                      showUploadList={false}
+                      customRequest={({ onSuccess }) => {
+                        if (onSuccess) onSuccess("ok", undefined);
+                      }}
+                    >
+                      <div></div>
+                    </Upload>
 
-              {formValues.variants.length === 0 ? (
-                <p className="text-sm text-gray-500">No variants added.</p>
-              ) : (
-                <div className="flex flex-col gap-6">
-                  {formValues.variants.map((v, i) => (
-                    <div key={i} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold">Variant {i + 1}</h4>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-xs">
-                            <input
-                              type="checkbox"
-                              checked={!!v.copy_from_main}
-                              onChange={(e) =>
-                                handleCopyFromMain(i, e.target.checked)
-                              }
-                            />
-                            <span>Copy main product values</span>
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => removeVariant(i)}
-                            className="text-red-500 font-[500] text-xs"
-                          >
-                            Remove
-                          </button>
-                        </div>
+                    <button
+                      type="button"
+                      onClick={triggerUpload}
+                      className={`p-6 w-full block border-2 border-dashed ${
+                        formErrors.images ||
+                        (error as any)?.data?.errors?.images?.join?.("\n")
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
+                    >
+                      <div className="flex justify-center items-center gap-2 py-4">
+                        <Icon icon="ic:round-plus" width="24" height="24" />
+                        <p className="text-xs font-bold text-center">
+                          Add Images
+                        </p>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <TextInput
-                          type="text"
-                          name={`variant_name_${i}`}
-                          errorMessage={getVariantError(i, "name")}
-                          value={v.name}
-                          className="py-[11px]"
-                          onChange={(e) =>
-                            updateVariantField(i, "name", e.target.value)
-                          }
-                          placeholder="Variant name"
-                          title={<span className="font-[500]">Name*</span>}
-                        />
-                        <div
-                          className={`grid  gap-4 ${
-                            v.is_serialized === 1
-                              ? "grid-cols-2"
-                              : "grid-cols-1"
-                          }`}
-                        >
-                          <div className="">
-                            {" "}
+                    </button>
+                    {(formErrors.images ||
+                      (error as any)?.data?.errors?.images) && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {formErrors.images ||
+                          (error as any)?.data?.errors?.images?.join?.("\n") ||
+                          ""}
+                      </p>
+                    )}
+
+                    {fileList.length > 0 && (
+                      <>
+                        {fileList.map((f, idx) => (
+                          <div
+                            key={f.uid ?? idx}
+                            className="border rounded p-2 flex flex-col items-center gap-2"
+                          >
+                            <img
+                              src={
+                                f.thumbUrl ||
+                                f.url ||
+                                (f.originFileObj &&
+                                  URL.createObjectURL(f.originFileObj))
+                              }
+                              alt="Preview"
+                              className="w-20 h-20 object-cover"
+                            />
+                            <p className="text-xs truncate w-full text-center">
+                              {f.name}
+                            </p>
+                            <button
+                              type="button"
+                              className="text-red-500 text-xs"
+                              onClick={() => {
+                                const copy = [...fileList];
+                                copy.splice(idx, 1);
+                                handleFileChange({ fileList: copy });
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Variants */}
+              <section>
+                <div className="flex items-center justify-between w-full mb-3">
+                  <h3 className="text-base font-semibold">Variants</h3>
+                  <div className="">
+                    <CustomButton
+                      onClick={addVariant}
+                      className="bg-primary-20 w-fit text-white px-4"
+                    >
+                      Add variant
+                    </CustomButton>
+                  </div>
+                </div>
+
+                {formValues.variants.length === 0 ? (
+                  <p className="text-sm text-gray-500">No variants added.</p>
+                ) : (
+                  <div className="flex flex-col gap-6">
+                    {formValues.variants.map((v, i) => (
+                      <div key={i} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold">Variant {i + 1}</h4>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={!!v.copy_from_main}
+                                onChange={(e) =>
+                                  handleCopyFromMain(i, e.target.checked)
+                                }
+                              />
+                              <span>Copy main product values</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeVariant(i)}
+                              className="text-red-500 font-[500] text-xs"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <TextInput
+                            type="text"
+                            name={`variant_name_${i}`}
+                            errorMessage={getVariantError(i, "name")}
+                            value={v.name}
+                            className="py-[11px]"
+                            onChange={(e) =>
+                              updateVariantField(i, "name", e.target.value)
+                            }
+                            placeholder="Variant name"
+                            title={<span className="font-[500]">Name*</span>}
+                          />
+                          <div
+                            className={`grid  gap-4 ${
+                              v.is_serialized === 1
+                                ? "grid-cols-2"
+                                : "grid-cols-1"
+                            }`}
+                          >
+                            <div className="">
+                              {" "}
+                              <div className={`pb-1`}>
+                                <label
+                                  className={
+                                    "text-sm capitalize text-[#2C3137]"
+                                  }
+                                >
+                                  Serialized
+                                </label>
+                              </div>
+                              <SelectInput
+                                onChange={(val) =>
+                                  updateVariantField(
+                                    i,
+                                    "is_serialized",
+                                    Number(val)
+                                  )
+                                }
+                                className="h-fit"
+                                value={v.is_serialized}
+                                placeholder={
+                                  <span className="text-sm font-bold">
+                                    Serialized
+                                  </span>
+                                }
+                                data={[
+                                  { label: "No", value: 0 },
+                                  { label: "Yes", value: 1 },
+                                ]}
+                              />
+                            </div>
+                            {v.is_serialized === 1 && (
+                              <TextInput
+                                type="text"
+                                name={`variant_serial_${i}`}
+                                errorMessage={getVariantError(
+                                  i,
+                                  "serial_number"
+                                )}
+                                value={v.serial_number || ""}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    i,
+                                    "serial_number",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Serial number"
+                                title={
+                                  <span className="font-[500]">Serial*</span>
+                                }
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                          <TextInput
+                            type="number"
+                            name={`variant_price_${i}`}
+                            errorMessage={getVariantError(i, "price")}
+                            value={v.price}
+                            onChange={(e) =>
+                              updateVariantField(i, "price", e.target.value)
+                            }
+                            placeholder="0.00"
+                            title={<span className="font-[500]">Price*</span>}
+                          />
+                          <TextInput
+                            type="number"
+                            name={`variant_compare_${i}`}
+                            errorMessage={getVariantError(i, "compare_price")}
+                            value={v.compare_price as any}
+                            onChange={(e) =>
+                              updateVariantField(
+                                i,
+                                "compare_price",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0.00"
+                            title={<span className="font-[500]">Compare</span>}
+                          />
+                          <TextInput
+                            type="number"
+                            name={`variant_cost_${i}`}
+                            errorMessage={getVariantError(i, "cost_price")}
+                            value={v.cost_price}
+                            onChange={(e) =>
+                              updateVariantField(
+                                i,
+                                "cost_price",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0.00"
+                            title={<span className="font-[500]">Cost*</span>}
+                          />
+                          <TextInput
+                            type="number"
+                            name={`variant_qty_${i}`}
+                            errorMessage={getVariantError(i, "quantity")}
+                            value={v.quantity}
+                            onChange={(e) =>
+                              updateVariantField(i, "quantity", e.target.value)
+                            }
+                            placeholder="0"
+                            title={<span className="font-[500]">Qty*</span>}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                          <div>
                             <div className={`pb-1`}>
                               <label
                                 className={"text-sm capitalize text-[#2C3137]"}
                               >
-                                Serialized
+                                Attribute values
                               </label>
                             </div>
                             <SelectInput
-                              onChange={(val) =>
+                              onChange={(values) =>
                                 updateVariantField(
                                   i,
-                                  "is_serialized",
-                                  Number(val)
+                                  "attribute_value_ids",
+                                  values
                                 )
                               }
-                              className="h-fit"
-                              value={v.is_serialized}
+                              handleSearchSelect={(q: string) =>
+                                debouncedAttrSearch(q ?? "")
+                              }
+                              loading={isLoadingAttributes}
+                              notFoundContent={
+                                isLoadingAttributes ? (
+                                  <Spinner />
+                                ) : (
+                                  <span className="text-gray-500">
+                                    No attributes found{" "}
+                                  </span>
+                                )
+                              }
+                              value={v.attribute_value_ids}
                               placeholder={
                                 <span className="text-sm font-bold">
-                                  Serialized
+                                  Select
                                 </span>
                               }
-                              data={[
-                                { label: "No", value: 0 },
-                                { label: "Yes", value: 1 },
-                              ]}
+                              data={attributeValueOptions}
+                              mode="multiple"
                             />
+                            {getVariantError(i, "attribute_value_ids") && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {getVariantError(i, "attribute_value_ids")}
+                              </p>
+                            )}
                           </div>
-                          {v.is_serialized === 1 && (
-                            <TextInput
-                              type="text"
-                              name={`variant_serial_${i}`}
-                              errorMessage={getVariantError(i, "serial_number")}
-                              value={v.serial_number || ""}
-                              onChange={(e) =>
-                                updateVariantField(
-                                  i,
-                                  "serial_number",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Serial number"
-                              title={
-                                <span className="font-[500]">Serial*</span>
-                              }
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
-                        <TextInput
-                          type="number"
-                          name={`variant_price_${i}`}
-                          errorMessage={getVariantError(i, "price")}
-                          value={v.price}
-                          onChange={(e) =>
-                            updateVariantField(i, "price", e.target.value)
-                          }
-                          placeholder="0.00"
-                          title={<span className="font-[500]">Price*</span>}
-                        />
-                        <TextInput
-                          type="number"
-                          name={`variant_compare_${i}`}
-                          errorMessage={getVariantError(i, "compare_price")}
-                          value={v.compare_price as any}
-                          onChange={(e) =>
-                            updateVariantField(
-                              i,
-                              "compare_price",
-                              e.target.value
-                            )
-                          }
-                          placeholder="0.00"
-                          title={<span className="font-[500]">Compare</span>}
-                        />
-                        <TextInput
-                          type="number"
-                          name={`variant_cost_${i}`}
-                          errorMessage={getVariantError(i, "cost_price")}
-                          value={v.cost_price}
-                          onChange={(e) =>
-                            updateVariantField(i, "cost_price", e.target.value)
-                          }
-                          placeholder="0.00"
-                          title={<span className="font-[500]">Cost*</span>}
-                        />
-                        <TextInput
-                          type="number"
-                          name={`variant_qty_${i}`}
-                          errorMessage={getVariantError(i, "quantity")}
-                          value={v.quantity}
-                          onChange={(e) =>
-                            updateVariantField(i, "quantity", e.target.value)
-                          }
-                          placeholder="0"
-                          title={<span className="font-[500]">Qty*</span>}
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                        <div>
-                          <div className={`pb-1`}>
-                            <label
-                              className={"text-sm capitalize text-[#2C3137]"}
-                            >
-                              Attribute values
-                            </label>
-                          </div>
-                          <SelectInput
-                            onChange={(values) =>
+                          <TextInput
+                            type="text"
+                            name={`variant_batch_${i}`}
+                            errorMessage={""}
+                            value={v.batch_number || ""}
+                            onChange={(e) =>
                               updateVariantField(
                                 i,
-                                "attribute_value_ids",
-                                values
+                                "batch_number",
+                                e.target.value
                               )
                             }
-                            handleSearchSelect={(q: string) =>
-                              debouncedAttrSearch(q ?? "")
+                            placeholder="Batch number (optional)"
+                            title={
+                              <span className="font-[500]">Batch No.</span>
                             }
-                            loading={isLoadingAttributes}
-                            notFoundContent={
-                              isLoadingAttributes ? (
-                                <Spinner />
-                              ) : (
-                                <span className="text-gray-500">
-                                  No attributes found{" "}
-                                </span>
-                              )
-                            }
-                            value={v.attribute_value_ids}
-                            placeholder={
-                              <span className="text-sm font-bold">Select</span>
-                            }
-                            data={attributeValueOptions}
-                            mode="multiple"
                           />
-                          {getVariantError(i, "attribute_value_ids") && (
-                            <p className="text-xs text-red-500 mt-1">
-                              {getVariantError(i, "attribute_value_ids")}
-                            </p>
-                          )}
                         </div>
-                        <TextInput
-                          type="text"
-                          name={`variant_batch_${i}`}
-                          errorMessage={""}
-                          value={v.batch_number || ""}
-                          onChange={(e) =>
-                            updateVariantField(
-                              i,
-                              "batch_number",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Batch number (optional)"
-                          title={<span className="font-[500]">Batch No.</span>}
-                        />
-                      </div>
 
-                      {/* Variant Images */}
-                      <div className="mt-4">
-                        <p className="text-sm capitalize font-[500] text-[#000]">
-                          Variant Images ({v.ui_files?.length || 0})
-                        </p>
-                        <div
-                          className={`relative w-full mt-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
-                            v.ui_files?.length! > 0 ? "grid" : "block"
-                          }`}
-                          id={`variant-upload-${i}`}
-                        >
-                          <Upload
-                            className="hidden-upload w-full hidden"
-                            multiple
-                            maxCount={6}
-                            fileList={v.ui_files as any}
-                            onChange={(info) =>
-                              handleVariantFileChange(i, info)
-                            }
-                            beforeUpload={() => {
-                              if ((v.ui_files?.length ?? 0) >= 4) {
-                                message.warning(
-                                  "You can only upload up to 6 images per variant"
-                                );
-                                return (Upload as any).LIST_IGNORE ?? false;
-                              }
-                              return false;
-                            }}
-                            accept="image/*"
-                            showUploadList={false}
-                            customRequest={({ onSuccess }) => {
-                              if (onSuccess) onSuccess("ok", undefined);
-                            }}
+                        {/* Variant Images */}
+                        <div className="mt-4">
+                          <p className="text-sm capitalize font-[500] text-[#000]">
+                            Variant Images ({v.ui_files?.length || 0})
+                          </p>
+                          <div
+                            className={`relative w-full mt-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 ${
+                              v.ui_files?.length! > 0 ? "grid" : "block"
+                            }`}
+                            id={`variant-upload-${i}`}
                           >
-                            <div></div>
-                          </Upload>
+                            <Upload
+                              className="hidden-upload w-full hidden"
+                              multiple
+                              maxCount={6}
+                              fileList={v.ui_files as any}
+                              onChange={(info) =>
+                                handleVariantFileChange(i, info)
+                              }
+                              beforeUpload={() => {
+                                if ((v.ui_files?.length ?? 0) >= 4) {
+                                  message.warning(
+                                    "You can only upload up to 6 images per variant"
+                                  );
+                                  return (Upload as any).LIST_IGNORE ?? false;
+                                }
+                                return false;
+                              }}
+                              accept="image/*"
+                              showUploadList={false}
+                              customRequest={({ onSuccess }) => {
+                                if (onSuccess) onSuccess("ok", undefined);
+                              }}
+                            >
+                              <div></div>
+                            </Upload>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if ((v.ui_files?.length ?? 0) >= 4) {
-                                message.warning(
-                                  "You can only upload up to 4 images per variant"
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if ((v.ui_files?.length ?? 0) >= 4) {
+                                  message.warning(
+                                    "You can only upload up to 4 images per variant"
+                                  );
+                                  return;
+                                }
+                                const container = document.getElementById(
+                                  `variant-upload-${i}`
                                 );
-                                return;
-                              }
-                              const container = document.getElementById(
-                                `variant-upload-${i}`
-                              );
-                              const input = container?.querySelector(
-                                '.ant-upload input[type="file"]'
-                              ) as HTMLElement | null;
-                              input?.click?.();
-                            }}
-                            className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
-                          >
-                            <div className="flex justify-center items-center gap-2 py-3">
-                              <Icon
-                                icon="ic:round-plus"
-                                width="20"
-                                height="20"
-                              />
-                              <p className="text-xs font-bold text-center">
-                                Add Variant Images
+                                const input = container?.querySelector(
+                                  '.ant-upload input[type="file"]'
+                                ) as HTMLElement | null;
+                                input?.click?.();
+                              }}
+                              className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors`}
+                            >
+                              <div className="flex justify-center items-center gap-2 py-3">
+                                <Icon
+                                  icon="ic:round-plus"
+                                  width="20"
+                                  height="20"
+                                />
+                                <p className="text-xs font-bold text-center">
+                                  Add Variant Images
+                                </p>
+                              </div>
+                            </button>
+
+                            {getVariantError(i, "images") && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {getVariantError(i, "images")}
                               </p>
-                            </div>
-                          </button>
+                            )}
 
-                          {getVariantError(i, "images") && (
-                            <p className="text-xs text-red-500 mt-1">
-                              {getVariantError(i, "images")}
-                            </p>
-                          )}
-
-                          {(v.ui_files?.length ?? 0) > 0 && (
-                            <>
-                              {(v.ui_files as any[]).map((file, idx) => (
-                                <div
-                                  key={file.uid ?? idx}
-                                  className="border rounded p-2 flex flex-col items-center gap-2"
-                                >
-                                  <img
-                                    src={
-                                      file.thumbUrl ||
-                                      file.url ||
-                                      (file.originFileObj &&
-                                        URL.createObjectURL(file.originFileObj))
-                                    }
-                                    alt="Variant Preview"
-                                    className="w-16 h-16 object-cover"
-                                  />
-                                  <p className="text-[10px] truncate w-full text-center">
-                                    {file.name}
-                                  </p>
-                                  <button
-                                    type="button"
-                                    className="text-red-500 text-[10px]"
-                                    onClick={() => {
-                                      const copy = [...(v.ui_files as any[])];
-                                      copy.splice(idx, 1);
-                                      handleVariantFileChange(i, {
-                                        fileList: copy,
-                                      });
-                                    }}
+                            {(v.ui_files?.length ?? 0) > 0 && (
+                              <>
+                                {(v.ui_files as any[]).map((file, idx) => (
+                                  <div
+                                    key={file.uid ?? idx}
+                                    className="border rounded p-2 flex flex-col items-center gap-2"
                                   >
-                                    Remove
-                                  </button>
-                                </div>
-                              ))}
-                            </>
-                          )}
+                                    <img
+                                      src={
+                                        file.thumbUrl ||
+                                        file.url ||
+                                        (file.originFileObj &&
+                                          URL.createObjectURL(
+                                            file.originFileObj
+                                          ))
+                                      }
+                                      alt="Variant Preview"
+                                      className="w-16 h-16 object-cover"
+                                    />
+                                    <p className="text-[10px] truncate w-full text-center">
+                                      {file.name}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      className="text-red-500 text-[10px]"
+                                      onClick={() => {
+                                        const copy = [...(v.ui_files as any[])];
+                                        copy.splice(idx, 1);
+                                        handleVariantFileChange(i, {
+                                          fileList: copy,
+                                        });
+                                      }}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-            {/* Actions */}
-            <div className="flex justify-end border-t border-gray-300 pt-3 pb-20">
-              <div className="w-fit flex gap-5">
-                <CustomButton
-                  type="button"
-                  onClick={() => {
-                    // simple reset
-                    setFormValues((prev) => ({
-                      ...prev,
-                      name: "",
-                      price: "",
-                      compare_price: "",
-                      cost_price: "",
-                      quantity: "",
-                      short_description: "",
-                      description: "",
-                      images: [],
-                      category_ids: [],
-                      attribute_value_ids: [],
-                      is_serialized: 0,
-                      serial_number: "",
-                      variants: [],
-                    }));
-                    setFileList([]);
-                  }}
-                  className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
-                >
-                  Clear
-                </CustomButton>
-                <CustomButton
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isLoadingCreate}
-                  className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
-                >
-                  {isLoadingCreate ? (
-                    <Spinner className="border-white" />
-                  ) : (
-                    "Create product"
-                  )}
-                </CustomButton>
+              {/* Actions */}
+              <div className="flex justify-end border-t border-gray-300 pt-3 pb-20">
+                <div className="w-fit flex gap-5">
+                  <CustomButton
+                    type="button"
+                    onClick={() => {
+                      // simple reset
+                      setFormValues((prev) => ({
+                        ...prev,
+                        name: "",
+                        price: "",
+                        compare_price: "",
+                        cost_price: "",
+                        quantity: "",
+                        short_description: "",
+                        description: "",
+                        images: [],
+                        category_ids: [],
+                        attribute_value_ids: [],
+                        is_serialized: 0,
+                        serial_number: "",
+                        variants: [],
+                      }));
+                      setFileList([]);
+                    }}
+                    className="border bg-border-300 text-black flex justify-center items-center gap-2 px-5"
+                  >
+                    Clear
+                  </CustomButton>
+                  <CustomButton
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isLoadingCreate}
+                    className="border bg-primary-40 flex justify-center items-center gap-2 text-white px-5"
+                  >
+                    {isLoadingCreate ? (
+                      <Spinner className="border-white" />
+                    ) : (
+                      "Create product"
+                    )}
+                  </CustomButton>
+                </div>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        </PermissionGuard>
       </SharedLayout>
     </div>
   );

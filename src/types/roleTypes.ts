@@ -10,6 +10,7 @@ export interface IRolesDatum {
   id: string;
   name: string;
   guard_name: string;
+  permissions?: IRolesPermissionsDatum[];
   created_at: string;
   updated_at: string;
 }
@@ -79,3 +80,23 @@ export interface ISingleRolesLink {
   label: string;
   active: boolean;
 }
+
+export interface IRolesPermissionsResponse {
+  data: IRolesPermissionsDatum[];
+  status: string;
+  message: string;
+}
+
+export interface IRolesPermissionsDatum {
+  id: string;
+  name: string;
+  guard_name: IRolesPermissionsGuardName;
+  created_at: string;
+  updated_at: string;
+  label: string;
+}
+
+export enum IRolesPermissionsGuardName {
+  Web = "web",
+}
+

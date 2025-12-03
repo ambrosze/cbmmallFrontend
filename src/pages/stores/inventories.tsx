@@ -31,6 +31,8 @@ import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
+import { useCheckPermission } from "@/hooks/useCheckPermission";
 import { Dropdown, MenuProps } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -43,6 +45,15 @@ const index = () => {
   const [filters, setFilters] = useState<InventoryFilterState>({});
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
+  const {
+    hasPermission: hasViewPermission,
+    isLoading: isLoadingViewPermission,
+  } = useCheckPermission("inventories.view");
+  // delete and edit permissions can be added similarly
+  const {
+    hasPermission: hasUpdatePermission,
+    isLoading: isLoadingUpdatePermission,
+  } = useCheckPermission("inventories.update-stock");
   const { data, isLoading, refetch } = useGetAllInventoryQuery({
     paginate: true,
     per_page: 15,
@@ -179,36 +190,44 @@ const index = () => {
             <div className="flex items-center space-x-2">
               {(() => {
                 const items: MenuProps["items"] = [
-                  {
-                    label: (
-                      <button
-                        onClick={() => {
-                          setSelectedItem(inv);
-                          setIsViewProductListModal(true);
-                        }}
-                        className="flex w-full items-center gap-2"
-                        type="button"
-                      >
-                        View details
-                      </button>
-                    ),
-                    key: "view",
-                  },
-                  {
-                    label: (
-                      <button
-                        onClick={() => {
-                          setSelectedItem(inv);
-                          setShowEditModal(true);
-                        }}
-                        className="flex w-full items-center gap-2"
-                        type="button"
-                      >
-                        Edit quantity
-                      </button>
-                    ),
-                    key: "edit",
-                  },
+                  isLoadingViewPermission
+                    ? null
+                    : hasViewPermission
+                    ? {
+                        label: (
+                          <button
+                            onClick={() => {
+                              setSelectedItem(inv);
+                              setIsViewProductListModal(true);
+                            }}
+                            className="flex w-full items-center gap-2"
+                            type="button"
+                          >
+                            View details
+                          </button>
+                        ),
+                        key: "view",
+                      }
+                    : null,
+                  isLoadingUpdatePermission
+                    ? null
+                    : hasUpdatePermission
+                    ? {
+                        label: (
+                          <button
+                            onClick={() => {
+                              setSelectedItem(inv);
+                              setShowEditModal(true);
+                            }}
+                            className="flex w-full items-center gap-2"
+                            type="button"
+                          >
+                            Edit quantity
+                          </button>
+                        ),
+                        key: "edit",
+                      }
+                    : null,
                 ];
                 return (
                   <Dropdown menu={{ items }} trigger={["click"]}>
@@ -489,67 +508,69 @@ const index = () => {
         btnText=""
         onClick={() => {}}
       />
-      <SharedLayout>
-        <div className="">
-          <InventoryFilter
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onClearFilters={handleClearFilters}
-            storeOptions={storeOptions}
-            productOptions={productOptions}
-            variantOptions={variantOptions}
+      <SharedLayout className="bg-white">
+        <PermissionGuard permission="inventories.viewAny">
+          <div className="">
+            <InventoryFilter
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
+              storeOptions={storeOptions}
+              productOptions={productOptions}
+              variantOptions={variantOptions}
+            />
+          </div>
+          <TableMainComponent
+            DeleteModalText={
+              selectedItem?.product_variant?.name ||
+              selectedItem?.product_variant?.product?.name ||
+              "Inventory"
+            }
+            data={selectedItem}
+            deleteCardApi={deleteProducts}
+            isDeleteLoading={isDeleteLoading}
+            printTitle="inventories"
+            showExportButton={true}
+            showPrintButton={true}
+            showDeleteModal={showDeleteModal}
+            refetch={refetch}
+            formValues={formValues}
+            setShowDeleteModal={setShowDeleteModal}
+            isLoading={isLoading}
+            columnsTable={columns as any}
+            exportColumns={exportColumns as any}
+            transformedData={transformedData}
           />
-        </div>
-        <TableMainComponent
-          DeleteModalText={
-            selectedItem?.product_variant?.name ||
-            selectedItem?.product_variant?.product?.name ||
-            "Inventory"
-          }
-          data={selectedItem}
-          deleteCardApi={deleteProducts}
-          isDeleteLoading={isDeleteLoading}
-          printTitle="inventories"
-          showExportButton={true}
-          showPrintButton={true}
-          showDeleteModal={showDeleteModal}
-          refetch={refetch}
-          formValues={formValues}
-          setShowDeleteModal={setShowDeleteModal}
-          isLoading={isLoading}
-          columnsTable={columns as any}
-          exportColumns={exportColumns as any}
-          transformedData={transformedData}
-        />
-        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className={`text-sm hidden lg:block font-[500] text-black`}>
-              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
-              {Math.min(
-                currentPage * data?.meta?.per_page!,
-                data?.meta?.total!
-              )}{" "}
-              of {data?.meta?.total!} results
-            </div>
-          ) : null}
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className="">
-              <PaginationComponent
-                paginationData={{
-                  current_page: data?.meta?.current_page!,
-                  last_page: data?.meta?.last_page!,
-                  per_page: data?.meta?.per_page!,
-                  total: data?.meta?.total!,
-                  next_page_url: data?.links?.next!,
-                  prev_page_url: data?.links?.prev!,
-                }}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          ) : null}
-        </div>
+          <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className={`text-sm hidden lg:block font-[500] text-black`}>
+                Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+                {Math.min(
+                  currentPage * data?.meta?.per_page!,
+                  data?.meta?.total!
+                )}{" "}
+                of {data?.meta?.total!} results
+              </div>
+            ) : null}
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className="">
+                <PaginationComponent
+                  paginationData={{
+                    current_page: data?.meta?.current_page!,
+                    last_page: data?.meta?.last_page!,
+                    per_page: data?.meta?.per_page!,
+                    total: data?.meta?.total!,
+                    next_page_url: data?.links?.next!,
+                    prev_page_url: data?.links?.prev!,
+                  }}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : null}
+          </div>
+        </PermissionGuard>
       </SharedLayout>
       {isViewProductListModal && selectedItem && (
         <PlannerModal

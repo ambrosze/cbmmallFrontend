@@ -7,12 +7,14 @@ import {
   customerColumns,
   storesColumns,
 } from "@/components/Items/itemsColumns";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
+import { useCheckPermission } from "@/hooks/useCheckPermission";
 import {
   useCreateCustomerMutation,
   useDeleteCustomerMutation,
@@ -27,15 +29,27 @@ import {
 import { customerSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 const index = () => {
   const [search, setSearch] = useState("");
-  const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
-  const router = useRouter();
+  const {
+    hasPermission: hasCreatePermission,
+    isLoading: isLoadingCreatePermission,
+  } = useCheckPermission("customers.create");
+  // delete and edit permissions can be added similarly
+  const {
+    hasPermission: hasDeletePermission,
+    isLoading: isLoadingDeletePermission,
+  } = useCheckPermission("customers.delete");
+  console.log("🚀 ~ index ~ hasDeletePermission:", hasDeletePermission);
+  const {
+    hasPermission: hasUpdatePermission,
+    isLoading: isLoadingUpdatePermission,
+  } = useCheckPermission("customers.update");
+
   const [formValues, setFormValues] = useState({
     name: "",
     email: "",
@@ -129,38 +143,46 @@ const index = () => {
     action: (
       <div className="flex items-center space-x-2">
         {(() => {
-          const items: MenuProps["items"] = [
-            {
-              label: (
-                <button
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setShowEditModal(true);
-                  }}
-                  className="flex w-full items-center gap-2"
-                  type="button"
-                >
-                  Edit
-                </button>
-              ),
-              key: "edit",
-            },
-            {
-              label: (
-                <button
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setShowDeleteModal(true);
-                  }}
-                  className="flex w-full items-center text-red-500 gap-2"
-                  type="button"
-                >
-                  Delete
-                </button>
-              ),
-              key: "delete",
-            },
-          ];
+          const items = [
+            isLoadingUpdatePermission
+              ? null
+              : hasUpdatePermission
+              ? {
+                  label: (
+                    <button
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setShowEditModal(true);
+                      }}
+                      className="flex w-full items-center gap-2"
+                      type="button"
+                    >
+                      Edit
+                    </button>
+                  ),
+                  key: "edit",
+                }
+              : null,
+            isLoadingDeletePermission
+              ? null
+              : hasDeletePermission
+              ? {
+                  label: (
+                    <button
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setShowDeleteModal(true);
+                      }}
+                      className="flex w-full items-center text-red-500 gap-2"
+                      type="button"
+                    >
+                      Delete
+                    </button>
+                  ),
+                  key: "delete",
+                }
+              : null,
+          ].filter(Boolean) as MenuProps["items"];
           return (
             <Dropdown menu={{ items }} trigger={["click"]}>
               <Icon
@@ -419,7 +441,14 @@ const index = () => {
       />
       <AttributeHeader
         headerText="All Customers"
-        btnText="Create Customer"
+        btnText={
+          isLoadingCreatePermission
+            ? ""
+            : hasCreatePermission
+            ? "Create Customer"
+            : ""
+        }
+        showAddButton={isLoadingCreatePermission ? false : hasCreatePermission}
         onClick={() => {
           setIsOpenModal(true);
           setFormValues({
@@ -433,60 +462,62 @@ const index = () => {
         }}
       />
       <SharedLayout className="bg-white">
-        {isLoading ? (
-          <SkeletonLoaderForPage />
-        ) : (
-          <>
-            <TableMainComponent
-              DeleteModalText={
-                <>{capitalizeOnlyFirstLetter(selectedItem?.name!)}</>
-              }
-              data={selectedItem}
-              deleteCardApi={deleteCustomer}
-              isDeleteLoading={isDeleteLoading}
-              printTitle="Customers"
-              showExportButton={true}
-              showPrintButton={true}
-              showDeleteModal={showDeleteModal}
-              refetch={refetch}
-              formValues={formValues}
-              setShowDeleteModal={setShowDeleteModal}
-              isLoading={false}
-              columnsTable={customerColumns as any}
-              exportColumns={exportColumns as any}
-              transformedData={transformedData}
-            />
-          </>
-        )}
-        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className={`text-sm hidden lg:block font-[500] text-black`}>
-              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
-              {Math.min(
-                currentPage * data?.meta?.per_page!,
-                data?.meta?.total!
-              )}{" "}
-              of {data?.meta?.total!} results
-            </div>
-          ) : null}
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className="">
-              <PaginationComponent
-                paginationData={{
-                  current_page: data?.meta?.current_page!,
-                  last_page: data?.meta?.last_page!,
-                  per_page: data?.meta?.per_page!,
-                  total: data?.meta?.total!,
-                  next_page_url: data?.links?.next!,
-                  prev_page_url: data?.links?.prev!,
-                }}
-                onPageChange={handlePageChange}
+        <PermissionGuard permission="customers.viewAny">
+          {isLoading ? (
+            <SkeletonLoaderForPage />
+          ) : (
+            <>
+              <TableMainComponent
+                DeleteModalText={
+                  <>{capitalizeOnlyFirstLetter(selectedItem?.name!)}</>
+                }
+                data={selectedItem}
+                deleteCardApi={deleteCustomer}
+                isDeleteLoading={isDeleteLoading}
+                printTitle="Customers"
+                showExportButton={true}
+                showPrintButton={true}
+                showDeleteModal={showDeleteModal}
+                refetch={refetch}
+                formValues={formValues}
+                setShowDeleteModal={setShowDeleteModal}
+                isLoading={false}
+                columnsTable={customerColumns as any}
+                exportColumns={exportColumns as any}
+                transformedData={transformedData}
               />
-            </div>
-          ) : null}
-        </div>
+            </>
+          )}
+          <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className={`text-sm hidden lg:block font-[500] text-black`}>
+                Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+                {Math.min(
+                  currentPage * data?.meta?.per_page!,
+                  data?.meta?.total!
+                )}{" "}
+                of {data?.meta?.total!} results
+              </div>
+            ) : null}
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className="">
+                <PaginationComponent
+                  paginationData={{
+                    current_page: data?.meta?.current_page!,
+                    last_page: data?.meta?.last_page!,
+                    per_page: data?.meta?.per_page!,
+                    total: data?.meta?.total!,
+                    next_page_url: data?.links?.next!,
+                    prev_page_url: data?.links?.prev!,
+                  }}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : null}
+          </div>
+        </PermissionGuard>
       </SharedLayout>
       {isOpenModal && (
         <PlannerModal

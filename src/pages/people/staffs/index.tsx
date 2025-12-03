@@ -3,13 +3,14 @@ import TableMainComponent from "@/components/Attributes/TableMainComponent";
 import { StaffForm } from "@/components/Forms/StaffForm";
 import Header from "@/components/header";
 import { staffsColumns } from "@/components/Items/itemsColumns";
+import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import SkeletonLoaderForPage from "@/components/sharedUI/Loader/SkeletonLoaderForPage";
 import PaginationComponent from "@/components/sharedUI/PaginationComponent";
 import PlannerModal from "@/components/sharedUI/PlannerModal";
 import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
-import { useGetAllRolesQuery } from "@/services/admin/role";
+import { useCheckPermission } from "@/hooks/useCheckPermission";
 import {
   useCreateStaffMutation,
   useDeleteStaffMutation,
@@ -17,6 +18,7 @@ import {
   useUpdateStaffMutation,
 } from "@/services/admin/staff";
 import { useGetAllStoresQuery } from "@/services/admin/store";
+import { useGetAllRolesQuery } from "@/services/roles_permissions/role";
 import { IStaffDatum } from "@/types/staffTypes";
 import debounce from "@/utils/debounce";
 import {
@@ -36,6 +38,19 @@ const index = () => {
   const [search, setSearch] = useState("");
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const router = useRouter();
+  const {
+    hasPermission: hasCreatePermission,
+    isLoading: isLoadingCreatePermission,
+  } = useCheckPermission("staff.create");
+  // delete and edit permissions can be added similarly
+  const {
+    hasPermission: hasDeletePermission,
+    isLoading: isLoadingDeletePermission,
+  } = useCheckPermission("staff.delete");
+  const {
+    hasPermission: hasUpdatePermission,
+    isLoading: isLoadingUpdatePermission,
+  } = useCheckPermission("staff.update");
   const [formValues, setFormValues] = useState({
     first_name: "",
     last_name: "",
@@ -62,7 +77,7 @@ const index = () => {
   const { data, refetch, isLoading } = useGetAllStaffQuery({
     q: search,
     page: currentPage,
-    include: "user,store",
+    include: "user,store,user.roles",
     per_page: 15,
     paginate: true,
   });
@@ -104,7 +119,7 @@ const index = () => {
         middle_name: selectedItem?.user?.middle_name || "",
         email: selectedItem?.user?.email || "",
         phone_number: selectedItem?.user?.phone_number || "",
-        role_id: (selectedItem as any)?.role?.id || "",
+        role_id: (selectedItem as any)?.user.roles?.[0]?.id || "",
         store_id: selectedItem?.store?.id || "",
       });
     }
@@ -140,39 +155,43 @@ const index = () => {
 
     action: (
       <div className="flex items-center space-x-2">
-        <Tooltip title="Delete">
-          <span
-            onClick={() => {
-              setSelectedItem(item);
-              setShowDeleteModal(true);
-            }}
-            className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-red-500 underline py-2`}
-          >
-            <Icon
-              className="text-red-500 cursor-pointer"
-              icon="gg:trash"
-              width="30"
-              height="30"
-            />
-          </span>
-        </Tooltip>
+        {isLoadingDeletePermission ? null : hasDeletePermission ? (
+          <Tooltip title="Delete">
+            <span
+              onClick={() => {
+                setSelectedItem(item);
+                setShowDeleteModal(true);
+              }}
+              className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-red-500 underline py-2`}
+            >
+              <Icon
+                className="text-red-500 cursor-pointer"
+                icon="gg:trash"
+                width="30"
+                height="30"
+              />
+            </span>
+          </Tooltip>
+        ) : null}
 
-        <Tooltip title="Edit">
-          <span
-            onClick={() => {
-              setSelectedItem(item);
-              setShowEditModal(true);
-            }}
-            className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-blue-500 underline py-2`}
-          >
-            <Icon
-              className="text-primary-40 cursor-pointer"
-              icon="line-md:pencil"
-              width="30"
-              height="30"
-            />
-          </span>
-        </Tooltip>
+        {isLoadingUpdatePermission ? null : hasUpdatePermission ? (
+          <Tooltip title="Edit">
+            <span
+              onClick={() => {
+                setSelectedItem(item);
+                setShowEditModal(true);
+              }}
+              className={`cursor-pointer hover:opacity-80 duration-150 ease-in-out font-semibold text-sm px-4 rounded-full text-blue-500 underline py-2`}
+            >
+              <Icon
+                className="text-primary-40 cursor-pointer"
+                icon="line-md:pencil"
+                width="30"
+                height="30"
+              />
+            </span>
+          </Tooltip>
+        ) : null}
       </div>
     ),
   }));
@@ -397,6 +416,7 @@ const index = () => {
       />
       <AttributeHeader
         headerText="All Staffs"
+        showAddButton={isLoadingCreatePermission ? false : hasCreatePermission}
         btnText="Create Staff"
         onClick={() => {
           setIsOpenModal(true);
@@ -412,65 +432,66 @@ const index = () => {
         }}
       />
       <SharedLayout className="bg-white">
-        {isLoading ? (
-          <SkeletonLoaderForPage />
-        ) : (
-          <>
-            <TableMainComponent
-              DeleteModalText={
-                <>
-                  {capitalizeOnlyFirstLetter(selectedItem?.user?.first_name!)}{" "}
-                  {capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
-                </>
-              }
-              data={selectedItem}
-              deleteCardApi={deleteStaff}
-              isDeleteLoading={isDeleteLoading}
-              printTitle="Staff Members"
-              showExportButton={true}
-              showPrintButton={true}
-              showDeleteModal={showDeleteModal}
-              refetch={refetch}
-              formValues={formValues}
-              setShowDeleteModal={setShowDeleteModal}
-              isLoading={false}
-              columnsTable={staffsColumns as any}
-              exportColumns={exportColumns as any}
-              transformedData={transformedData}
-            />
-          </>
-        )}
-
-        <div className="flex lg:justify-between justify-end  items-center w-full py-10">
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className={`text-sm hidden lg:block font-[500] text-black`}>
-              Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
-              {Math.min(
-                currentPage * data?.meta?.per_page!,
-                data?.meta?.total!
-              )}{" "}
-              of {data?.meta?.total!} results
-            </div>
-          ) : null}
-          {(currentPage === 1 && data?.meta?.total! >= 10) ||
-          (currentPage > 1 && data?.meta?.total! >= 1) ? (
-            <div className="">
-              <PaginationComponent
-                paginationData={{
-                  current_page: data?.meta?.current_page!,
-                  last_page: data?.meta?.last_page!,
-                  per_page: data?.meta?.per_page!,
-                  total: data?.meta?.total!,
-                  next_page_url: data?.links?.next!,
-                  prev_page_url: data?.links?.prev!,
-                }}
-                onPageChange={handlePageChange}
+        <PermissionGuard permission="staff.viewAny">
+          {isLoading ? (
+            <SkeletonLoaderForPage />
+          ) : (
+            <>
+              <TableMainComponent
+                DeleteModalText={
+                  <>
+                    {capitalizeOnlyFirstLetter(selectedItem?.user?.first_name!)}{" "}
+                    {capitalizeOnlyFirstLetter(selectedItem?.user?.last_name!)}
+                  </>
+                }
+                data={selectedItem}
+                deleteCardApi={deleteStaff}
+                isDeleteLoading={isDeleteLoading}
+                printTitle="Staff Members"
+                showExportButton={true}
+                showPrintButton={true}
+                showDeleteModal={showDeleteModal}
+                refetch={refetch}
+                formValues={formValues}
+                setShowDeleteModal={setShowDeleteModal}
+                isLoading={false}
+                columnsTable={staffsColumns as any}
+                exportColumns={exportColumns as any}
+                transformedData={transformedData}
               />
-            </div>
-          ) : null}
-        </div>
-        {/* <EmptyState textHeader="This place is empty, Add a new item, to see all your products here">
+            </>
+          )}
+
+          <div className="flex lg:justify-between justify-end  items-center w-full py-10">
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className={`text-sm hidden lg:block font-[500] text-black`}>
+                Showing {(currentPage - 1) * data?.meta?.per_page! + 1} to{" "}
+                {Math.min(
+                  currentPage * data?.meta?.per_page!,
+                  data?.meta?.total!
+                )}{" "}
+                of {data?.meta?.total!} results
+              </div>
+            ) : null}
+            {(currentPage === 1 && data?.meta?.total! >= 10) ||
+            (currentPage > 1 && data?.meta?.total! >= 1) ? (
+              <div className="">
+                <PaginationComponent
+                  paginationData={{
+                    current_page: data?.meta?.current_page!,
+                    last_page: data?.meta?.last_page!,
+                    per_page: data?.meta?.per_page!,
+                    total: data?.meta?.total!,
+                    next_page_url: data?.links?.next!,
+                    prev_page_url: data?.links?.prev!,
+                  }}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : null}
+          </div>
+          {/* <EmptyState textHeader="This place is empty, Add a new item, to see all your products here">
           <div className="flex justify-center items-center gap-3 mt-8">
             <div className="">
               <CustomButton
@@ -496,6 +517,7 @@ const index = () => {
             </div>
           </div>
         </EmptyState> */}
+        </PermissionGuard>
       </SharedLayout>
       {isOpenModal && (
         <PlannerModal
