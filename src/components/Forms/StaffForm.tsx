@@ -79,8 +79,8 @@ export const StaffForm = ({
               }
               value={formValues.last_name}
               onChange={handleInputChange}
-              placeholder="Enter a first name"
-              title={<span className="font-[500]">First Name*</span>}
+              placeholder="Enter a last name"
+              title={<span className="font-[500]">Last Name*</span>}
               required={false}
             />
           </div>

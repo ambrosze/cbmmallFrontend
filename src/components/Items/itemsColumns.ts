@@ -364,7 +364,7 @@ export const customerColumns: TableColumnsType<any> = [
     // },
   },
   {
-    title: "City",
+    title: "State",
     dataIndex: "city",
     width: 200,
     // sorter: {
