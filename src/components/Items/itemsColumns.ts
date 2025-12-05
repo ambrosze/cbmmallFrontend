@@ -400,6 +400,107 @@ export const customerColumns: TableColumnsType<any> = [
     width: 80,
   },
 ];
+
+export const deliveryLocationColumns: TableColumnsType<any> = [
+  {
+    title: "Country",
+    dataIndex: "country",
+    width: 180,
+  },
+  {
+    title: "State",
+    dataIndex: "state",
+    width: 200,
+  },
+  {
+    title: "City",
+    dataIndex: "city",
+    width: 150,
+  },
+  {
+    title: "Delivery Fee",
+    dataIndex: "delivery_fee",
+    width: 150,
+  },
+  {
+    title: "Est. Delivery Days",
+    dataIndex: "estimated_delivery_days",
+    width: 150,
+  },
+  {
+    title: "Created Date",
+    dataIndex: "dateInitiated",
+    width: 150,
+    sorter: {
+      compare: (a, b) =>
+        new Date(a.dateInitiated).getTime() -
+        new Date(b.dateInitiated).getTime(),
+      multiple: 1,
+    },
+  },
+  {
+    title: "Action",
+    fixed: "right",
+    dataIndex: "action",
+    width: 80,
+  },
+];
+
+export const paymentGatewayColumns: TableColumnsType<any> = [
+  {
+    title: "Logo",
+    dataIndex: "logo",
+    width: 80,
+  },
+  {
+    title: "Name",
+    dataIndex: "name",
+    width: 180,
+  },
+  {
+    title: "Code",
+    dataIndex: "code",
+    width: 120,
+  },
+  {
+    title: "Mode",
+    dataIndex: "mode",
+    width: 100,
+  },
+  {
+    title: "Currencies",
+    dataIndex: "currencies",
+    width: 200,
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    width: 120,
+  },
+  {
+    title: "Default",
+    dataIndex: "is_default",
+    width: 100,
+  },
+  {
+    title: "Created Date",
+    dataIndex: "dateInitiated",
+    width: 150,
+    sorter: {
+      compare: (a, b) =>
+        new Date(a.dateInitiated).getTime() -
+        new Date(b.dateInitiated).getTime(),
+      multiple: 1,
+    },
+  },
+  {
+    title: "Action",
+    fixed: "right",
+    dataIndex: "action",
+    width: 80,
+  },
+];
+
 export const rolesColumns: TableColumnsType<any> = [
   {
     title: "Name",

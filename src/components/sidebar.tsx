@@ -60,6 +60,7 @@ const Sidebar = ({
     if (path.includes("/products")) return ["2", "sub1"];
     if (path.includes("/stock-transfer")) return ["4", "sub1"];
     if (path.includes("/scrapes")) return ["3", "sub1"];
+    // sales
     if (
       path.includes("/sales/sales-list") ||
       path.includes("/sales/sales-inventory")
@@ -67,6 +68,8 @@ const Sidebar = ({
       return ["20", "sub2"];
     if (path.includes("/sales/pos")) return ["22", "sub2"];
     if (path.includes("/sales/orders")) return ["23", "sub2"];
+    if (path.includes("/sales/delivery-locations")) return ["24", "sub2"];
+    // attributes
     if (path.includes("/attributes/category")) return ["30", "sub3"];
     if (path.includes("/attributes/types")) return ["31", "sub3"];
     if (path.includes("/attributes/colours")) return ["32", "sub3"];
@@ -81,6 +84,9 @@ const Sidebar = ({
     if (path.includes("/people/suppliers")) return ["41", "sub5"];
     if (path.includes("/people/users")) return ["42", "sub5"];
     if (path.includes("/people/roles")) return ["45", "sub5"];
+    // payment
+    if (path.includes("/payment/gateways")) return ["60", "sub6"];
+    if (path.includes("/payment/configs")) return ["63", "sub6"];
 
     return ["1"]; // Default to dashboard
   };
@@ -230,6 +236,16 @@ const Sidebar = ({
             router.push("/sales/orders");
           },
         },
+        {
+          key: "24",
+          label: <span className="">Delivery Locations</span>,
+          icon: (
+            <Icon icon="hugeicons:delivery-truck-01" width="20" height="20" />
+          ),
+          onClick: () => {
+            router.push("/sales/delivery-locations");
+          },
+        },
         // { key: "23", label: "Return Item" },
       ],
     },
@@ -289,8 +305,24 @@ const Sidebar = ({
         // },
       ],
     },
-
-
+    {
+      key: "sub6",
+      label: "Payments",
+      icon: <Icon icon="fluent-mdl2:payment-card" width="26" height="26" />,
+      children: [
+        {
+          key: "60",
+          label: "Gateways",
+          icon: (
+            <Icon icon="streamline-ultimate:gateway" width="20" height="20" />
+          ),
+          onClick: () => {
+            router.push("/payment/gateways");
+          },
+        },
+       
+      ],
+    },
 
     // {
     //   key: "41",

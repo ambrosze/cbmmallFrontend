@@ -43,8 +43,12 @@ export type PermissionName =
   | "users.update"
   | "users.update-password"
   | "users.view"
-  | "users.viewAny";
-
+  | "users.viewAny"
+  | "delivery_locations.create"
+  | "delivery_locations.update"
+  | "delivery_locations.delete"
+  | "payment_gateways.view"
+  | "payment_gateways.update";
 export enum PermissionGuardName {
   Web = "web",
 }
