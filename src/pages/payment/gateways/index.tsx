@@ -214,21 +214,6 @@ const index = () => {
                   key: "edit",
                 }
               : null,
-            {
-              label: (
-                <button
-                  onClick={() => {
-                    setSelectedItem(item);
-                    router.push(`/payment/gateways/${item.id}/config`);
-                  }}
-                  className="flex w-full items-center gap-2"
-                  type="button"
-                >
-                  Config
-                </button>
-              ),
-              key: "config",
-            },
           ].filter(Boolean) as MenuProps["items"];
           return (
             <Dropdown menu={{ items }} trigger={["click"]}>
