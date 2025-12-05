@@ -12,6 +12,10 @@ import SharedLayout from "@/components/sharedUI/SharedLayout";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import { useGetAllDiscountAdminQuery } from "@/services/admin/discount";
+import {
+  useCreateCustomerMutation,
+  useGetAllCustomersQuery,
+} from "@/services/customers";
 import { useGetAllInventoryQuery } from "@/services/inventories";
 import {
   useCreateSalesMutation,
@@ -29,13 +33,12 @@ import {
 } from "@/utils/fx";
 import { customerSchema, inventorySchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Dropdown, MenuProps } from "antd";
+import { Dropdown, MenuProps, Tooltip } from "antd";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import imgError from "/public/states/notificationToasts/error.svg";
 import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import { useCreateCustomerMutation, useGetAllCustomersQuery } from "@/services/customers";
 
 interface InventoryCategory {
   name?: string;
@@ -98,15 +101,23 @@ const index = () => {
     useCreateSalesMutation();
   const [updateSales, { isLoading: isLoadingUpdate, error: errorUpdate }] =
     useUpdateSalesMutation();
-  const [createCustomer, { isLoading: isLoadingCustomerCreate, error: errorCustomerCreate }] =
-    useCreateCustomerMutation();
-    const { data: customerData, isLoading: isLoadingCustomers,refetch: refetchCustomers } =
-      useGetAllCustomersQuery({
-        paginate: true,
-        per_page: 50,
-        page: 1,
-        q: customerSearch,
-      }, { refetchOnMountOrArgChange: true });
+  const [
+    createCustomer,
+    { isLoading: isLoadingCustomerCreate, error: errorCustomerCreate },
+  ] = useCreateCustomerMutation();
+  const {
+    data: customerData,
+    isLoading: isLoadingCustomers,
+    refetch: refetchCustomers,
+  } = useGetAllCustomersQuery(
+    {
+      paginate: true,
+      per_page: 50,
+      page: 1,
+      q: customerSearch,
+    },
+    { refetchOnMountOrArgChange: true }
+  );
   const { data, refetch, isLoading } = useGetAllSalesQuery({
     q: search,
     page: currentPage,
@@ -119,6 +130,7 @@ const index = () => {
     useGetAllInventoryQuery({
       paginate: false,
       per_page: 50,
+      include: "productVariant.product.attributeValues,productVariant.images",
       page: currentPage,
       q: inventorySearch,
     });
@@ -159,7 +171,9 @@ const index = () => {
       [name]: value,
     }));
   };
-  const handleCustomerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     setFormCustomerValues((prev: any) => ({
       ...prev,
@@ -349,10 +363,41 @@ const index = () => {
     inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
       const qty = 1;
       const price = Number(item?.product_variant?.cost_price) || 0;
+      const imageUrl = item?.product_variant?.images?.[0]?.url;
       return {
-        label: `${item?.product_variant?.name} - ${formatCurrency(
-          qty * price
-        )}`,
+        label: (
+          <Tooltip
+            title={
+              item?.product_variant?.name + ` - ` + formatCurrency(qty * price)
+            }
+            placement="topRight"
+          >
+            <div className="flex items-center gap-2">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={item?.product_variant?.name || "Product"}
+                  className="w-8 h-8 object-cover rounded"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                  <Icon
+                    icon="mdi:image-off"
+                    className="text-gray-400"
+                    width={16}
+                    height={16}
+                  />
+                </div>
+              )}
+              <span>
+                {item?.product_variant?.name} - {formatCurrency(qty * price)}
+              </span>
+            </div>
+          </Tooltip>
+        ) as any,
         value: item.id,
         price: item?.product_variant?.price,
         quantity: item?.quantity,
