@@ -1,6 +1,6 @@
-import { CountryTopLevel, StateTopLevel } from "@/types/globalTypes";
-import { api } from ".";
 import { ICountryTopLevel } from "@/types/global";
+import { StateTopLevel } from "@/types/globalTypes";
+import { api } from ".";
 export interface IEnumsResponse {
   enum: string;
   values: IEnumsValue[];
@@ -28,7 +28,9 @@ export const authApi = api.injectEndpoints({
           | "Status"
           | "InventoryStatus"
           | "OrderStatus"
-          | "PaymentMode";
+          | "PaymentMode"
+          | "TimePeriod"
+          | "DeliveryMethod";
       }
     >({
       query: ({ enum: enumValue }: { enum?: string }) => {
