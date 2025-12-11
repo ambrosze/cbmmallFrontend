@@ -8,6 +8,7 @@ import { useGetAllEnumsQuery } from "@/services/global";
 import { useGetAllSalesReportQuery } from "@/services/reports";
 import { formatCurrency } from "@/utils/fx";
 import {
+  AreaChartOutlined,
   CalendarOutlined,
   ClearOutlined,
   CreditCardOutlined,
@@ -137,6 +138,7 @@ const SalesReport = () => {
   const [filter, setFilter] = useState({
     start_date: "",
     end_date: "",
+    period: "day",
     payment_method: "",
     cashier_staff_id: "",
   });
@@ -154,6 +156,7 @@ const SalesReport = () => {
   const { data: timePeriodsData, isLoading: isTimePeriodsLoading } =
     useGetAllEnumsQuery({ enum: "TimePeriod" });
 
+  const timePeriodOptions = timePeriodsData?.values || [];
   const handleDateChange = (_: any, dateStrings: [string, string]) => {
     setFilter((prev) => ({
       ...prev,
@@ -170,7 +173,8 @@ const SalesReport = () => {
     setFilter({
       start_date: "",
       end_date: "",
-      period: "",
+      period: "day",
+      cashier_staff_id: "",
       payment_method: "",
     });
   };
@@ -342,7 +346,29 @@ const SalesReport = () => {
                     }
                   />
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
+                <Col xs={24} sm={12} lg={5}>
+                  <label className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 block flex items-center gap-2">
+                    <AreaChartOutlined className="text-blue-500" />
+                    Group By Period
+                  </label>
+                  <Select
+                    className="w-full"
+                    placeholder="Select Period (e.g., Monthly)"
+                    value={filter.period || undefined}
+                    onChange={(val) => handleFilterChange("period", val)}
+                    allowClear
+                    showSearch
+                    size="large"
+                    loading={isTimePeriodsLoading}
+                  >
+                    {timePeriodOptions.map((period) => (
+                      <Option key={period.value} value={period.value}>
+                        {period.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} lg={5}>
                   <label className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 block">
                     Payment Method
                   </label>

@@ -110,8 +110,9 @@ const CustomerReport = () => {
         totalCustomers: acc.totalCustomers + 1,
         totalRevenue: acc.totalRevenue + curr.total_spent,
         totalPurchases: acc.totalPurchases + curr.purchase_count,
+        averageOrderValueOverall: acc.averageOrderValueOverall || 0,
       }),
-      { totalCustomers: 0, totalRevenue: 0, totalPurchases: 0 }
+      { totalCustomers: 0, totalRevenue: 0, totalPurchases: 0, averageOrderValueOverall: 0 }
     );
 
     stats.averageOrderValueOverall =
