@@ -37,8 +37,8 @@ import { Dropdown, MenuProps, Tooltip } from "antd";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 interface InventoryCategory {
   name?: string;

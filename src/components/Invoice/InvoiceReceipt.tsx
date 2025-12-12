@@ -2,9 +2,8 @@ import { SalesDatum, SingleSalesData } from "@/types/SalesTypes";
 import { formatCurrency } from "@/utils/fx";
 import { PrinterOutlined } from "@ant-design/icons";
 import { Card, Col, Divider, Row, Space, Typography } from "antd";
-import dynamic from "next/dynamic";
 import Image from "next/image";
-import Logo from "/public/images/logo-cbm.png";
+const Logo = "/images/logo-cbm.png";
 
 const { Text } = Typography;
 
@@ -109,7 +108,6 @@ const InvoiceReceipt = ({ selectedItem, storeInfo }: InvoiceReceiptProps) => {
       (multipleStores ? "" : chosenStore?.phone_number) ||
       "",
   } as Required<NonNullable<InvoiceReceiptProps["storeInfo"]>>;
-
 
   // Print by opening a lightweight new window with only the receipt markup
   const handlePrint = () => {

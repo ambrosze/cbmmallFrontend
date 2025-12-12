@@ -22,8 +22,8 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 const index = () => {
   const [search, setSearch] = useState("");
   const [isOpenModal, setIsOpenModal] = useState(false);

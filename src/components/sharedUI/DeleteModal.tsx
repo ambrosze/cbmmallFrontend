@@ -1,7 +1,7 @@
 import Image from "next/image";
 import CustomButton from "./Buttons/Button";
 import Spinner from "./Spinner";
-import ErrorImageModal from "/public/states/error.svg";
+const ErrorImageModal = "/states/error.svg";
 
 interface IProps {
   text: string;

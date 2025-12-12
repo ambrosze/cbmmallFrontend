@@ -19,8 +19,8 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { Breadcrumb, Upload, message } from "antd";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 type Variant = {
   name: string;

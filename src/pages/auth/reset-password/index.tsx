@@ -10,7 +10,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import * as yup from "yup";
 import { AuthHeader } from "../login";
-import imgError from "/public/states/notificationToasts/error.svg";
+const imgError = "/states/notificationToasts/error.svg";
 
 interface IAuthHeader {
   icon: string;

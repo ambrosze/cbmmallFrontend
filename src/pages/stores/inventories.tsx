@@ -28,8 +28,8 @@ import {
 } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import { useCheckPermission } from "@/hooks/useCheckPermission";

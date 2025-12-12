@@ -15,8 +15,8 @@ import ImageComponent from "../sharedUI/ImageComponent";
 import PlannerModal from "../sharedUI/PlannerModal";
 import CustomToast from "../sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "../sharedUI/Toast/plannerToast";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 interface IProps {
   data: CategoryDatum;
