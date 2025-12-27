@@ -452,6 +452,32 @@ const index = () => {
             setSelectedItem(null);
           }}
         >
+          <PaymentGatewayForm
+            selectedItem={selectedItem}
+            error={errorUpdate}
+            setFormValues={setFormValues}
+            btnText="Edit Gateway"
+            formErrors={formErrors}
+            formValues={formValues}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleUpdateSubmit}
+            isLoadingCreate={isLoadingUpdate}
+            setIsOpenModal={setShowEditModal}
+          />
+        </PlannerModal>
+      )}
+      {showViewModal && (
+        <PlannerModal
+          modalOpen={showViewModal}
+          setModalOpen={setShowViewModal}
+          className="order-details-modal"
+          width={700}
+          title="View Gateway Details"
+          onCloseModal={() => {
+            setShowViewModal(false);
+            setSelectedItem(null);
+          }}
+        >
           <style jsx global>{`
             .order-details-modal .ant-modal-body {
               padding: 0;
@@ -468,7 +494,7 @@ const index = () => {
               overflow: hidden;
             }
             .order-details-container {
-              padding: 2rem;
+              padding: 0rem;
             }
             @media (max-width: 768px) {
               .order-details-container {
@@ -477,37 +503,11 @@ const index = () => {
             }
           `}</style>
           <div className="order-details-container">
-            <PaymentGatewayForm
-              selectedItem={selectedItem}
-              error={errorUpdate}
-              setFormValues={setFormValues}
-              btnText="Edit Gateway"
-              formErrors={formErrors}
-              formValues={formValues}
-              handleInputChange={handleInputChange}
-              handleSubmit={handleUpdateSubmit}
-              isLoadingCreate={isLoadingUpdate}
-              setIsOpenModal={setShowEditModal}
+            <PaymentGatewayViewModal
+              gateway={singleData?.data || selectedItem}
+              isLoading={isLoadingSingle}
             />
           </div>
-        </PlannerModal>
-      )}
-      {showViewModal && (
-        <PlannerModal
-          modalOpen={showViewModal}
-          setModalOpen={setShowViewModal}
-          className=""
-          width={700}
-          title="View Gateway Details"
-          onCloseModal={() => {
-            setShowViewModal(false);
-            setSelectedItem(null);
-          }}
-        >
-          <PaymentGatewayViewModal
-            gateway={singleData?.data || selectedItem}
-            isLoading={isLoadingSingle}
-          />
         </PlannerModal>
       )}
     </div>
