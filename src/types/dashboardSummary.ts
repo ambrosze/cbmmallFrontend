@@ -114,7 +114,8 @@ export interface SummaryUsers {
   active: number;
   inactive: number;
   new_signups: number;
-}export interface SummaryTopLevel {
+}
+export interface SummaryTopLevel {
   data: SummaryData;
   message: string;
   status: string;
@@ -230,7 +231,8 @@ export interface SummaryUsers {
   active: number;
   inactive: number;
   new_signups: number;
-}export interface SummaryTopLevel {
+}
+export interface SummaryTopLevel {
   data: SummaryData;
   message: string;
   status: string;
