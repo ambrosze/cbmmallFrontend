@@ -488,7 +488,7 @@ const ProfilePage = () => {
                                 />
                                 <span className="text-sm text-gray-700">
                                   {/* {permission.label || permission.name} */}
-                                  {permission.name}
+                                  { permission.name}
                                 </span>
                               </div>
                             ))}

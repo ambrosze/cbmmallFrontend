@@ -452,18 +452,44 @@ const index = () => {
             setSelectedItem(null);
           }}
         >
-          <PaymentGatewayForm
-            selectedItem={selectedItem}
-            error={errorUpdate}
-            setFormValues={setFormValues}
-            btnText="Edit Gateway"
-            formErrors={formErrors}
-            formValues={formValues}
-            handleInputChange={handleInputChange}
-            handleSubmit={handleUpdateSubmit}
-            isLoadingCreate={isLoadingUpdate}
-            setIsOpenModal={setShowEditModal}
-          />
+          <style jsx global>{`
+            .order-details-modal .ant-modal-body {
+              padding: 0;
+              max-height: 85vh;
+              overflow-y: auto;
+              // reduce scrollbar width
+              scrollbar-width: 1px;
+              &::-webkit-scrollbar {
+                width: 6px;
+              }
+            }
+            .order-details-modal .ant-modal-content {
+              border-radius: 16px;
+              overflow: hidden;
+            }
+            .order-details-container {
+              padding: 2rem;
+            }
+            @media (max-width: 768px) {
+              .order-details-container {
+                padding: 0;
+              }
+            }
+          `}</style>
+          <div className="order-details-container">
+            <PaymentGatewayForm
+              selectedItem={selectedItem}
+              error={errorUpdate}
+              setFormValues={setFormValues}
+              btnText="Edit Gateway"
+              formErrors={formErrors}
+              formValues={formValues}
+              handleInputChange={handleInputChange}
+              handleSubmit={handleUpdateSubmit}
+              isLoadingCreate={isLoadingUpdate}
+              setIsOpenModal={setShowEditModal}
+            />
+          </div>
         </PlannerModal>
       )}
       {showViewModal && (
