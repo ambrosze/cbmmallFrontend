@@ -8,8 +8,8 @@ import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
 import CustomToast from "../sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "../sharedUI/Toast/plannerToast";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 const CheckboxGroup = Checkbox.Group;
 
 interface IProps {

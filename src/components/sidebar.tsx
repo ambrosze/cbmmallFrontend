@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { useDispatch } from "react-redux";
 import { useLocalStorage } from "react-use";
 import { clearCookie } from "./header";
-import Logo from "/public/images/logo-cbm.png";
+const Logo = "/images/logo-cbm.png";
 type MenuItem = GetProp<MenuProps, "items">[number];
 interface IProps {
   setToggleNavbar?: React.Dispatch<React.SetStateAction<boolean>>;

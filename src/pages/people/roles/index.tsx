@@ -33,8 +33,8 @@ import { Dropdown } from "antd";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 const index = () => {
   const [search, setSearch] = useState("");
   const [searchPermissions, setSearchPermissions] = useState("");

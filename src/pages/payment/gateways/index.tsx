@@ -25,8 +25,8 @@ import { Dropdown, MenuProps, Tag } from "antd";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 const index = () => {
   const [search, setSearch] = useState("");
@@ -496,7 +496,7 @@ const index = () => {
         <PlannerModal
           modalOpen={showViewModal}
           setModalOpen={setShowViewModal}
-          className=""
+          className="order-details-modal"
           width={700}
           title="View Gateway Details"
           onCloseModal={() => {
@@ -504,10 +504,36 @@ const index = () => {
             setSelectedItem(null);
           }}
         >
-          <PaymentGatewayViewModal
-            gateway={singleData?.data || selectedItem}
-            isLoading={isLoadingSingle}
-          />
+          <style jsx global>{`
+            .order-details-modal .ant-modal-body {
+              padding: 0;
+              max-height: 85vh;
+              overflow-y: auto;
+              // reduce scrollbar width
+              scrollbar-width: 1px;
+              &::-webkit-scrollbar {
+                width: 6px;
+              }
+            }
+            .order-details-modal .ant-modal-content {
+              border-radius: 16px;
+              overflow: hidden;
+            }
+            .order-details-container {
+              padding: 0rem;
+            }
+            @media (max-width: 768px) {
+              .order-details-container {
+                padding: 0;
+              }
+            }
+          `}</style>
+          <div className="order-details-container">
+            <PaymentGatewayViewModal
+              gateway={singleData?.data || selectedItem}
+              isLoading={isLoadingSingle}
+            />
+          </div>
         </PlannerModal>
       )}
     </div>

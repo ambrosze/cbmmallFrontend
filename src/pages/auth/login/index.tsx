@@ -4,6 +4,7 @@ import Spinner from "@/components/sharedUI/Spinner";
 import CustomToast from "@/components/sharedUI/Toast/CustomToast";
 import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import { useLoginMutation } from "@/services/auth";
+import { UserResponseTopLevel } from "@/types/loginInUserType";
 import { loginSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react";
 import { Checkbox } from "antd";
@@ -13,10 +14,9 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useLocalStorage } from "react-use";
 import * as yup from "yup";
-import Logo from "/public/images/logo-cbm.png";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import { UserResponseTopLevel } from "@/types/loginInUserType";
+const Logo = "/images/logo-cbm.png";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 interface IAuthHeader {
   headerText: string;

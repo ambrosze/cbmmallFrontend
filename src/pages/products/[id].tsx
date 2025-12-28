@@ -114,9 +114,11 @@ const ProductDetailsPage = () => {
       />
       <AttributeHeader
         headerText="Product details"
-        showAddButton={false}
-        btnText=""
-        onClick={() => {}}
+        showAddButton={true}
+        btnText="Edit Product"
+        onClick={() => {
+          router.push(`/products/edit/${product?.id}`);
+        }}
       />
       <SharedLayout className="bg-white">
         <Breadcrumb

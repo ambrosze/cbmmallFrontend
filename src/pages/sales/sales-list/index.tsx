@@ -34,11 +34,12 @@ import {
 import { customerSchema, inventorySchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps, Tooltip } from "antd";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 interface InventoryCategory {
   name?: string;
@@ -362,7 +363,7 @@ const index = () => {
   const inventoryList: InventoryListItem[] | undefined =
     inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
       const qty = 1;
-      const price = Number(item?.product_variant?.cost_price) || 0;
+      const price = Number(item?.product_variant?.price) || 0;
       const imageUrl = item?.product_variant?.images?.[0]?.url;
       return {
         label: (
@@ -374,10 +375,12 @@ const index = () => {
           >
             <div className="flex items-center gap-2">
               {imageUrl ? (
-                <img
+                <Image
                   src={imageUrl}
                   alt={item?.product_variant?.name || "Product"}
                   className="w-8 h-8 object-cover rounded"
+                  width={32}
+                  height={32}
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
@@ -392,10 +395,10 @@ const index = () => {
                   />
                 </div>
               )}
-              <span>
+              <span className="text-wrap text-sm font-[500]">
                 {item?.product_variant?.name} - {formatCurrency(qty * price)}
               </span>
-            </div>
+            </div>  
           </Tooltip>
         ) as any,
         value: item.id,

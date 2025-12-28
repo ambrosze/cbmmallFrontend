@@ -694,10 +694,34 @@ const Header = ({
         setModalOpen={setShowStoreModal}
         title="Select Store"
         width={600}
-        height={500}
+        className="order-details-modal"
         onCloseModal={() => setShowStoreModal(false)}
       >
-        <div className="py-4">
+        <style jsx global>{`
+          .order-details-modal .ant-modal-body {
+            padding: 0;
+            max-height: 85vh;
+            overflow-y: auto;
+            // reduce scrollbar width
+            scrollbar-width: 1px;
+            &::-webkit-scrollbar {
+              width: 6px;
+            }
+          }
+          .order-details-modal .ant-modal-content {
+            border-radius: 16px;
+            overflow: hidden;
+          }
+          .order-details-container {
+            padding: 0rem;
+          }
+          @media (max-width: 768px) {
+            .order-details-container {
+              padding: 0;
+            }
+          }
+        `}</style>
+        <div className="order-details-container py-4">
           {/* Display current active store */}
           {currentStore && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -727,7 +751,7 @@ const Header = ({
             placeholder="Search stores..."
           />
 
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="">
             {isLoading ? (
               <div className="text-center py-4">Loading stores...</div>
             ) : (

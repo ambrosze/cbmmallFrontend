@@ -28,8 +28,8 @@ import {
 } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 import PermissionGuard from "@/components/RolesPermission/PermissionGuard";
 import { useCheckPermission } from "@/hooks/useCheckPermission";
@@ -576,13 +576,37 @@ const index = () => {
         <PlannerModal
           modalOpen={isViewProductListModal}
           setModalOpen={setIsViewProductListModal}
-          className=""
+          className="order-details-modal"
           width={950}
           title="Inventory details"
           onCloseModal={() => setIsViewProductListModal(false)}
         >
+          <style jsx global>{`
+            .order-details-modal .ant-modal-body {
+              padding: 0;
+              max-height: 85vh;
+              overflow-y: auto;
+              // reduce scrollbar width
+              scrollbar-width: 1px;
+              &::-webkit-scrollbar {
+                width: 6px;
+              }
+            }
+            .order-details-modal .ant-modal-content {
+              border-radius: 16px;
+              overflow: hidden;
+            }
+            .order-details-container {
+              padding: 0rem;
+            }
+            @media (max-width: 768px) {
+              .order-details-container {
+                padding: 0;
+              }
+            }
+          `}</style>
           {/* Details Content */}
-          <div className="space-y-6">
+          <div className="order-details-container space-y-6">
             {/* Header */}
             <div className="flex items-start gap-4">
               <div className="h-20 w-20 rounded-xl overflow-hidden ring-1 ring-gray-200 bg-white">
