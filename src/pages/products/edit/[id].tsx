@@ -51,8 +51,8 @@ import { Breadcrumb, Upload, message } from "antd";
 import { useRouter } from "next/router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 type Variant = {
   id?: string;

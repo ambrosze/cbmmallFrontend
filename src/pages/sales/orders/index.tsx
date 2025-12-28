@@ -19,8 +19,8 @@ import {
 import { IOrdersDatum } from "@/types/orderTypes";
 import { formatCurrency, newUserTimeZoneFormatDate } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 import { orderTableColumns } from "@/components/Order/OrderTableColumns";
 import PermissionGuard from "@/components/RolesPermission/PermissionGuard";

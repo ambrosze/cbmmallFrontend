@@ -34,9 +34,9 @@ import { customerSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 import * as yup from "yup";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 interface AddItemFormState {
   sku: string;

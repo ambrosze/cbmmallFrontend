@@ -21,8 +21,8 @@ import ProfileInfoGrid from "@/components/Profile/ProfileInfoGrid";
 import { Icon } from "@iconify/react";
 import { UploadFile } from "antd"; // kept type for consistency, though using custom input now
 import { useEffect, useMemo, useRef, useState } from "react";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 // Page component: User Profile overview
 const ProfilePage = () => {
@@ -487,7 +487,8 @@ const ProfilePage = () => {
                                   width={16}
                                 />
                                 <span className="text-sm text-gray-700">
-                                  {permission.label || permission.name}
+                                  {/* {permission.label || permission.name} */}
+                                  {permission.name}
                                 </span>
                               </div>
                             ))}

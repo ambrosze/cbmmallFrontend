@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { useDispatch } from "react-redux";
 import { useLocalStorage } from "react-use";
 import { clearCookie } from "./header";
-import Logo from "/public/images/logo-cbm.png";
+const Logo = "/images/logo-cbm.png";
 type MenuItem = GetProp<MenuProps, "items">[number];
 interface IProps {
   setToggleNavbar?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -87,6 +87,18 @@ const Sidebar = ({
     // payment
     if (path.includes("/payment/gateways")) return ["60", "sub6"];
     if (path.includes("/payment/configs")) return ["63", "sub6"];
+    // reports
+    if (path.includes("/reports/sales-report")) return ["41-1", "41"];
+    if (path.includes("/reports/orders-report")) return ["41-2", "41"];
+    if (path.includes("/reports/inventory-report")) return ["41-3", "41"];
+    if (path.includes("/reports/staff-performance-report"))
+      return ["41-4", "41"];
+    if (path.includes("/reports/customers-report")) return ["41-5", "41"];
+    if (path.includes("/reports/product-performance-report"))
+      return ["41-6", "41"];
+    if (path.includes("/reports/revenue-analytics-report"))
+      return ["41-7", "41"];
+    if (path.includes("/reports/profit-analysis-report")) return ["41-8", "41"];
 
     return ["1"]; // Default to dashboard
   };
@@ -249,7 +261,81 @@ const Sidebar = ({
         // { key: "23", label: "Return Item" },
       ],
     },
-
+    {
+      key: "41",
+      icon: <Icon icon="mdi:report-line" width="20" height="20" />,
+      label: <span className="font-[500]">Reports</span>,
+      children: [
+        {
+          key: "41-1",
+          label: <span className="">Sales Report</span>,
+          onClick: () => {
+            router.push("/reports/sales-report");
+          },
+          icon: <Icon icon="mdi:cash-multiple" width="20" height="20" />,
+        },
+        {
+          key: "41-2",
+          label: "Orders Report",
+          onClick: () => {
+            router.push("/reports/orders-report");
+          },
+          icon: (
+            <Icon icon="mdi:clipboard-list-outline" width="20" height="20" />
+          ),
+        },
+        {
+          key: "41-3",
+          label: "Inventory Report",
+          onClick: () => {
+            router.push("/reports/inventory-report");
+          },
+          icon: <Icon icon="mdi:warehouse" width="20" height="20" />,
+        },
+        {
+          key: "41-4",
+          label: "Staff Performance Report",
+          onClick: () => {
+            router.push("/reports/staff-performance-report");
+          },
+          icon: <Icon icon="mdi:account-tie-outline" width="20" height="20" />,
+        },
+        {
+          key: "41-5",
+          label: "Customers Report",
+          onClick: () => {
+            router.push("/reports/customers-report");
+          },
+          icon: (
+            <Icon icon="mdi:account-multiple-outline" width="20" height="20" />
+          ),
+        },
+        {
+          key: "41-6",
+          label: "Product Performance Report",
+          onClick: () => {
+            router.push("/reports/product-performance-report");
+          },
+          icon: <Icon icon="mdi:chart-bar" width="20" height="20" />,
+        },
+        {
+          key: "41-7",
+          label: "Revenue Analytics Report",
+          onClick: () => {
+            router.push("/reports/revenue-analytics-report");
+          },
+          icon: <Icon icon="mdi:currency-usd" width="20" height="20" />,
+        },
+        {
+          key: "41-8",
+          label: "Profit Analysis Report",
+          onClick: () => {
+            router.push("/reports/profit-analysis-report");
+          },
+          icon: <Icon icon="mdi:finance" width="20" height="20" />,
+        },
+      ],
+    },
     {
       key: "sub5",
       label: "People",
@@ -320,36 +406,8 @@ const Sidebar = ({
             router.push("/payment/gateways");
           },
         },
-       
       ],
     },
-
-    // {
-    //   key: "41",
-    //   icon: <Icon icon="mdi:report-line" width="20" height="20" />,
-    //   label: "Reports",
-    //   children: [
-    //     {
-    //       key: "41-1",
-    //       label: "Sales List",
-    //       onClick: () => {
-    //         router.push("/reports/sales-list");
-    //       },
-    //     },
-    //     {
-    //       key: "41-2",
-    //       label: "Transfer Summary",
-    //       onClick: () => {
-    //         router.push("/reports/transfer-summary");
-    //       },
-    //     },
-    //   ],
-    // },
-    // {
-    //   key: "42",
-    //   icon: <Icon icon="mdi:report-line" width="20" height="20" />,
-    //   label: "Reports",
-    // },
   ];
   const supportItems: MenuItem[] = [
     {

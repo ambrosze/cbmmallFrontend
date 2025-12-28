@@ -19,8 +19,8 @@ import { Tooltip } from "antd";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { useLocalStorage } from "react-use";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 const index = () => {
   const [search, setSearch] = useState("");

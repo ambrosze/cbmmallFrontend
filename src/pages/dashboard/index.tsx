@@ -51,20 +51,21 @@ const index = () => {
     { name: "New Sales", value: dashboardData?.data?.sales?.new_sales || 0 },
   ];
 
-  const itemsData = [
+  const productsSummary = dashboardData?.data?.products;
+  const productsInventoryData = [
     {
       name: "Available",
-      value: dashboardData?.data?.items?.available || 0,
+      value: productsSummary?.available || 0,
       color: "#10b981",
     },
     {
       name: "Low Stock",
-      value: dashboardData?.data?.items?.low_stock || 0,
+      value: productsSummary?.low_stock || 0,
       color: "#f59e0b",
     },
     {
       name: "Out of Stock",
-      value: dashboardData?.data?.items?.out_of_stock?.length || 0,
+      value: productsSummary?.out_of_stock?.length || 0,
       color: "#ef4444",
     },
   ];
@@ -82,10 +83,15 @@ const index = () => {
     },
   ];
 
-  const topSellingItems =
-    dashboardData?.data?.items?.top_selling_items?.slice(0, 5) || [];
-
-  const COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
+  const topSellingProducts = (
+    dashboardData?.data?.products?.top_selling_products ?? []
+  )
+    .slice(0, 5)
+    .map((product) => ({
+      ...product,
+      product_name:
+        product.product_variant.product?.name || product.product_variant.name,
+    }));
 
   return (
     <div className={``}>
@@ -186,20 +192,20 @@ const index = () => {
               </div>
             </Card>
 
-            {/* Total Items */}
+            {/* Total Products */}
             <Card className="border border-[#D0D3D9] shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-[#383E49] text-[16px] font-medium mb-2">
-                    Total Items
+                    Total Products
                   </h3>
                   <p className="text-[#48505E] text-[24px] font-bold">
                     {isLoadingDashboard
                       ? "Loading..."
-                      : dashboardData?.data?.items?.total || 0}
+                      : dashboardData?.data?.products?.total || 0}
                   </p>
                   <p className="text-[#f59e0b] text-sm mt-1">
-                    Available: {dashboardData?.data?.items?.available || 0}
+                    Available: {dashboardData?.data?.products?.available || 0}
                   </p>
                 </div>
                 <div className="p-3 bg-amber-100 rounded-xl">
@@ -322,10 +328,10 @@ const index = () => {
               </h3>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topSellingItems}>
+                  <BarChart data={topSellingProducts}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
-                      dataKey="item.type.name"
+                      dataKey="product_name"
                       tick={{ fontSize: 12 }}
                       angle={-45}
                       textAnchor="end"
@@ -337,7 +343,7 @@ const index = () => {
                         value,
                         name === "sales_count" ? "Sales Count" : "Revenue",
                       ]}
-                      labelFormatter={(label) => `Item: ${label}`}
+                      labelFormatter={(label) => `Product: ${label}`}
                     />
                     <Bar
                       dataKey="sales_count"
@@ -363,7 +369,7 @@ const index = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={itemsData}
+                      data={productsInventoryData}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -371,7 +377,7 @@ const index = () => {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {itemsData.map((entry, index) => (
+                      {productsInventoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -380,7 +386,7 @@ const index = () => {
                 </ResponsiveContainer>
               </div>
               <div className="mt-4 space-y-2">
-                {itemsData.map((item, index) => (
+                {productsInventoryData.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between"
@@ -406,14 +412,14 @@ const index = () => {
                 Top Selling Items Details
               </h3>
               <Link
-                href="/items"
+                href="/products"
                 className="text-[#0F50AA] hover:opacity-70 hover:underline text-sm font-medium"
               >
                 View All Items
               </Link>
             </div>
             <div className="space-y-3">
-              {topSellingItems.map((item, index) => (
+              {topSellingProducts.map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -427,12 +433,12 @@ const index = () => {
                     </div>
                     <div>
                       <p className="font-medium text-[#2B2F38]">
-                        {item.item.type?.name} - {item.item.material}
+                        {item.product_variant.product?.name ||
+                          item.product_variant.name}{" "}
+                        - {item.product_variant.material}
                       </p>
                       <p className="text-sm text-[#667085]">
-                        Weight: {item.item.weight}g
-                        {item.item.category && ` • ${item.item.category.name}`}
-                        {item.item.colour && ` • ${item.item.colour.name}`}
+                        SKU: {item.product_variant.sku}
                       </p>
                     </div>
                   </div>

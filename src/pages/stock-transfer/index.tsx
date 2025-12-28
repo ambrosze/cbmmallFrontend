@@ -45,8 +45,8 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalStorage } from "react-use";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 interface InventoryListItem {
   label: string;
   value: string | number;

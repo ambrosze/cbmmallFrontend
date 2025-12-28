@@ -13,13 +13,15 @@ import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import { useGetAllStoresQuery } from "@/services/admin/store";
 import { useGetAllCategoryQuery } from "@/services/category";
 import { useGetAllColoursQuery } from "@/services/colour";
-import { useGetAllInventoryItemsQuery } from "@/services/InventoryItem";
+import { useGetAllInventoryQuery } from "@/services/inventories";
 import {
   useAddSingleScrapeItemToInventoryMutation,
   useCreateInventoryScrapeItemsMutation,
   useGetAllInventoryScrapeItemsQuery,
 } from "@/services/InventoryScrapes";
 import { useGetAllTypesQuery } from "@/services/types";
+import { InventoryDatum } from "@/types/inventoryListType";
+import debounce from "@/utils/debounce";
 import {
   capitalizeOnlyFirstLetter,
   newUserTimeZoneFormatDate,
@@ -28,11 +30,8 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { Dropdown, MenuProps } from "antd";
 import { useRouter } from "next/router";
 import { useMemo, useState } from "react";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
-import { useGetAllInventoryQuery } from "@/services/inventories";
-import debounce from "@/utils/debounce";
-import { InventoryDatum } from "@/types/inventoryListType";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 interface InventoryListItem {
   label: string;
   value: string | number;
@@ -46,7 +45,7 @@ const index = () => {
   const [selectedFilterTypes, setSelectedFilterTypes] = useState<any>(null);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-      const [inventorySearch, setInventorySearch] = useState<string>("");
+  const [inventorySearch, setInventorySearch] = useState<string>("");
   const [filters, setFilters] = useState<{
     store_id?: string;
     item_id?: string;
@@ -142,16 +141,16 @@ const index = () => {
       value: item.id,
     };
   });
-    const inventoryList: InventoryListItem[] | undefined =
-      inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
-        return {
-          label: item?.product_variant?.name,
-          value: item.id,
-          price: item?.product_variant?.price,
-          quantity: item?.quantity,
-          cost_price: item?.product_variant?.cost_price,
-        };
-      });
+  const inventoryList: InventoryListItem[] | undefined =
+    inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
+      return {
+        label: item?.product_variant?.name,
+        value: item.id,
+        price: item?.product_variant?.price,
+        quantity: item?.quantity,
+        cost_price: item?.product_variant?.cost_price,
+      };
+    });
 
   // get the category by  id from the data
   const getCategoryById = (id: string) => {
@@ -203,10 +202,10 @@ const index = () => {
       key: "1",
     },
   ];
-    const debouncedInventorySearch = useMemo(
-      () => debounce((q: string) => setInventorySearch(q.trim()), 400),
-      []
-    );
+  const debouncedInventorySearch = useMemo(
+    () => debounce((q: string) => setInventorySearch(q.trim()), 400),
+    []
+  );
   const transformedData = data?.data.map((item: any) => ({
     key: item?.id,
     item: (

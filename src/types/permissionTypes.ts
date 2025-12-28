@@ -48,7 +48,15 @@ export type PermissionName =
   | "delivery_locations.update"
   | "delivery_locations.delete"
   | "payment_gateways.view"
-  | "payment_gateways.update";
+  | "payment_gateways.update"
+  | "reports.view-sales"
+  | "reports.view-orders"
+  | "reports.view-customers"
+  | "reports.view-inventory"
+  | "reports.view-staff"
+  | "reports.view-products"
+  | "reports.view-financial";
+
 export enum PermissionGuardName {
   Web = "web",
 }

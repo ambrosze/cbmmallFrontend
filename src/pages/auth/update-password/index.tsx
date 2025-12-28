@@ -7,13 +7,13 @@ import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import { useResetPasswordMutation } from "@/services/auth";
 import { resetPasswordSchema } from "@/validation/authValidate";
 import { Icon } from "@iconify/react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import * as yup from "yup";
-import imgError from "/public/states/notificationToasts/error.svg";
-import imgSuccess from "/public/states/notificationToasts/successcheck.svg";
 import { AuthHeader } from "../login";
-import Link from "next/link";
+const imgError = "/states/notificationToasts/error.svg";
+const imgSuccess = "/states/notificationToasts/successcheck.svg";
 
 interface IInputHeader {
   icon: string;
@@ -270,7 +270,10 @@ const index = ({}: IProps) => {
                 )}
               </CustomButton>
             </div>
-            <Link href="/auth/reset-password" className="text-center hover:opacity-60">
+            <Link
+              href="/auth/reset-password"
+              className="text-center hover:opacity-60"
+            >
               Go Back
             </Link>
           </form>
