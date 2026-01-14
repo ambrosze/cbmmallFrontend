@@ -160,6 +160,7 @@ const index = () => {
   const uploadRef = useRef(null);
   // Avoid overwriting user edits on incidental refetches (e.g., image mutations)
   const hydratedProductIdRef = useRef<string | null>(null);
+  const shouldRehydrateRef = useRef<boolean>(false);
   const { id } = router.query as { id?: string };
   const dispatch = useAppDispatch();
 
@@ -178,7 +179,7 @@ const index = () => {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     null
   );
-  const { data, isLoading } = useGetSingleProductsQuery(
+  const { data, isLoading, refetch } = useGetSingleProductsQuery(
     {
       id: id as string,
       // Include variant images up-front so their previews show without needing to click a variant
@@ -230,7 +231,7 @@ const index = () => {
   const [deleteProductImage] = useDeleteProductImageMutation();
   const [updateVariant, { isLoading: isUpdatingVariant }] =
     useUpdateProductVariantMutation();
-  const [createVariantImage, { isLoading: isCreatingVariantImage }] =
+  const [createVariantImage, { isLoading: isCreatingVariantImage, isSuccess }] =
     useCreateVariantProductImageMutation();
   const [updateVariantAttributes, { isLoading: isUpdatingVariantAttrs }] =
     useUpdateVariantProductAttributeValueMutation();
@@ -248,7 +249,12 @@ const index = () => {
     if (!product || !productId) return;
 
     // Only hydrate once per product id to avoid clobbering user edits on refetch
-    if (hydratedProductIdRef.current === productId) return;
+    if (
+      hydratedProductIdRef.current === productId &&
+      !shouldRehydrateRef.current
+    )
+      return;
+    shouldRehydrateRef.current = false;
     hydratedProductIdRef.current = productId;
 
     // Hydrate main fields (initial load)
@@ -514,7 +520,8 @@ const index = () => {
 
     // 1) Immediately show local previews and mark uploading for new files
     const withPreviews = limitedList.map((f: any) => {
-      if (f?.originFileObj) {
+      // Only set status to uploading if it's a new file and doesn't have a status yet
+      if (f?.originFileObj && !f.status) {
         const previewUrl = URL.createObjectURL(f.originFileObj);
         return {
           ...f,
@@ -530,15 +537,18 @@ const index = () => {
     try {
       // 2) Auto-upload to product if id exists, and update each item as it finishes
       if (id) {
+        let hasError = false;
         for (let idx = 0; idx < withPreviews.length; idx++) {
           const f: any = withPreviews[idx];
-          if (!f?.originFileObj) continue;
+          // Only upload if it's a new file and we just marked it as uploading
+          if (!f?.originFileObj || f.status !== "uploading") continue;
+
           const tempUid = f.uid; // antd's generated uid before server id
           try {
             const compressed = await compressImage(f.originFileObj);
             const base64 = (await fileToBase64(compressed)) as string;
             const resp: any = await createProductImage({
-              product_id: id,
+              product_id: id as string,
               body: { image: base64 },
             }).unwrap();
             const created = resp?.data || resp;
@@ -549,6 +559,7 @@ const index = () => {
               if (foundIdx !== -1) {
                 const current = copy[foundIdx];
                 copy[foundIdx] = {
+                  ...current,
                   uid: created?.id ?? current.uid,
                   name:
                     created?.name ??
@@ -556,11 +567,15 @@ const index = () => {
                     `image-${created?.id ?? foundIdx}`,
                   url: created?.url ?? current.url ?? current._previewUrl,
                   status: "done",
+                  // Keep originFileObj so that if the user deletes it, it's treated as a local delete
+                  // This prevents 404 errors if the returned ID isn't immediately deletable or invalid
+                  originFileObj: current.originFileObj,
                 } as any;
               }
               return copy;
             });
           } catch (e) {
+            hasError = true;
             // Mark as error but keep preview
             setFileList((prev) => {
               const copy = [...prev];
@@ -571,6 +586,10 @@ const index = () => {
               return copy;
             });
           }
+        }
+        if (!hasError) {
+          shouldRehydrateRef.current = true;
+          refetch();
         }
       } else {
         // No product id: keep base64s for later upload
@@ -586,6 +605,14 @@ const index = () => {
           ...prev,
           images: base64Images,
         }));
+        // Update UI status to done for these files since we've processed them
+        setFileList((prev) =>
+          prev.map((f) =>
+            f.originFileObj && f.status === "uploading"
+              ? { ...f, status: "done" }
+              : f
+          )
+        );
       }
     } catch (err) {
       console.error("Error processing images", err);
@@ -623,6 +650,7 @@ const index = () => {
           },
           message: "Deleted",
         });
+        refetch();
       } catch (e: any) {
         showPlannerToast({
           options: {
@@ -743,7 +771,8 @@ const index = () => {
     }
     // Update UI previews immediately (mark new files as uploading + preview)
     const withPreviews = limitedList.map((f: any) => {
-      if (f?.originFileObj) {
+      // Only set status to uploading if it's a new file and doesn't have a status yet
+      if (f?.originFileObj && !f.status) {
         const previewUrl = URL.createObjectURL(f.originFileObj);
         return {
           ...f,
@@ -757,18 +786,20 @@ const index = () => {
     setFormValues((prev: FormValues) => {
       const variants = [...prev.variants];
       variants[index] = {
-        ...variants[index],
+        ...(variants[index] || {}),
         ui_files: withPreviews,
       } as Variant;
       return { ...prev, variants };
     });
 
     try {
-      const vid = (formValues.variants[index] || {}).id;
+      const vid = formValues.variants[index]?.id;
       if (vid) {
         for (let idx = 0; idx < withPreviews.length; idx++) {
           const f: any = withPreviews[idx];
-          if (!f?.originFileObj) continue;
+          // Only upload if it's a new file and we just marked it as uploading
+          if (!f?.originFileObj || f.status !== "uploading") continue;
+
           const tempUid = f.uid;
           try {
             const compressed = await compressImage(f.originFileObj);
@@ -786,6 +817,7 @@ const index = () => {
               if (foundIdx !== -1) {
                 const cur = files[foundIdx];
                 files[foundIdx] = {
+                  ...cur,
                   uid: created?.id ?? cur.uid,
                   name:
                     created?.name ??
@@ -793,11 +825,15 @@ const index = () => {
                     `image-${created?.id ?? foundIdx}`,
                   url: created?.url ?? cur.url ?? cur._previewUrl,
                   status: "done",
+                  // Keep originFileObj to ensure local delete if user removes it immediately
+                  originFileObj: cur.originFileObj,
                 } as any;
               }
               variants[index] = { ...current, ui_files: files } as Variant;
               return { ...prev, variants };
             });
+            refetch();
+            variantRefetch();
           } catch (e) {
             setFormValues((prev: FormValues) => {
               const variants = [...prev.variants];
@@ -820,17 +856,29 @@ const index = () => {
         const base64Images: string[] = [];
         for (const f of limitedList) {
           const fileObj = (f as any).originFileObj;
-          if (!fileObj) continue;
-          const compressed = await compressImage(fileObj);
-          const base64 = await fileToBase64(compressed);
-          base64Images.push(base64 as string);
+          if (fileObj) {
+            const compressed = await compressImage(fileObj);
+            const base64 = (await fileToBase64(compressed)) as string;
+            base64Images.push(base64);
+          } else if (f.url) {
+            // Keep existing images (might be base64 if added before save)
+            base64Images.push(f.url);
+          }
         }
         setFormValues((prev: FormValues) => {
           const variants = [...prev.variants];
-          variants[index] = {
-            ...variants[index],
-            images: base64Images,
-          } as Variant;
+          const v = variants[index];
+          if (v) {
+            variants[index] = {
+              ...v,
+              images: base64Images,
+              ui_files: (v.ui_files || []).map((f: any) =>
+                f.originFileObj && f.status === "uploading"
+                  ? { ...f, status: "done" }
+                  : f
+              ),
+            } as Variant;
+          }
           return { ...prev, variants };
         });
       }
@@ -880,6 +928,8 @@ const index = () => {
           },
           message: "Deleted",
         });
+        refetch();
+        variantRefetch();
       } catch (e: any) {
         showPlannerToast({
           options: {
