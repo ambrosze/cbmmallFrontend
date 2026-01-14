@@ -15,7 +15,6 @@ import { showPlannerToast } from "@/components/sharedUI/Toast/plannerToast";
 import WarningModal from "@/components/sharedUI/WarningModal";
 import StockTransferDetailsModal from "@/components/StockTransfer/StockTransferDetailsModal";
 import StockTransferFilters from "@/components/StockTransfer/StockTransferFilters";
-import { useGetAllDailyGoldPricesQuery } from "@/services/admin/daily-gold-price";
 import {
   useAcceptStockTransferMutation,
   useCreateStockTransferMutation,
@@ -172,19 +171,6 @@ const index = () => {
       page: currentPage,
       q: inventorySearch,
     });
-  console.log("🚀 ~ index ~ inventoryData:", inventoryData);
-  const { data: dailyColdPriceData } = useGetAllDailyGoldPricesQuery({
-    paginate: false,
-    per_page: 15,
-    page: currentPage,
-    q: search,
-    include: "category",
-    sort: "recorded_on",
-    filter: {
-      period: "daily",
-    },
-  });
-  console.log("🚀 ~ index ~ dailyColdPriceData:", dailyColdPriceData);
   const [deleteStockTransfer, { isLoading: isDeleteLoading }] =
     useDeleteStockTransferMutation();
   const [showInvoice, setShowInvoice] = useState(false);
@@ -293,23 +279,13 @@ const index = () => {
               const categoryId = transferItem?.inventory?.item?.category_id;
               console.log("🚀 Category ID:", categoryId);
 
-              let goldPrice = null;
-              if (categoryId && dailyColdPriceData?.data) {
-                goldPrice = dailyColdPriceData.data.find(
-                  (price: any) => price.category_id === categoryId
-                );
-              }
-
-              console.log("🚀 Found gold price:", goldPrice);
-
               return {
                 id: transferItem?.id || null,
                 inventory_id: transferItem?.inventory_id || "",
                 quantity: transferItem?.quantity || 0,
-                price_per_gram: goldPrice?.price_per_gram || 0,
               };
             }
-          ) || [{ inventory_id: "", quantity: 0, price_per_gram: 0 }],
+          ) || [{ inventory_id: "", quantity: 0 }],
       };
 
       console.log("🚀 Setting new form values:", newFormValues);
@@ -320,7 +296,6 @@ const index = () => {
     isLoadingSingleTransfer,
     selectedItem?.id,
     showEditModal,
-    dailyColdPriceData,
   ]);
 
   const items: MenuProps["items"] = [
@@ -1033,7 +1008,7 @@ const index = () => {
             error={error}
             inventoryData={inventoryList || []}
             debouncedInventorySearch={debouncedInventorySearch}
-            dailyGoldPrices={dailyColdPriceData?.data || []}
+            dailyGoldPrices={[]}
             storeData={storeList || []}
             btnText="Create Stock Transfer"
             formErrors={formErrors}
