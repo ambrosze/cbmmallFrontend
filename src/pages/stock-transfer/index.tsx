@@ -1040,7 +1040,7 @@ const index = () => {
               key={selectedItem?.id} // Add key to force re-render
               debouncedInventorySearch={debouncedInventorySearch}
               inventoryData={inventoryList || []}
-              dailyGoldPrices={dailyColdPriceData?.data || []}
+              dailyGoldPrices={[]}
               storeData={storeList || []}
               error={errorUpdate}
               setFormValues={setFormValues}
