@@ -36,10 +36,12 @@ import { StockTransferDatum } from "@/types/StockTransferTypes";
 import debounce from "@/utils/debounce";
 import {
   capitalizeOnlyFirstLetter,
+  formatCurrency,
   newUserTimeZoneFormatDate,
 } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Dropdown, MenuProps } from "antd";
+import { Dropdown, MenuProps, Tooltip } from "antd";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalStorage } from "react-use";
@@ -169,6 +171,7 @@ const index = () => {
       paginate: false,
       per_page: 50,
       page: currentPage,
+      include: "productVariant.product.attributeValues,productVariant.images",
       q: inventorySearch,
     });
   const [deleteStockTransfer, { isLoading: isDeleteLoading }] =
@@ -536,8 +539,45 @@ const index = () => {
   };
   const inventoryList: InventoryListItem[] | undefined =
     inventoryData?.data.map((item: InventoryDatum): InventoryListItem => {
+      const qty = 1;
+      const price = Number(item?.product_variant?.price) || 0;
+      const imageUrl = item?.product_variant?.images?.[0]?.url;
       return {
-        label: item?.product_variant?.name,
+        label: (
+          <Tooltip
+            title={
+              item?.product_variant?.name + ` - ` + formatCurrency(qty * price)
+            }
+            placement="topRight"
+          >
+            <div className="flex items-center gap-2">
+              {imageUrl ? (
+                <Image
+                  src={imageUrl}
+                  alt={item?.product_variant?.name || "Product"}
+                  className="w-8 h-8 object-cover rounded"
+                  width={32}
+                  height={32}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                  <Icon
+                    icon="mdi:image-off"
+                    className="text-gray-400"
+                    width={16}
+                    height={16}
+                  />
+                </div>
+              )}
+              <span className="text-wrap text-sm font-[500]">
+                {item?.product_variant?.name} - {formatCurrency(qty * price)}
+              </span>
+            </div>
+          </Tooltip>
+        ) as any,
         value: item.id,
         price: item?.product_variant?.price,
         quantity: item?.quantity,
