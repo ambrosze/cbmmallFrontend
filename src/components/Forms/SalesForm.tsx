@@ -3,6 +3,7 @@ import { AdminDiscountDatum } from "@/types/discountTypes";
 import { formatCurrency } from "@/utils/fx";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import SelectInput from "../Input/SelectInput";
+import TextAreaInput from "../Input/TextAreaInput";
 import TextInput from "../Input/TextInput";
 import CustomButton from "../sharedUI/Buttons/Button";
 import Spinner from "../sharedUI/Spinner";
@@ -93,9 +94,9 @@ export const SalesForm = ({
       if (inv && inv.quantity !== undefined) {
         updatedItems[index].quantity = inv.quantity > 0 ? 1 : 0; // default to 1 if available, else 0
       }
-      // auto-fill cost price (read-only field)
-      if (inv && inv.cost_price !== undefined) {
-        updatedItems[index].cost_price = inv.cost_price;
+      // auto-fill price (read-only field)
+      if (inv && inv.price !== undefined) {
+        updatedItems[index].price = inv.price;
       }
     } else {
       updatedItems[index][field] = value;
@@ -112,7 +113,7 @@ export const SalesForm = ({
     items.push({
       inventory_id: "",
       quantity: "",
-      cost_price: "",
+      price: "",
     });
 
     setFormValues({
@@ -347,35 +348,61 @@ export const SalesForm = ({
                   <div>
                     <TextInput
                       type="number"
-                      name={`sale_inventories[${index}][cost_price]`}
+                      name={`sale_inventories[${index}][price]`}
                       className="py-[13px]"
-                      readOnly={true}
+                      readOnly={false}
                       errorMessage={
-                        formErrors[`sale_inventories.${index}.cost_price`] ||
+                        formErrors[`sale_inventories.${index}.price`] ||
                         (error as any)?.data?.errors?.[
-                          `sale_inventories.${index}.cost_price`
+                          `sale_inventories.${index}.price`
                         ]?.map((err: any) => err) ||
                         ""
                       }
-                      value={item.cost_price}
-                      onChange={() => {}}
+                      value={item.price}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(index, "price", e.target.value)
+                      }
                       placeholder="Auto cost price"
                       title={
                         <span className="font-[500]">
-                          Cost Price (readonly)
+                          Cost Price (editable)
                         </span>
                       }
                       required={false}
                     />
                   </div>
                 </div>
+
+                <div className="mt-1">
+                  <TextAreaInput
+                    row={2}
+                    name={`sale_inventories[${index}][comment]`}
+                    className="py-[13px] w-full"
+                    errorMessage={getFieldErrors(
+                      `sale_inventories.${index}.comment`,
+                      [
+                        `sale_inventories[${index}].comment`,
+                        `sale_inventories.${index}[comment]`,
+                        `sale_inventories[${index}][comment]`,
+                      ]
+                    )}
+                    value={item.comment || ""}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      handleItemChange(index, "comment", e.target.value)
+                    }
+                    placeholder="Enter item comment"
+                    title={<span className="font-[500]">Comment</span>}
+                    required={false}
+                  />
+                </div>
+
                 {/* Per-item total */}
                 <div className="mt-3 text-sm text-gray-700 flex items-center justify-between">
                   <span className="font-medium">Item total:</span>
                   <span className="font-semibold">
                     {(() => {
                       const qty = Number(item.quantity) || 0;
-                      const price = Number(item.cost_price) || 0;
+                      const price = Number(item.price) || 0;
                       return formatCurrency(qty * price);
                     })()}
                   </span>
@@ -401,7 +428,7 @@ export const SalesForm = ({
                 const items = formValues.sale_inventories || [];
                 const total = items.reduce((sum: number, cur: any) => {
                   const qty = Number(cur?.quantity) || 0;
-                  const price = Number(cur?.cost_price) || 0;
+                  const price = Number(cur?.price) || 0;
                   return sum + qty * price;
                 }, 0);
                 return formatCurrency(total);

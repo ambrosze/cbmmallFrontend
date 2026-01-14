@@ -41,6 +41,7 @@ import {
   useDeleteVariantProductImageMutation,
 } from "@/services/products/variant/variant-product-image";
 import {
+  useCreateProductVariantMutation,
   useDeleteProductVariantMutation,
   useGetSingleProductVariantQuery,
   useUpdateProductVariantMutation,
@@ -155,6 +156,9 @@ const index = () => {
   });
 
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [variantErrors, setVariantErrors] = useState<{
+    [variantIndex: number]: { [key: string]: string[] };
+  }>({});
   const [fileList, setFileList] = useState<any[]>([]);
   console.log("🚀 ~ index ~ fileList:", fileList);
   const uploadRef = useRef(null);
@@ -239,6 +243,8 @@ const index = () => {
     useDeleteVariantProductAttributeValueMutation();
   const [deleteVariantImage] = useDeleteVariantProductImageMutation();
   const [deleteVariantApi] = useDeleteProductVariantMutation();
+  const [createVariant, { isLoading: isCreatingVariant }] =
+    useCreateProductVariantMutation();
 
   // Preload form values from product data (or nested product inside variant)
   React.useEffect(() => {
@@ -683,7 +689,6 @@ const index = () => {
     setFormValues((prev: FormValues) => ({
       ...prev,
       variants: [
-        ...prev.variants,
         {
           name: "",
           price: "",
@@ -697,6 +702,7 @@ const index = () => {
           ui_files: [],
           copy_from_main: false,
         },
+        ...prev.variants,
       ],
     }));
   }, []);
@@ -1165,8 +1171,109 @@ const index = () => {
   };
 
   // Variant-level helpers
-  const saveVariant = async (variant: Variant) => {
-    if (!variant.id || !id) return;
+  const saveVariant = async (variant: Variant, index?: number) => {
+    if (!id) return;
+    // Clear previous errors for this variant index if provided
+    if (typeof index === "number") {
+      setVariantErrors((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+    }
+
+    // Create new variant
+    if (!variant.id) {
+      if (typeof index !== "number") return;
+      try {
+        const payload = {
+          name: variant.name || "",
+          price: typeof variant.price === "number" ? variant.price : 0,
+          compare_price:
+            typeof variant.compare_price === "number"
+              ? variant.compare_price
+              : null,
+          cost_price:
+            typeof variant.cost_price === "number" ? variant.cost_price : 0,
+          quantity: typeof variant.quantity === "number" ? variant.quantity : 0,
+          short_description: formValues.short_description || "",
+          description: formValues.description || "",
+          images: variant.images || [],
+          product_id: id,
+          attribute_value_ids: variant.attribute_value_ids || [],
+          is_serialized: (variant.is_serialized ?? 0) as 0 | 1,
+          serial_number: variant.is_serialized
+            ? variant.serial_number || ""
+            : "",
+        };
+
+        const resp: any = await createVariant(payload).unwrap();
+        const created = resp?.data || resp;
+
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Success"}
+                title={"Variant Created"}
+                image={imgSuccess}
+                textColor="green"
+                message={"Variant created successfully."}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Success",
+        });
+
+        // Update local state with new ID and persisted images from server
+        setFormValues((prev: FormValues) => {
+          const variants = [...prev.variants];
+          if (variants[index]) {
+            const serverImages = created.images || [];
+            variants[index] = {
+              ...variants[index],
+              id: created.id,
+              ui_files: serverImages.map((img: any) => ({
+                uid: img.id,
+                name: img.name ?? `image-${img.id}`,
+                url: img.url,
+                status: "done",
+              })),
+              images: serverImages.map((img: any) => img.url),
+            };
+          }
+          return { ...prev, variants };
+        });
+
+        refetch();
+        variantRefetch();
+      } catch (e: any) {
+        if (e?.data?.errors && typeof index === "number") {
+          setVariantErrors((prev) => ({
+            ...prev,
+            [index]: e.data.errors,
+          }));
+        }
+        showPlannerToast({
+          options: {
+            customToast: (
+              <CustomToast
+                altText={"Error"}
+                title={"Creation Failed"}
+                image={imgError}
+                textColor="red"
+                message={e?.data?.message || "Unable to create variant"}
+                backgroundColor="#FCFCFD"
+              />
+            ),
+          },
+          message: "Error",
+        });
+      }
+      return;
+    }
+
     try {
       await updateVariant({
         product_variant_id: variant.id,
@@ -1177,10 +1284,12 @@ const index = () => {
             typeof variant.compare_price === "number"
               ? variant.compare_price
               : null,
+          cost_price:
+            typeof variant.cost_price === "number" ? variant.cost_price : 0,
           quantity: typeof variant.quantity === "number" ? variant.quantity : 0,
           short_description: formValues.short_description || "",
           description: formValues.description || "",
-          images: [],
+          images: variant.images || [],
           product_id: id,
           attribute_value_ids: variant.attribute_value_ids || [],
           is_serialized: (variant.is_serialized ?? 0) as 0 | 1,
@@ -1205,6 +1314,12 @@ const index = () => {
         message: "Success",
       });
     } catch (e: any) {
+      if (e?.data?.errors && typeof index === "number") {
+        setVariantErrors((prev) => ({
+          ...prev,
+          [index]: e.data.errors,
+        }));
+      }
       showPlannerToast({
         options: {
           customToast: (
@@ -1313,6 +1428,12 @@ const index = () => {
   // Helper: read variant field error from client (Yup) and server API errors
   const getVariantError = useCallback(
     (i: number, field: string): string => {
+      // Check our new local variantErrors state first
+      const specificErrors = variantErrors[i]?.[field];
+      if (specificErrors && specificErrors.length > 0) {
+        return specificErrors[0];
+      }
+
       const keyYup = `variants[${i}].${field}`;
       if (formErrors[keyYup]) return formErrors[keyYup];
 
@@ -1338,7 +1459,7 @@ const index = () => {
 
       return "";
     },
-    [formErrors, error]
+    [formErrors, error, variantErrors]
   );
 
   return (
@@ -2203,42 +2324,44 @@ const index = () => {
                                 <div></div>
                               </Upload>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if ((v.ui_files?.length ?? 0) >= 6) {
-                                    message.warning(
-                                      "You can only upload up to 6 images per variant"
+                              <div className="flex flex-col relative">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if ((v.ui_files?.length ?? 0) >= 6) {
+                                      message.warning(
+                                        "You can only upload up to 6 images per variant"
+                                      );
+                                      return;
+                                    }
+                                    const container = document.getElementById(
+                                      `variant-upload-${i}`
                                     );
-                                    return;
-                                  }
-                                  const container = document.getElementById(
-                                    `variant-upload-${i}`
-                                  );
-                                  const input = container?.querySelector(
-                                    '.ant-upload input[type="file"]'
-                                  ) as HTMLElement | null;
-                                  input?.click?.();
-                                }}
-                                className={`p-4 w-full border-2 border-dashed border-gray-300 rounded-lg  cursor-pointer hover:border-blue-500 transition-colors`}
-                              >
-                                <div className="flex justify-center items-center gap-2 py-3">
-                                  <Icon
-                                    icon="ic:round-plus"
-                                    width="20"
-                                    height="20"
-                                  />
-                                  <p className="text-xs font-bold text-center">
-                                    Add Variant Images
-                                  </p>
-                                </div>
-                              </button>
+                                    const input = container?.querySelector(
+                                      '.ant-upload input[type="file"]'
+                                    ) as HTMLElement | null;
+                                    input?.click?.();
+                                  }}
+                                  className={`p-4 w-full h-full border-2 border-dashed border-gray-300 rounded-lg  cursor-pointer hover:border-blue-500 transition-colors`}
+                                >
+                                  <div className="flex justify-center items-center gap-2 py-3">
+                                    <Icon
+                                      icon="ic:round-plus"
+                                      width="20"
+                                      height="20"
+                                    />
+                                    <p className="text-xs font-bold text-center">
+                                      Add Variant Images
+                                    </p>
+                                  </div>
+                                </button>
 
-                              {getVariantError(i, "images") && (
-                                <p className="text-xs text-red-500 mt-1">
-                                  {getVariantError(i, "images")}
-                                </p>
-                              )}
+                                {getVariantError(i, "images") && (
+                                  <span className="text-xs text-red-500 absolute -bottom-5 left-0 mt-1">
+                                    {getVariantError(i, "images")}
+                                  </span>
+                                )}
+                              </div>
 
                               {(v.ui_files?.length ?? 0) > 0 && (
                                 <>
@@ -2303,16 +2426,20 @@ const index = () => {
                             <div className="">
                               <CustomButton
                                 type="button"
-                                onClick={() => saveVariant(v)}
-                                disabled={isUpdatingVariant || !v.id}
+                                onClick={() => saveVariant(v, i)}
+                                disabled={
+                                  isUpdatingVariant || isCreatingVariant
+                                }
                                 className="border bg-black text-white px-4 py-2"
                               >
-                                {isUpdatingVariant ? (
+                                {isUpdatingVariant || isCreatingVariant ? (
                                   <span className="flex items-center gap-2">
                                     <Spinner className="border-white" /> Saving…
                                   </span>
-                                ) : (
+                                ) : v.id ? (
                                   "Save variant"
+                                ) : (
+                                  "Create variant"
                                 )}
                               </CustomButton>
                             </div>
