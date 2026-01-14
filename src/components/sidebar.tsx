@@ -440,7 +440,7 @@ const Sidebar = ({
             width={200}
             height={80}
             className="py-[21px]"
-            alt={"Goldwise Logo"}
+            alt={"CBM MALL Logo"}
             sizes=""
           />
 
