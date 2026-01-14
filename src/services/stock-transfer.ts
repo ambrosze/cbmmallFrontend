@@ -14,7 +14,6 @@ interface CreateStockTransferType {
 interface AddItemToStockTransferType {
   inventory_id: string; // nullable|string|max:191|exists:inventory,id
   quantity: number;
-  price_per_gram: number;
 }
 export const stockTransferApi = api.injectEndpoints({
   overrideExisting: true,

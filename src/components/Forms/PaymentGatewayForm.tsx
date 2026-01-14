@@ -40,7 +40,7 @@ export const PaymentGatewayForm = ({
   const enumOptions = useMemo(
     () =>
       (enumsData?.values ?? []).map((enumItem) => ({
-        label: enumItem.label,
+        label: enumItem.name,
         value: enumItem.value,
       })),
     [enumsData]
@@ -135,9 +135,11 @@ export const PaymentGatewayForm = ({
               data={enumOptions}
               loading={isLoadingEnums}
             />
-            {formErrors.mode ? (
+            {formErrors.mode || (error as any)?.data?.errors?.mode ? (
               <p className="flex flex-col gap-1 text-xs italic text-red-600">
-                {formErrors.mode ? formErrors.mode : ""}
+                {formErrors.mode ||
+                  (error as any)?.data?.errors?.mode?.map((err: any) => err) ||
+                  ""}
               </p>
             ) : null}
           </div>
