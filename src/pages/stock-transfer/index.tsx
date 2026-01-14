@@ -744,7 +744,6 @@ const index = () => {
           (item) => ({
             inventory_id: item.inventory_id,
             quantity: Number(item.quantity),
-            price_per_gram: Number(item.price_per_gram),
           })
         ),
       };
