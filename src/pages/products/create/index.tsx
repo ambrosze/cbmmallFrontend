@@ -247,7 +247,6 @@ const index = () => {
     setFormValues((prev) => ({
       ...prev,
       variants: [
-        ...prev.variants,
         {
           name: "",
           price: "",
@@ -261,6 +260,7 @@ const index = () => {
           ui_files: [],
           copy_from_main: false,
         },
+        ...prev.variants,
       ],
     }));
   }, []);

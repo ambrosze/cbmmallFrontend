@@ -109,6 +109,16 @@ export const inventorySchema = yup.object().shape({
           .typeError("Quantity must be a number")
           .positive("Quantity must be greater than zero")
           .required("Quantity is required"),
+        price: yup
+          .number()
+          .typeError("Price must be a number")
+          .min(0, "Price must be non-negative")
+          .nullable()
+          .optional()
+          .transform((value, originalValue) =>
+            String(originalValue).trim() === "" ? null : value
+          ),
+        comment: yup.string().nullable().optional(),
       })
     )
     .min(1, "At least one inventory item is required"),

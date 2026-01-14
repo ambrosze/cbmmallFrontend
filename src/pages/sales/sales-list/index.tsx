@@ -63,7 +63,7 @@ interface InventoryListItem {
   value: string | number;
   price?: number | string;
   quantity?: number; // available quantity from inventory
-  cost_price?: string; // cost price from product variant
+  cost_price?: number | string;
 }
 const index = () => {
   const [search, setSearch] = useState("");
@@ -73,7 +73,9 @@ const index = () => {
     customer_id: "",
     payment_method: "",
     discount_code: "",
-    sale_inventories: [{ inventory_id: "", quantity: "" }],
+    sale_inventories: [
+      { inventory_id: "", quantity: "", price: "", comment: "" },
+    ],
   });
   const [selectedItem, setSelectedItem] = useState<SalesDatum | null>(null);
   console.log("🚀 ~ index ~ selectedItem:", selectedItem);
@@ -198,6 +200,8 @@ const index = () => {
               )?.cost_price ||
               saleItem?.price_per_gram ||
               "",
+            price: saleItem?.price || "",
+            comment: saleItem?.comment || "",
           })) || [],
       });
     }
@@ -345,6 +349,8 @@ const index = () => {
                       )?.cost_price ||
                       saleItem?.price_per_gram ||
                       "",
+                    price: saleItem?.price || "",
+                    comment: saleItem?.comment || "",
                   })) || [],
               });
             }}
@@ -398,7 +404,7 @@ const index = () => {
               <span className="text-wrap text-sm font-[500]">
                 {item?.product_variant?.name} - {formatCurrency(qty * price)}
               </span>
-            </div>  
+            </div>
           </Tooltip>
         ) as any,
         value: item.id,
@@ -426,6 +432,8 @@ const index = () => {
         sale_inventories: formValues.sale_inventories.map((item) => ({
           inventory_id: item.inventory_id,
           quantity: Number(item.quantity),
+          price: item.price ? Number(item.price) : undefined,
+          comment: item.comment,
         })),
       };
       // Proceed with server-side submission
@@ -566,6 +574,8 @@ const index = () => {
           id: item.id || null,
           inventory_id: item.inventory_id,
           quantity: Number(item.quantity),
+          price: item.price ? Number(item.price) : undefined,
+          comment: item.comment,
         })),
       };
 
@@ -658,7 +668,9 @@ const index = () => {
             customer_id: "",
             payment_method: "",
             discount_code: "",
-            sale_inventories: [{ inventory_id: "", quantity: "" }],
+            sale_inventories: [
+              { inventory_id: "", quantity: "", price: "", comment: "" },
+            ],
           });
         }}
       />

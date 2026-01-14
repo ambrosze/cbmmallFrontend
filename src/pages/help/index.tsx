@@ -612,7 +612,7 @@ const index = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4 text-sm">
                   <span className="bg-white px-3 py-1 rounded-full">
-                    📧 admin@goldwise.com
+                    📧 admin@cbm-mall.com
                   </span>
                   <span className="bg-white px-3 py-1 rounded-full">
                     📞 +1-234-567-8900

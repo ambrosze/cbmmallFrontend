@@ -4,6 +4,7 @@ interface CreateProductsType {
   name: string;
   price: number;
   compare_price: null | number;
+  cost_price: number;
   quantity: number;
   short_description: string;
   description: string;
