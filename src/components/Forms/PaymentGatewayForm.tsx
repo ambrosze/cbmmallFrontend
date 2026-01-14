@@ -120,7 +120,7 @@ export const PaymentGatewayForm = ({
           <div className="w-full">
             <div className={`pb-1`}>
               <label className={"text-sm"}>
-                Store <span className="text-red-600">*</span>
+                Mode <span className="text-red-600">*</span>
               </label>
             </div>
             <SelectInput
