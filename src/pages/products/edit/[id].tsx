@@ -121,11 +121,6 @@ const productSchema = yup.object().shape({
           .typeError("Variant cost must be a number")
           .min(0)
           .optional(),
-        quantity: yup
-          .number()
-          .typeError("Variant qty must be a number")
-          .min(0)
-          .optional(),
         is_serialized: yup.mixed<1 | 0>().oneOf([0, 1]).optional(),
         serial_number: yup.string().optional(),
         batch_number: yup.string().optional(),
@@ -220,6 +215,7 @@ const index = () => {
       per_page: 100,
       paginate: false,
     });
+  console.log("🚀 ~ index ~ attributesResp:", attributesResp?.data)
 
   const [updateProducts, { isLoading: isLoadingUpdate, error }] =
     useUpdateProductsMutation();
@@ -496,7 +492,7 @@ const index = () => {
     });
     return options;
   }, [attributesResp]);
-
+  
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -2175,7 +2171,7 @@ const index = () => {
                                 )
                               }
                               placeholder="0"
-                              title={<span className="font-[500]">Qty*</span>}
+                              title={<span className="font-[500]">Qty</span>}
                             />
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">

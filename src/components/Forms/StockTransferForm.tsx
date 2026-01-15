@@ -262,7 +262,7 @@ export const StockTransferForm = ({
                       onChange={(value) =>
                         handleItemChange(index, "inventory_id", value)
                       }
-                      className="py-[3px] "
+                      className="py-[3px]"
                       value={item.inventory_id || undefined}
                       placeholder={
                         <span className="text-sm">Select inventory item</span>
