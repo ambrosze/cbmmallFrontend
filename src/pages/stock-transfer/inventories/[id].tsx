@@ -103,6 +103,24 @@ const index = () => {
   // Define table columns for stock transfer inventories
   const stockTransferInventoriesColumns = [
     {
+      title: "Product",
+      dataIndex: "product",
+      key: "product",
+      width: 250,
+    },
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      key: "sku",
+      width: 150,
+    },
+    {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      width: 120,
+    },
+    {
       title: "Inventory ID",
       dataIndex: "inventoryId",
       key: "inventoryId",
@@ -143,47 +161,87 @@ const index = () => {
 
   // Transform data for table
   const transformedData = data?.data?.stock_transfer_inventories?.map(
-    (item) => ({
-      key: item?.id,
-      inventoryId: (
-        <div className="flex flex-col">
-          <span className="font-medium text-sm">
-            {item?.inventory_id ? item.inventory_id.slice(-8) : "N/A"}
+    (item) => {
+      const productVariant = item?.inventory?.product_variant;
+      const product = productVariant?.product;
+      const imageUrl =
+        productVariant?.images?.[0]?.url ||
+        product?.images?.[0]?.url ||
+        "/images/placeholder.png";
+
+      return {
+        key: item?.id,
+        product: (
+          <div className="flex items-center gap-3">
+            <img
+              src={imageUrl}
+              alt={productVariant?.name}
+              className="w-10 h-10 object-cover rounded-md"
+            />
+            <div className="flex flex-col">
+              <span
+                className="font-medium text-sm text-gray-900 truncate max-w-[200px]"
+                title={productVariant?.name}
+              >
+                {productVariant?.name || "N/A"}
+              </span>
+            </div>
+          </div>
+        ),
+        sku: (
+          <span className="text-sm text-gray-700">
+            {productVariant?.sku || "N/A"}
           </span>
-          <span className="text-xs text-gray-500">
-            {item?.inventory_id || "No ID"}
+        ),
+        price: (
+          <span className="text-sm text-gray-700">
+            {productVariant?.price
+              ? `₦${parseFloat(productVariant?.price).toLocaleString()}`
+              : "-"}
           </span>
-        </div>
-      ),
-      quantity: (
-        <span className="font-medium text-center">{item?.quantity || "-"}</span>
-      ),
-      dateAdded: (
-        <span className="text-sm">
-          {newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY HH:mm")}
-        </span>
-      ),
-      lastUpdated: (
-        <span className="text-sm">
-          {newUserTimeZoneFormatDate(item?.updated_at, "DD/MM/YYYY HH:mm")}
-        </span>
-      ),
-      action: loginResponse?.user?.is_admin ? (
-        <Tooltip title="Delete">
-          <button
-            onClick={() => {
-              setSelectedInventoryId(item?.id);
-              setSelectedInventoryItem(item);
-              setShowDeleteModal(true);
-            }}
-            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200"
-            aria-label="Delete inventory item"
-          >
-            <Icon icon="gg:trash" width="20" height="20" />
-          </button>
-        </Tooltip>
-      ) : null,
-    })
+        ),
+        inventoryId: (
+          <div className="flex flex-col">
+            <span className="font-medium text-sm">
+              {item?.inventory_id ? item.inventory_id.slice(-8) : "N/A"}
+            </span>
+            <span className="text-xs text-gray-500">
+              {item?.inventory_id || "No ID"}
+            </span>
+          </div>
+        ),
+        quantity: (
+          <span className="font-medium text-center">
+            {item?.quantity || "-"}
+          </span>
+        ),
+        dateAdded: (
+          <span className="text-sm">
+            {newUserTimeZoneFormatDate(item?.created_at, "DD/MM/YYYY HH:mm")}
+          </span>
+        ),
+        lastUpdated: (
+          <span className="text-sm">
+            {newUserTimeZoneFormatDate(item?.updated_at, "DD/MM/YYYY HH:mm")}
+          </span>
+        ),
+        action: loginResponse?.user?.is_admin ? (
+          <Tooltip title="Delete">
+            <button
+              onClick={() => {
+                setSelectedInventoryId(item?.id);
+                setSelectedInventoryItem(item);
+                setShowDeleteModal(true);
+              }}
+              className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200"
+              aria-label="Delete inventory item"
+            >
+              <Icon icon="gg:trash" width="20" height="20" />
+            </button>
+          </Tooltip>
+        ) : null,
+      };
+    }
   );
 
   const getInventoryDisplayName = () => {
