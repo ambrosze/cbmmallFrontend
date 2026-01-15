@@ -101,11 +101,11 @@ const productSchema = yup.object().shape({
           .typeError("Variant cost must be a number")
           .min(0)
           .required("Variant cost is required"),
-        quantity: yup
-          .number()
-          .typeError("Variant qty must be a number")
-          .min(0)
-          .required("Variant quantity is required"),
+        // quantity: yup
+        //   .number()
+        //   .typeError("Variant qty must be a number")
+        //   .min(0)
+        //   .required("Variant quantity is required"),
         is_serialized: yup.mixed<1 | 0>().oneOf([0, 1]).required(),
         serial_number: yup.string().when("is_serialized", {
           is: 1,
@@ -1074,7 +1074,7 @@ const index = () => {
                               updateVariantField(i, "quantity", e.target.value)
                             }
                             placeholder="0"
-                            title={<span className="font-[500]">Qty*</span>}
+                            title={<span className="font-[500]">Qty</span>}
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
