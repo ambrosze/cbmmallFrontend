@@ -43,16 +43,20 @@ const UpdateBannerManagement = () => {
   const [bulkFormValues, setBulkFormValues] = useState<any[]>([]);
   const [formErrors, setFormErrors] = useState<any>({});
 
-  const {
-    data,
-    isLoading: isFetching,
-    refetch,
-  } = useGetContentBlocksListQuery(
+  const { data, isLoading, isFetching, refetch } = useGetContentBlocksListQuery(
     {
       q: search,
-      per_page: 150,
+      paginate: false,
+      filter: {
+        group: group || "",
+      },
     },
-    { skip: !group },
+    {
+      skip: !group,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    },
   );
 
   const [updateBulkContent, { isLoading: isUpdating }] =
@@ -68,7 +72,14 @@ const UpdateBannerManagement = () => {
   }, [data, group]);
 
   useEffect(() => {
-    if (groupItems.length > 0 && bulkFormValues.length === 0) {
+    if (isFetching) {
+      setBulkFormValues([]);
+      setBulkFileLists({});
+    }
+  }, [isFetching]);
+
+  useEffect(() => {
+    if (!isFetching && groupItems.length > 0 && bulkFormValues.length === 0) {
       const initialFileLists: Record<string, any[]> = {};
       const initialValues = groupItems.map((child: any) => {
         initialFileLists[child.id] = buildInitialFileList(
@@ -91,7 +102,7 @@ const UpdateBannerManagement = () => {
       setBulkFileLists(initialFileLists);
       setBulkFormValues(initialValues);
     }
-  }, [groupItems]);
+  }, [groupItems, isFetching]);
 
   const handleBulkImageChange = async (info: any, index: number) => {
     const trimmedList = info.fileList.slice(-1);
@@ -218,7 +229,7 @@ const UpdateBannerManagement = () => {
       <SharedLayout className="bg-white">
         <PermissionGuard permission="products.viewAny">
           <div className="flex flex-col gap-6 max-w-5xl mx-auto py-6">
-            {isFetching ? (
+            {isFetching && bulkFormValues.length === 0 ? (
               <div className="flex justify-center p-10">
                 <SkeletonLoaderForPage />
               </div>

@@ -76,6 +76,7 @@ const BannerManagement = () => {
       ...filters,
     },
   });
+  console.log("🚀 ~ BannerManagement ~ data:", data);
   const { data: enumsData, isLoading: isLoadingEnums } = useGetAllEnumsQuery({
     enum: "ContentBlockGroup",
   });
@@ -116,9 +117,11 @@ const BannerManagement = () => {
 
     data.data.forEach((item: any) => {
       const groupName = item.group || "Uncategorized";
+      console.log("🚀 ~ BannerManagement ~ groupName:", groupName);
       if (!groupedMap.has(groupName)) {
         groupedMap.set(groupName, {
           key: `group-${groupName}`,
+          childKey: item.key,
           title: groupName,
           isGroup: true,
           children: [],
@@ -128,6 +131,7 @@ const BannerManagement = () => {
       groupedMap.get(groupName).children.push({
         ...item,
         key: item.id,
+        childKey: item.key,
         isGroup: false,
       });
     });
@@ -139,8 +143,8 @@ const BannerManagement = () => {
     return Array.from(groupedMap.values());
   }, [data]);
 
-  const handleBulkUpdate = (groupName: string) => {
-    router.push(`/cms/banner-management/update?group=${groupName}`);
+  const handleBulkUpdate = (group: string) => {
+    router.push(`/cms/banner-management/${group}/bulk-update`);
   };
 
   const handleSingleEdit = (record: any) => {
@@ -270,7 +274,7 @@ const BannerManagement = () => {
         return (
           <div className="flex flex-col gap-1 pl-4">
             <span className="text-sm font-semibold text-gray-900">{text}</span>
-            <span className="text-xs text-gray-500">Key: {record.key}</span>
+            <span className="text-xs text-gray-500">Key: {record.childKey}</span>
           </div>
         );
       },
