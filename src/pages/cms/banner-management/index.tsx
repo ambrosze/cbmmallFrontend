@@ -36,6 +36,12 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useMemo, useRef, useState } from "react";
+import * as yup from "yup";
+
+const singleUpdateSchema = yup.object().shape({
+  title: yup.string().required("Title is required"),
+  short_description: yup.string().required("Short description is required"),
+});
 
 const placeholderImg = "/images/empty_box.svg";
 
@@ -238,6 +244,10 @@ const BannerManagement = () => {
     if (!selectedId) return;
     try {
       setFormErrors({});
+
+      // Validate client side
+      await singleUpdateSchema.validate(formValues, { abortEarly: false });
+
       const { existing_image_url, ...payload } = formValues;
 
       await updateSingleContent({
@@ -248,11 +258,22 @@ const BannerManagement = () => {
       setIsOpenModal(false);
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || "Operation failed");
-      if (error?.data?.errors) {
-        setFormErrors(error.data.errors);
+      if (error?.name === "ValidationError") {
+        const errors: any = {};
+        error.inner?.forEach((validationError: any) => {
+          if (validationError.path) {
+            errors[validationError.path] = validationError.message;
+          }
+        });
+        setFormErrors(errors);
+        message.error("Please fix the validation errors");
+      } else {
+        message.error(error?.data?.message || "Operation failed");
+        if (error?.data?.errors) {
+          setFormErrors(error.data.errors);
+        }
+        console.error(error);
       }
-      console.error(error);
     }
   };
 
@@ -274,7 +295,9 @@ const BannerManagement = () => {
         return (
           <div className="flex flex-col gap-1 pl-4">
             <span className="text-sm font-semibold text-gray-900">{text}</span>
-            <span className="text-xs text-gray-500">Key: {record.childKey}</span>
+            <span className="text-xs text-gray-500">
+              Key: {record.childKey}
+            </span>
           </div>
         );
       },
@@ -492,7 +515,7 @@ const BannerManagement = () => {
               onChange={handleInputChange}
               placeholder="Enter title"
               title={<span className="font-[500]">Title*</span>}
-              required={false}
+              required={true}
             />
             <TextInput
               type="text"
@@ -521,8 +544,8 @@ const BannerManagement = () => {
               value={formValues.short_description}
               onChange={handleInputChange}
               placeholder="Short description"
-              title={<span className="font-[500]">Short Description</span>}
-              required={false}
+              title={<span className="font-[500]">Short Description*</span>}
+              required={true}
             />
           </div>
 

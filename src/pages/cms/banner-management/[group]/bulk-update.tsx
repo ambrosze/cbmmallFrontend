@@ -17,6 +17,16 @@ import { Icon } from "@iconify/react";
 import { Checkbox, CheckboxChangeEvent, Upload, message } from "antd";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
+import * as yup from "yup";
+
+const bulkUpdateSchema = yup.object().shape({
+  content_blocks: yup.array().of(
+    yup.object().shape({
+      title: yup.string().required("Title is required"),
+      short_description: yup.string().required("Short description is required"),
+    }),
+  ),
+});
 
 const buildInitialFileList = (
   url: string | null,
@@ -189,6 +199,13 @@ const UpdateBannerManagement = () => {
   const handleSubmit = async () => {
     try {
       setFormErrors({});
+
+      // Validate client side
+      await bulkUpdateSchema.validate(
+        { content_blocks: bulkFormValues },
+        { abortEarly: false },
+      );
+
       // Filter out existing_image_url before sending
       const payload = bulkFormValues.map(
         ({ existing_image_url, ...rest }) => rest,
@@ -200,10 +217,28 @@ const UpdateBannerManagement = () => {
       message.success("Bulk update successful");
       router.push("/cms/banner-management");
     } catch (error: any) {
-      console.log(error);
-      message.error(error?.data?.message || "Operation failed");
-      if (error?.data?.errors) {
-        setFormErrors(error.data.errors);
+      if (error?.name === "ValidationError") {
+        const errors: any = {};
+        error.inner?.forEach((validationError: any) => {
+          if (validationError.path) {
+            // Convert path from "content_blocks[0].short_description" to "content_blocks.0.short_description"
+            const normalizedPath = validationError.path.replace(
+              /\[(\d+)\]/g,
+              ".$1",
+            );
+            if (!errors[normalizedPath]) {
+              errors[normalizedPath] = validationError.message;
+            }
+          }
+        });
+        setFormErrors(errors);
+        message.error("Please fix the validation errors");
+      } else {
+        console.log(error);
+        message.error(error?.data?.message || "Operation failed");
+        if (error?.data?.errors) {
+          setFormErrors(error.data.errors);
+        }
       }
     }
   };
@@ -301,9 +336,10 @@ const UpdateBannerManagement = () => {
                             placeholder="Short description"
                             title={
                               <span className="font-[500]">
-                                Short Description
+                                Short Description*
                               </span>
                             }
+                            required
                           />
                         </div>
 
