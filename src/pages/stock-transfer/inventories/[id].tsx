@@ -162,7 +162,7 @@ const index = () => {
   // Transform data for table
   const transformedData = data?.data?.stock_transfer_inventories?.map(
     (item) => {
-      const productVariant = item?.inventory?.product_variant;
+      const productVariant = (item as any)?.inventory?.product_variant;
       const product = productVariant?.product;
       const imageUrl =
         productVariant?.images?.[0]?.url ||
