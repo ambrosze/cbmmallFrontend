@@ -114,7 +114,7 @@ const TextInput = forwardRef<HTMLInputElement, IProps>(function TextInput(
         multiple={multiple}
         max={max}
         className={twMerge(
-          "w-full rounded-[8px] border border-gray-300 px-[10px] py-[9.5px] font-medium placeholder:text-sm hover:border-primary-40 focus:outline-none focus:ring-1 focus:ring-primary-40 text-base lg:text-sm",
+          "w-full rounded-[8px] border border-gray-300 px-[10px] py-[12.5px] font-medium placeholder:text-sm hover:border-primary-40 focus:outline-none focus:ring-1 focus:ring-primary-40 text-base lg:text-sm",
           className
         )}
         accept={accept}
