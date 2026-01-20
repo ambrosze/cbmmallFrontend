@@ -408,6 +408,27 @@ const Sidebar = ({
         },
       ],
     },
+    {
+      key: "sub7",
+      label: "CMS",
+      icon: <Icon icon="ic:outline-web" width="26" height="26" />,
+      children: [
+        {
+          key: "70",
+          label: "Banner Management",
+          icon: (
+            <Icon
+              icon="material-symbols:planner-banner-ad-pt-outline"
+              width="20"
+              height="20"
+            />
+          ),
+          onClick: () => {
+            router.push("/cms/banner-management");
+          },
+        },
+      ],
+    },
   ];
   const supportItems: MenuItem[] = [
     {
@@ -475,7 +496,7 @@ const Sidebar = ({
               className="pretty-menu"
               style={{ width: "100%", border: "none" }}
               selectedKeys={getActiveMenuKeys().filter((key) =>
-                ["100", "101"].includes(key)
+                ["100", "101"].includes(key),
               )}
               mode={"inline"}
               items={supportItems}

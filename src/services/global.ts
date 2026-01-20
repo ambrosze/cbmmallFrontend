@@ -30,7 +30,7 @@ export const authApi = api.injectEndpoints({
           | "OrderStatus"
           | "PaymentMode"
           | "TimePeriod"
-          | "DeliveryMethod";
+          | "DeliveryMethod" | "ContentBlockGroup";
       }
     >({
       query: ({ enum: enumValue }: { enum?: string }) => {
